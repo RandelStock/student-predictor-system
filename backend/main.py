@@ -50,7 +50,7 @@ import json
 # AUTH CONFIG
 # ══════════════════════════════════════════════════════════════════════════════
 
-SECRET_KEY = os.environ.get("EE_PREDICTOR_SECRET_KEY", "CHANGE_ME_TO_A_LONG_RANDOM_SECRET")
+SECRET_KEY = os.environ.get("EE_PREDICTOR_SECRET_KEY", "77284ebb88f5c8d3ba9d60b3eec22b9991932471a84020d5d8702266d2d767aa")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 1 day
 
