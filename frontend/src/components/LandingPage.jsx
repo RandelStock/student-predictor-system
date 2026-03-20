@@ -58,35 +58,6 @@ const ABOUT_ITEMS = [
   },
 ];
 
-function LogoSlot({ src, alt, size = 46, glowColor = "rgba(56,189,248,0.25)" }) {
-  return (
-    <div style={{
-      width:  `${size}px`,
-      height: `${size}px`,
-      flexShrink: 0,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      borderRadius: "50%",
-      background: "rgba(255,255,255,0.04)",
-      border: "1px solid rgba(255,255,255,0.08)",
-      overflow: "hidden",
-      boxShadow: `0 0 10px ${glowColor}`,
-    }}>
-      <img
-        src={src}
-        alt={alt}
-        style={{
-          width:  "100%",
-          height: "100%",
-          objectFit: "contain",
-          display: "block",
-        }}
-      />
-    </div>
-  );
-}
-
 export default function LandingPage({ onEnter }) {
   const [scrolled, setScrolled] = useState(false);
 

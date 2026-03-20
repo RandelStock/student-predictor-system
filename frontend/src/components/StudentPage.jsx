@@ -167,7 +167,6 @@ export default function StudentPage({ onLogout }) {
   const [history, setHistory]     = useState([]);
   const [viewingEntry, setViewingEntry] = useState(null);
   const [pendingResult, setPendingResult] = useState(null);
-  const [historyLoading, setHistoryLoading] = useState(false);
 
   const token = localStorage.getItem("token");
 

@@ -417,7 +417,7 @@ export default function ProfessorPage({ onLogout }) {
 
   useEffect(() => {
     if (activeTab === "trends") fetchAdminFromDb();
-  }, [attPage, attFilter, selectedYear]);
+  }, [attPage, attFilter, selectedYear, activeTab, fetchAdminFromDb]);
 
   const TABS = [
     { id: "overview",     label: "Overview",            icon: "📊" },
