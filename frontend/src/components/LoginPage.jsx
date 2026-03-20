@@ -1,6 +1,5 @@
 import { useState } from "react";
-
-const API_BASE = process.env.REACT_APP_API_BASE || "http://localhost:8000";
+import API_BASE_URL from "../apiBase";
 
 export default function LoginPage({ role, onSuccess, onBack }) {
   const [name, setName]         = useState("");
@@ -36,7 +35,7 @@ export default function LoginPage({ role, onSuccess, onBack }) {
         ? { name, email, password, role, student_id: role === "student" ? email : undefined }
         : { email, password };
 
-      const res = await fetch(`${API_BASE}${endpoint}`, {
+      const res = await fetch(`${API_BASE_URL}${endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
