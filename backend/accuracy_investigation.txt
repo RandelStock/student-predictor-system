@@ -1,0 +1,10 @@
+============================================================
+  INVESTIGATION: WHY IS CLASSIFICATION ACCURACY 100%?
+============================================================
+
+  PRC Rule Check: EE>=70 AND MATH>=70 AND ESAS>=70 → PASS
+  Records where rule matches actual label: 303/333 (91.0%)
+
+  FINDING: 30 records do NOT follow the simple PRC rule.
+  The model may have learned additional patterns.
+  Check these records for data entry errors or exceptions.

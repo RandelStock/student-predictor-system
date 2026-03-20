@@ -1,0 +1,35 @@
+======================================================================
+  BASELINE MODEL COMPARISON REPORT (5-Fold Cross-Validation)
+======================================================================
+
+  SCENARIO A: All Features (includes EE, MATH, ESAS scores)
+----------------------------------------------------------------------
+  Model                         Accuracy  Precision   Recall       F1      AUC
+  -----------------------------------------------------------------
+  Logistic Regression             1.0000     1.0000   1.0000   1.0000   1.0000
+  Decision Tree                   0.9640     0.9613   0.9800   0.9704   0.9601
+  Naive Bayes                     0.9218     0.9322   0.9400   0.9349   0.9900
+  K-Nearest Neighbors             0.9880     0.9810   1.0000   0.9902   1.0000
+  Gradient Boosting               0.9730     0.9754   0.9800   0.9776   0.9852
+  Random Forest (Ours)            0.9940     0.9902   1.0000   0.9951   1.0000 <-- OUR MODEL
+
+  SCENARIO B: No Subject Scores (GWA + Survey features only)
+----------------------------------------------------------------------
+  Model                         Accuracy  Precision   Recall       F1      AUC
+  -----------------------------------------------------------------
+  Logistic Regression             0.9730     0.9760   0.9800   0.9776   0.9977
+  Decision Tree                   0.9520     0.9620   0.9600   0.9598   0.9502
+  Naive Bayes                     0.9098     0.9261   0.9250   0.9243   0.9860
+  K-Nearest Neighbors             0.8978     0.8552   1.0000   0.9218   0.9613
+  Gradient Boosting               0.9671     0.9537   0.9950   0.9735   0.9978
+  Random Forest (Ours)            0.9820     0.9763   0.9950   0.9853   0.9998 <-- OUR MODEL
+
+----------------------------------------------------------------------
+  JUSTIFICATION FOR RANDOM FOREST:
+  Random Forest was selected as the primary model because it:
+  1. Achieved the highest or competitive scores across all metrics
+  2. Handles non-linear relationships in survey Likert data
+  3. Is robust to outliers and missing values
+  4. Provides feature importance scores for Objective 4 insights
+  5. Does not require feature scaling or normalization
+  6. Handles class imbalance via class_weight='balanced'
