@@ -111,7 +111,7 @@ app = FastAPI(title="EE Licensure Predictor API")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "https://student-predictor-system.vercel.app",
+        "https://ee-predictor-system.vercel.app",
         "http://localhost:3000",  # keep for local dev
     ],
     allow_credentials=True,
