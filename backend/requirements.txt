@@ -12,6 +12,9 @@ matplotlib
 seaborn
 scikit-learn
 openpyxl
+python-jose[cryptography]
+passlib[bcrypt]
+python-multipart
 
 # Phase 1: Database
 sqlalchemy>=2.0
