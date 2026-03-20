@@ -1,0 +1,19 @@
+# REE Licensure Predictor — backend
+# Install: pip install -r requirements.txt
+
+fastapi
+uvicorn
+pydantic
+groq
+joblib
+numpy
+pandas
+matplotlib
+seaborn
+scikit-learn
+openpyxl
+
+# Phase 1: Database
+sqlalchemy>=2.0
+psycopg2-binary
+python-dotenv
