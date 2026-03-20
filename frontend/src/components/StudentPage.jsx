@@ -174,7 +174,6 @@ export default function StudentPage({ onLogout }) {
   useEffect(() => {
     let cancelled = false;
     const run = async () => {
-      setHistoryLoading(true);
       try {
         const items = await fetchDbHistory({ token, pageSize: 50 });
         if (!cancelled) setHistory(items);
@@ -182,7 +181,7 @@ export default function StudentPage({ onLogout }) {
         // Fallback: local history (for thesis demo environments where DB isn't set up)
         if (!cancelled) setHistory(loadHistory());
       } finally {
-        if (!cancelled) setHistoryLoading(false);
+        if (!cancelled) ;
       }
     };
     run();
@@ -227,14 +226,13 @@ export default function StudentPage({ onLogout }) {
     // Refresh DB view (fallback happens inside StudentPage mount/fetchDbHistory)
     (async () => {
       try {
-        setHistoryLoading(true);
         const items = await fetchDbHistory({ token, pageSize: 50 });
         setHistory(items);
         saveHistory(items);
       } catch {
         setHistory(loadHistory());
       } finally {
-        setHistoryLoading(false);
+        ;
       }
     })();
   };

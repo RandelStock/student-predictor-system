@@ -415,6 +415,7 @@ export default function ProfessorPage({ onLogout }) {
     }
   }, [activeTab, fetchAdminFromDb, fetchTrendInsights, trendInsights, fetchUsage]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (activeTab === "trends") fetchAdminFromDb();
   }, [attPage, attFilter, selectedYear, activeTab, fetchAdminFromDb]);
