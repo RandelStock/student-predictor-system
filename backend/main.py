@@ -557,6 +557,7 @@ class PredictRequest(BaseModel):
     Used_Resources:   Literal["Yes", "No"]
     GWA_Reflection:   int = Field(..., ge=1, le=5)
     Review_Duration:  int = Field(..., ge=0, le=2)
+    question_timings: Optional[dict] = None
 
     KN1: int; KN2: int; KN3: int; KN4: int
     KN5: int; KN6: int; KN7: int; KN8: int
@@ -761,6 +762,8 @@ def student_attempts(
                 "reliability_score": reliability_score,
                 "reliability_category": _reliability_category(reliability_score),
                 "answers": answers,
+                "attended_formal_review": answers.get("Review_Program") if isinstance(answers, dict) else None,
+                "question_timings": answers.get("question_timings") if isinstance(answers, dict) else None,
                 "date": r.created_at.isoformat() if r.created_at else None,
                 "name": r.name,
                 "age": r.age,
@@ -1292,6 +1295,52 @@ def admin_pass_fail_by_year(db: Session = Depends(get_db)):
             "fail_count": total - pass_count,
         })
     return out
+
+
+@app.get("/admin/review-analysis")
+def admin_review_analysis(db: Session = Depends(get_db)):
+    rows = (
+        db.query(PredictionAttempt.prediction, PredictionAttempt.input_json)
+        .filter(PredictionAttempt.input_json.isnot(None))
+        .all()
+    )
+
+    grouped = {
+        "Yes": {"total": 0, "pass": 0, "timed_human_like": 0, "timed_total": 0},
+        "No": {"total": 0, "pass": 0, "timed_human_like": 0, "timed_total": 0},
+    }
+
+    for pred, raw_json in rows:
+        try:
+            payload = json.loads(raw_json or "{}")
+        except Exception:
+            payload = {}
+        review = "Yes" if str(payload.get("Review_Program", "No")).strip().lower() == "yes" else "No"
+        grouped[review]["total"] += 1
+        grouped[review]["pass"] += 1 if int(pred or 0) == 1 else 0
+
+        timings = payload.get("question_timings") if isinstance(payload, dict) else None
+        if isinstance(timings, dict) and timings:
+            grouped[review]["timed_total"] += len(timings)
+            grouped[review]["timed_human_like"] += sum(
+                1 for t in timings.values() if isinstance(t, dict) and t.get("is_human_like") is True
+            )
+
+    items = []
+    for k in ["Yes", "No"]:
+        total = grouped[k]["total"]
+        timed_total = grouped[k]["timed_total"]
+        items.append(
+            {
+                "review_program": k,
+                "total": total,
+                "pass_count": grouped[k]["pass"],
+                "pass_rate": round((grouped[k]["pass"] / total) * 100, 2) if total else 0.0,
+                "human_like_rate": round((grouped[k]["timed_human_like"] / timed_total) * 100, 2) if timed_total else None,
+            }
+        )
+
+    return {"items": items}
 
 
 @app.get("/admin/trend-stats")

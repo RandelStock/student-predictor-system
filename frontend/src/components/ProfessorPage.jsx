@@ -238,6 +238,7 @@ export default function ProfessorPage({ onLogout }) {
   const [usageSummary, setUsageSummary] = useState(null);
   const [usageLoading, setUsageLoading] = useState(false);
   const [reportLoading, setReportLoading] = useState(false);
+  const [reviewAnalysis, setReviewAnalysis] = useState(null);
 
   // Final defense / held-out evaluation (2025)
   const [test2025, setTest2025] = useState(null);
@@ -314,6 +315,15 @@ export default function ProfessorPage({ onLogout }) {
       console.error("Usage summary error:", e);
     } finally {
       setUsageLoading(false);
+    }
+  }, []);
+
+  const fetchReviewAnalysis = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/admin/review-analysis`);
+      if (res.ok) setReviewAnalysis(await res.json());
+    } catch (e) {
+      console.error("Review analysis error:", e);
     }
   }, []);
 
@@ -411,9 +421,10 @@ export default function ProfessorPage({ onLogout }) {
     if (activeTab === "trends") {
       fetchAdminFromDb();
       fetchUsage();
+      fetchReviewAnalysis();
       if (!trendInsights) fetchTrendInsights();
     }
-  }, [activeTab, fetchAdminFromDb, fetchTrendInsights, trendInsights, fetchUsage]);
+  }, [activeTab, fetchAdminFromDb, fetchTrendInsights, trendInsights, fetchUsage, fetchReviewAnalysis]);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
@@ -425,6 +436,8 @@ export default function ProfessorPage({ onLogout }) {
     { id: "performance",  label: "Performance",         icon: "📈" },
     { id: "features",     label: "Feature Importance",  icon: "🤖" },
     { id: "curriculum",   label: "Curriculum Gaps",     icon: "🏫" },
+    { id: "classification_metrics", label: "Classification Metrics", icon: "🎯" },
+    { id: "regression_metrics", label: "Regression Metrics", icon: "📐" },
     { id: "correlation",  label: "Correlation",         icon: "🧮" },
     { id: "test2025",     label: "2025 Final Defense",  icon: "🧪" },
     { id: "trends",       label: "Trends & Monitoring", icon: "📅" },
@@ -465,11 +478,11 @@ export default function ProfessorPage({ onLogout }) {
   })();
 
   return (
-    <div style={{
+    <div className="prof-ui" style={{
       minHeight: "100vh",
       background: "#060b14",
       fontFamily: "'DM Sans', system-ui, sans-serif",
-      color: "#f1f5f9",
+      color: "#f8fafc",
     }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
@@ -485,6 +498,10 @@ export default function ProfessorPage({ onLogout }) {
         .att-table tr:hover td { background:rgba(255,255,255,0.02); }
         .filter-input { background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:6px 10px; color:#f1f5f9; font-size:12px; font-family:'DM Sans',sans-serif; outline:none; }
         .filter-input:focus { border-color:rgba(56,189,248,0.5); }
+        .prof-ui p { color: #dbeafe; font-size: 14px; line-height: 1.55; }
+        .prof-ui td, .prof-ui th { color: #dbeafe; font-size: 12px; }
+        .prof-ui label { color: #cbd5e1; font-size: 12px; }
+        .prof-ui button { font-size: 13px; }
       `}</style>
 
       {/* ══ TOP NAV ══ */}
@@ -497,17 +514,14 @@ export default function ProfessorPage({ onLogout }) {
         height: "76px",
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
-          <div style={{ position: "relative" }}>
-            <img
-              src="/slsulogo.png" alt="SLSU"
-              style={{ width: "46px", height: "46px", objectFit: "contain", filter: "drop-shadow(0 0 8px rgba(139,92,246,0.3))" }}
-              onError={e => { e.target.style.display = "none"; e.target.nextSibling.style.display = "flex"; }}
-            />
-            <div style={{ display: "none", width: "46px", height: "46px", borderRadius: "11px", background: "linear-gradient(135deg, #7c3aed, #6366f1)", alignItems: "center", justifyContent: "center", fontSize: "20px" }}>🔬</div>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            {["/slsulogo.png", "/slsulogo1.png", "/slsulogo2.png"].map((src, idx) => (
+              <img key={src} src={src} alt={`Logo ${idx + 1}`} style={{ width: "30px", height: "30px", objectFit: "contain", opacity: 0.95 }} />
+            ))}
           </div>
           <div style={{ borderLeft: "1px solid rgba(255,255,255,0.08)", paddingLeft: "14px" }}>
             <p style={{ margin: 0, fontSize: "15px", fontWeight: 800, color: "#f1f5f9", letterSpacing: "0.01em", fontFamily: "'Syne',sans-serif" }}>Insights Dashboard</p>
-            <p style={{ margin: 0, fontSize: "10px", color: "#475569", textTransform: "uppercase", letterSpacing: "0.07em", fontFamily: "'DM Sans',sans-serif" }}>Faculty Portal · SLSU IIEE</p>
+            <p style={{ margin: 0, fontSize: "10px", color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.07em", fontFamily: "'DM Sans',sans-serif" }}>Faculty Portal · SLSU IIEE</p>
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
@@ -886,6 +900,90 @@ export default function ProfessorPage({ onLogout }) {
             )}
 
             {/* ══ CORRELATION TAB ══ */}
+            {activeTab === "classification_metrics" && (
+              <div style={{ animation: "fadeUp 0.4s ease" }}>
+                <div style={{ marginBottom: "20px" }}>
+                  <h2 style={{ margin: "0 0 4px", fontSize: "20px", fontWeight: 800, fontFamily: "'Syne',sans-serif", color: "#f8fafc" }}>
+                    Classification Metrics
+                  </h2>
+                  <p style={{ margin: 0, fontSize: "13px", color: "#cbd5e1" }}>
+                    System metrics for model development focused on Pass/Fail prediction.
+                  </p>
+                </div>
+                <Card title="Classification Metrics System" icon="🎯" subtitle="When and why each metric is used" fullWidth>
+                  <div style={{ overflowX: "auto" }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px", fontFamily: "'DM Sans',sans-serif" }}>
+                      <thead>
+                        <tr>
+                          {["METRIC", "FOCUS", "WHEN TO USE"].map((h) => (
+                            <th key={h} style={{ padding: "10px 12px", borderBottom: "1px solid rgba(148,163,184,0.2)", textAlign: "left", color: "#cbd5e1", fontWeight: 700, letterSpacing: "0.04em" }}>
+                              {h}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {[
+                          ["Accuracy", "Overall correctness", "Balanced classes"],
+                          ["Precision", "Avoid false positives", "Spam/fraud"],
+                          ["Recall", "Catch all positives", "Medical/safety"],
+                          ["F1-Score", "Precision-recall balance", "Imbalanced data"],
+                        ].map((row, i) => (
+                          <tr key={i}>
+                            <td style={{ padding: "10px 12px", borderBottom: "1px solid rgba(30,41,59,0.7)", color: "#f8fafc", fontWeight: 700 }}>{row[0]}</td>
+                            <td style={{ padding: "10px 12px", borderBottom: "1px solid rgba(30,41,59,0.7)", color: "#cbd5e1" }}>{row[1]}</td>
+                            <td style={{ padding: "10px 12px", borderBottom: "1px solid rgba(30,41,59,0.7)", color: "#94a3b8" }}>{row[2]}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </Card>
+              </div>
+            )}
+
+            {activeTab === "regression_metrics" && (
+              <div style={{ animation: "fadeUp 0.4s ease" }}>
+                <div style={{ marginBottom: "20px" }}>
+                  <h2 style={{ margin: "0 0 4px", fontSize: "20px", fontWeight: 800, fontFamily: "'Syne',sans-serif", color: "#f8fafc" }}>
+                    Regression Metrics
+                  </h2>
+                  <p style={{ margin: 0, fontSize: "13px", color: "#cbd5e1" }}>
+                    System metrics for rating prediction model development.
+                  </p>
+                </div>
+                <Card title="Regression Metrics System" icon="📐" subtitle="Error behavior and optimization goals" fullWidth>
+                  <div style={{ overflowX: "auto" }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px", fontFamily: "'DM Sans',sans-serif" }}>
+                      <thead>
+                        <tr>
+                          {["METRIC", "UNITS", "SENSITIVITY TO OUTLIERS", "GOALS"].map((h) => (
+                            <th key={h} style={{ padding: "10px 12px", borderBottom: "1px solid rgba(148,163,184,0.2)", textAlign: "left", color: "#cbd5e1", fontWeight: 700, letterSpacing: "0.04em" }}>
+                              {h}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {[
+                          ["MAE", "Same as target", "Low", "Minimize average error"],
+                          ["RMSE", "Same as target", "High", "Avoid large misses"],
+                          ["R^2 SCORE", "None (Percentage)", "Moderate", "Maximize explained variance"],
+                        ].map((row, i) => (
+                          <tr key={i}>
+                            <td style={{ padding: "10px 12px", borderBottom: "1px solid rgba(30,41,59,0.7)", color: "#f8fafc", fontWeight: 700 }}>{row[0]}</td>
+                            <td style={{ padding: "10px 12px", borderBottom: "1px solid rgba(30,41,59,0.7)", color: "#cbd5e1" }}>{row[1]}</td>
+                            <td style={{ padding: "10px 12px", borderBottom: "1px solid rgba(30,41,59,0.7)", color: "#94a3b8" }}>{row[2]}</td>
+                            <td style={{ padding: "10px 12px", borderBottom: "1px solid rgba(30,41,59,0.7)", color: "#94a3b8" }}>{row[3]}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </Card>
+              </div>
+            )}
+
             {activeTab === "correlation" && (
               <div style={{ animation: "fadeUp 0.4s ease" }}>
                 <div style={{ marginBottom: "20px" }}>
@@ -1214,6 +1312,27 @@ export default function ProfessorPage({ onLogout }) {
                             </div>
                           );
                         })}
+                      </div>
+                    </Card>
+                  </div>
+                )}
+
+                {(reviewAnalysis?.items ?? []).length > 0 && (
+                  <div style={{ marginBottom: "16px" }}>
+                    <Card title="Formal Review Split Analysis" icon="📚" subtitle="Separated results by Attended Formal Review = Yes / No">
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: "10px" }}>
+                        {(reviewAnalysis.items ?? []).map((item, idx) => (
+                          <div key={idx} style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "10px", padding: "12px" }}>
+                            <p style={{ margin: "0 0 3px", fontSize: "11px", color: item.review_program === "Yes" ? c.pass : c.amber, fontWeight: 700 }}>
+                              {item.review_program === "Yes" ? "Attended Review" : "No Formal Review"}
+                            </p>
+                            <p style={{ margin: "0 0 2px", fontSize: "20px", color: "#f1f5f9", fontWeight: 800 }}>{item.pass_rate?.toFixed(1)}%</p>
+                            <p style={{ margin: 0, fontSize: "11px", color: "#94a3b8" }}>
+                              {item.pass_count}/{item.total} predicted pass
+                              {item.human_like_rate != null ? ` · Human-like timing: ${item.human_like_rate.toFixed(1)}%` : ""}
+                            </p>
+                          </div>
+                        ))}
                       </div>
                     </Card>
                   </div>

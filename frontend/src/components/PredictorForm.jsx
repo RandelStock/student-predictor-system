@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import API_BASE_URL from "../apiBase";
 import ResultCard from "./ResultCard";
 
@@ -7,6 +7,14 @@ import ResultCard from "./ResultCard";
 const STRAND_OPTIONS = ["STEM", "GAS", "TVL", "HUMSS", "ABM"];
 
 const LIKERT_LABELS = ["Strongly Agree", "Agree", "Disagree", "Strongly Disagree"];
+const QUESTION_TIME_RULES = {
+  knowledge: [5, 10],
+  problem_solving: [10, 20],
+  motivation: [5, 12],
+  mental_health: [5, 12],
+  support: [5, 12],
+  institutional: [8, 18],
+};
 
 const STEPS = [
   {
@@ -383,6 +391,12 @@ function LikertRow({ label, fieldKey, value, onChange, hasError, displayIndex })
   );
 }
 
+function resolveExpectedTime(stepId, displayIndex) {
+  const [baseMin, baseMax] = QUESTION_TIME_RULES[stepId] || [5, 12];
+  const add = Math.floor((displayIndex - 1) / 4);
+  return { min: baseMin + add, max: baseMax + add };
+}
+
 // ── Step indicator ────────────────────────────────────────────────────────────
 
 function StepIndicator({ steps, current }) {
@@ -408,12 +422,34 @@ function StepIndicator({ steps, current }) {
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function PredictorForm({ onResult }) {
+  const loggedInName = localStorage.getItem("name") || "";
   const [form, setForm]       = useState(defaultForm);
   const [step, setStep]       = useState(0);
+  const [questionIndex, setQuestionIndex] = useState(0);
   const [result, setResult]   = useState(null);
   const [loading, setLoading] = useState(false);
   const [toast, setToast]     = useState(null);
   const [errors, setErrors]   = useState({});
+  const [questionTimings, setQuestionTimings] = useState({});
+  const [activeQuestionStart, setActiveQuestionStart] = useState(Date.now());
+
+  useEffect(() => {
+    if (loggedInName && !form.name) {
+      setForm((prev) => ({ ...prev, name: loggedInName }));
+    }
+  }, [loggedInName, form.name]);
+
+  const currentStep = STEPS[step];
+  const activeQuestion = useMemo(() => {
+    if (!currentStep || currentStep.type !== "likert") return null;
+    return currentStep.fields[questionIndex] || null;
+  }, [currentStep, questionIndex]);
+
+  useEffect(() => {
+    if (currentStep?.type === "likert") {
+      setActiveQuestionStart(Date.now());
+    }
+  }, [step, questionIndex, currentStep?.type]);
 
   const showToast = (message, type = "error") => {
     setToast({ message, type });
@@ -422,7 +458,12 @@ export default function PredictorForm({ onResult }) {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    setForm((prev) => {
+      if (name === "Review_Program" && value === "No") {
+        return { ...prev, Review_Program: value, Review_Duration: "0" };
+      }
+      return { ...prev, [name]: value };
+    });
     if (SCORE_FIELDS[name]) {
       const err = validateScore(name, value);
       setErrors((prev) => ({ ...prev, [name]: err || "" }));
@@ -453,13 +494,35 @@ export default function PredictorForm({ onResult }) {
       if (!form.year_taking_exam) newErr.year_taking_exam = true;
     }
     if (current.type === "likert") {
-      current.fields.forEach(({ key }) => {
-        if (!form[key]) newErr[key] = true;
-      });
+      if (!activeQuestion || !form[activeQuestion.key]) {
+        if (activeQuestion?.key) newErr[activeQuestion.key] = true;
+      }
     }
 
     setErrors(newErr);
     return Object.keys(newErr).length === 0;
+  };
+
+  const finalizeQuestionTiming = (stepObj, qIndex) => {
+    if (!stepObj || stepObj.type !== "likert") return;
+    const q = stepObj.fields[qIndex];
+    if (!q || !form[q.key]) return;
+    if (questionTimings[q.key]) return;
+
+    const now = Date.now();
+    const elapsedSec = Math.max(1, Math.round((now - activeQuestionStart) / 1000));
+    const expected = resolveExpectedTime(stepObj.id, qIndex + 1);
+    setQuestionTimings((prev) => ({
+      ...prev,
+      [q.key]: {
+        step_id: stepObj.id,
+        question_index: qIndex + 1,
+        duration_sec: elapsedSec,
+        expected_min_sec: expected.min,
+        expected_max_sec: expected.max,
+        is_human_like: elapsedSec >= expected.min && elapsedSec <= expected.max,
+      },
+    }));
   };
 
   const handleNext = () => {
@@ -474,11 +537,32 @@ export default function PredictorForm({ onResult }) {
       }
       return;
     }
+    if (current.type === "likert") {
+      finalizeQuestionTiming(current, questionIndex);
+      const isLastQuestion = questionIndex >= current.fields.length - 1;
+      if (!isLastQuestion) {
+        setQuestionIndex((q) => q + 1);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return;
+      }
+      setQuestionIndex(0);
+    }
     setStep((s) => s + 1);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleBack = () => {
+    if (currentStep?.type === "likert" && questionIndex > 0) {
+      setQuestionIndex((q) => q - 1);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+    const prevStep = step - 1;
+    if (prevStep >= 0 && STEPS[prevStep].type === "likert") {
+      setQuestionIndex(STEPS[prevStep].fields.length - 1);
+    } else {
+      setQuestionIndex(0);
+    }
     setStep((s) => s - 1);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -512,6 +596,7 @@ export default function PredictorForm({ onResult }) {
         Used_Resources:   form.Used_Resources,
         GWA_Reflection:   Number(form.GWA_Reflection),
         Review_Duration:  Number(form.Review_Duration),
+        question_timings: questionTimings,
       };
       STEPS.forEach((s) => {
         if (s.type === "likert") {
@@ -564,14 +649,15 @@ export default function PredictorForm({ onResult }) {
     setErrors({});
     setResult(null);
     setStep(0);
+    setQuestionIndex(0);
+    setQuestionTimings({});
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const currentStep    = STEPS[step];
   const isLastStep     = step === STEPS.length - 1;
   const isDone         = step >= STEPS.length;
-  const unansweredCount = currentStep?.type === "likert"
-    ? currentStep.fields.filter(({ key }) => !form[key]).length
+  const unansweredCount = currentStep?.type === "likert" && activeQuestion
+    ? (form[activeQuestion.key] ? 0 : 1)
     : 0;
 
   return (
@@ -674,7 +760,9 @@ export default function PredictorForm({ onResult }) {
                         className={`bg-slate-800/80 border rounded-xl px-3 py-3 text-slate-100 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 ${errors.name ? "border-red-500" : "border-slate-700"}`}
                         type="text" name="name" value={form.name} onChange={handleChange}
                         placeholder="e.g. Juan Dela Cruz"
+                        readOnly={!!loggedInName}
                       />
+                      {loggedInName && <p className="text-[11px] text-slate-500">Auto-filled from logged-in account.</p>}
                       {errors.name && <p className="text-[11px] text-red-400">⚠ Full name is required.</p>}
                     </div>
                     <div className="flex flex-col gap-1.5">
@@ -783,17 +871,22 @@ export default function PredictorForm({ onResult }) {
                         { val: "1", text: "~3 Months" },
                         { val: "2", text: "~6 Months" },
                       ].map(({ val, text }) => (
-                        <label key={val} className={`flex items-center justify-center py-3 rounded-xl border cursor-pointer transition select-none text-sm font-semibold
+                        <label key={val} className={`flex items-center justify-center py-3 rounded-xl border transition select-none text-sm font-semibold
+                          ${form.Review_Program === "No" && val !== "0" ? "opacity-45 cursor-not-allowed" : "cursor-pointer"}
                           ${form.Review_Duration === val
                             ? "bg-blue-500/15 border-blue-500 text-blue-300"
                             : "bg-slate-800/80 border-slate-700 text-slate-400 hover:border-slate-600 hover:text-slate-200"}`}>
                           <input type="radio" name="Review_Duration" value={val}
                             checked={form.Review_Duration === val}
+                            disabled={form.Review_Program === "No" && val !== "0"}
                             onChange={handleChange} className="sr-only" />
                           {text}
                         </label>
                       ))}
                     </div>
+                    {form.Review_Program === "No" && (
+                      <p className="text-[11px] text-slate-500">Review duration is disabled when formal review is not attended.</p>
+                    )}
                   </div>
                 </div>
               )}
@@ -806,13 +899,20 @@ export default function PredictorForm({ onResult }) {
                       <p key={i} className="text-center text-[10px] text-slate-600 font-medium">{i + 1} — {l}</p>
                     ))}
                   </div>
-                  {currentStep.fields.map(({ key, label }, idx) => (
+                  {activeQuestion && (
                     <LikertRow
-                      key={key} label={label} fieldKey={key}
-                      value={form[key]} onChange={handleChange} hasError={!!errors[key]}
-                      displayIndex={idx + 1}
+                      key={activeQuestion.key}
+                      label={activeQuestion.label}
+                      fieldKey={activeQuestion.key}
+                      value={form[activeQuestion.key]}
+                      onChange={handleChange}
+                      hasError={!!errors[activeQuestion.key]}
+                      displayIndex={questionIndex + 1}
                     />
-                  ))}
+                  )}
+                  <p className="text-xs text-slate-500 mt-2">
+                    Question {questionIndex + 1} of {currentStep.fields.length}
+                  </p>
                 </div>
               )}
 

@@ -87,6 +87,7 @@ function HistoryRow({ entry, index, onView }) {
   const reliabilityBg = `${reliabilityColor}18`;
   const reliabilityBorder = `${reliabilityColor}35`;
   const isRecent   = index === 0;
+  const attendedReview = entry?.answers?.Review_Program || entry?.attended_formal_review || "—";
 
   return (
     <div style={{
@@ -152,6 +153,9 @@ function HistoryRow({ entry, index, onView }) {
           >
             {entry.reliability_category ? entry.reliability_category : reliabilityText}
           </span>
+          <span style={{ fontSize: "10px", color: attendedReview === "Yes" ? "#34d399" : "#fbbf24" }}>
+            Review: {attendedReview}
+          </span>
         </div>
       </div>
 
@@ -164,6 +168,7 @@ function HistoryRow({ entry, index, onView }) {
 // ── main StudentPage ──────────────────────────────────────────────────────────
 export default function StudentPage({ onLogout }) {
   const [view, setView]           = useState("dashboard"); // "dashboard" | "predictor" | "result"
+  const [historyFilter, setHistoryFilter] = useState("all"); // all | yes | no
   const [history, setHistory]     = useState([]);
   const [viewingEntry, setViewingEntry] = useState(null);
   const [pendingResult, setPendingResult] = useState(null);
@@ -246,13 +251,28 @@ export default function StudentPage({ onLogout }) {
     : "—";
 
   const displayedResult = viewingEntry || pendingResult;
+  const reviewYesHistory = history.filter((h) => (h?.answers?.Review_Program || h?.attended_formal_review) === "Yes");
+  const reviewNoHistory = history.filter((h) => (h?.answers?.Review_Program || h?.attended_formal_review) === "No");
+  const filteredHistory = history.filter((h) => {
+    const review = h?.answers?.Review_Program || h?.attended_formal_review;
+    if (historyFilter === "yes") return review === "Yes";
+    if (historyFilter === "no") return review === "No";
+    return true;
+  });
+  const avgPassProb = (arr) => {
+    if (!arr.length) return null;
+    const total = arr.reduce((acc, cur) => acc + Number(cur?.probability_pass || 0), 0);
+    return (total / arr.length) * 100;
+  };
+  const yesAvgProb = avgPassProb(reviewYesHistory);
+  const noAvgProb = avgPassProb(reviewNoHistory);
 
   return (
-    <div style={{
+    <div className="student-ui" style={{
       minHeight: "100vh",
       background: "#060b14",
       fontFamily: "'DM Sans', system-ui, sans-serif",
-      color: "#f1f5f9",
+      color: "#f8fafc",
     }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;700&display=swap');
@@ -260,6 +280,10 @@ export default function StudentPage({ onLogout }) {
         @keyframes spin   { to{transform:rotate(360deg)} }
         .student-fade { animation: fadeUp 0.35s ease forwards; }
         ::-webkit-scrollbar{width:4px} ::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:99px}
+        .student-ui p { color: #dbeafe; font-size: 14px; line-height: 1.55; }
+        .student-ui td, .student-ui th { color: #dbeafe; font-size: 12px; }
+        .student-ui label { color: #cbd5e1; font-size: 12px; }
+        .student-ui button { font-size: 13px; }
       `}</style>
 
       {/* ══ TOP NAV ══ */}
@@ -273,16 +297,14 @@ export default function StudentPage({ onLogout }) {
       }}>
         {/* Left */}
         <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
-          <div style={{ position: "relative" }}>
-            <img src="/slsulogo.png" alt="SLSU"
-              style={{ width: "46px", height: "46px", objectFit: "contain", filter: "drop-shadow(0 0 8px rgba(14,165,233,0.28))" }}
-              onError={e => { e.target.style.display = "none"; e.target.nextSibling.style.display = "flex"; }}
-            />
-            <div style={{ display: "none", width: "46px", height: "46px", borderRadius: "11px", background: "linear-gradient(135deg, #0ea5e9, #6366f1)", alignItems: "center", justifyContent: "center", fontSize: "20px" }}>⚡</div>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            {["/slsulogo.png", "/slsulogo1.png", "/slsulogo2.png"].map((src, idx) => (
+              <img key={src} src={src} alt={`Logo ${idx + 1}`} style={{ width: "30px", height: "30px", objectFit: "contain", opacity: 0.95 }} />
+            ))}
           </div>
           <div style={{ borderLeft: "1px solid rgba(255,255,255,0.08)", paddingLeft: "14px" }}>
             <p style={{ margin: 0, fontSize: "15px", fontWeight: 800, color: "#f1f5f9", letterSpacing: "0.01em", fontFamily: "'Syne',sans-serif" }}>EE Licensure Predictor</p>
-            <p style={{ margin: 0, fontSize: "10px", color: "#475569", textTransform: "uppercase", letterSpacing: "0.07em", fontFamily: "'DM Sans',sans-serif" }}>Student Portal · SLSU IIEE</p>
+            <p style={{ margin: 0, fontSize: "10px", color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.07em", fontFamily: "'DM Sans',sans-serif" }}>Student Portal · SLSU IIEE</p>
           </div>
         </div>
 
@@ -339,10 +361,10 @@ export default function StudentPage({ onLogout }) {
                 <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#34d399", boxShadow: "0 0 8px #34d399" }} />
                 <span style={{ fontSize: "11px", fontWeight: 700, color: "#34d399", textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: "'DM Sans',sans-serif" }}>Student Dashboard</span>
               </div>
-              <h1 style={{ margin: "0 0 6px", fontSize: "28px", fontWeight: 800, color: "#f1f5f9", fontFamily: "'Syne',sans-serif", letterSpacing: "-0.02em" }}>
+              <h1 style={{ margin: "0 0 6px", fontSize: "31px", fontWeight: 800, color: "#f8fafc", fontFamily: "'Syne',sans-serif", letterSpacing: "-0.02em" }}>
                 Your Readiness Overview
               </h1>
-              <p style={{ margin: 0, fontSize: "13px", color: "#475569", fontFamily: "'DM Sans',sans-serif" }}>
+            <p style={{ margin: 0, fontSize: "14px", color: "#cbd5e1", fontFamily: "'DM Sans',sans-serif" }}>
                 Track your board exam predictions and review past results to monitor your progress.
               </p>
             </div>
@@ -447,8 +469,56 @@ export default function StudentPage({ onLogout }) {
                   <div style={{ flex: 1, height: "1px", background: "rgba(255,255,255,0.06)" }} />
                   <span style={{ fontSize: "10px", color: "#334155", fontFamily: "'DM Sans',sans-serif" }}>{history.length} attempt{history.length !== 1 ? "s" : ""}</span>
                 </div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0,1fr))", gap: "8px", marginBottom: "10px" }}>
+                  <div style={{ background: "rgba(52,211,153,0.08)", border: "1px solid rgba(52,211,153,0.2)", borderRadius: "10px", padding: "10px 12px" }}>
+                    <p style={{ margin: 0, fontSize: "10px", color: "#34d399" }}>With Formal Review</p>
+                    <p style={{ margin: "3px 0 0", fontSize: "18px", color: "#e2e8f0", fontWeight: 800 }}>{reviewYesHistory.length}</p>
+                  </div>
+                  <div style={{ background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.2)", borderRadius: "10px", padding: "10px 12px" }}>
+                    <p style={{ margin: 0, fontSize: "10px", color: "#fbbf24" }}>Without Formal Review</p>
+                    <p style={{ margin: "3px 0 0", fontSize: "18px", color: "#e2e8f0", fontWeight: 800 }}>{reviewNoHistory.length}</p>
+                  </div>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0,1fr))", gap: "8px", marginBottom: "10px" }}>
+                  <div style={{ background: "rgba(52,211,153,0.05)", border: "1px solid rgba(52,211,153,0.18)", borderRadius: "10px", padding: "10px 12px" }}>
+                    <p style={{ margin: 0, fontSize: "10px", color: "#86efac" }}>Avg Pass Prob. (With Review)</p>
+                    <p style={{ margin: "3px 0 0", fontSize: "17px", color: "#f8fafc", fontWeight: 800 }}>
+                      {yesAvgProb != null ? `${yesAvgProb.toFixed(1)}%` : "—"}
+                    </p>
+                  </div>
+                  <div style={{ background: "rgba(251,191,36,0.05)", border: "1px solid rgba(251,191,36,0.18)", borderRadius: "10px", padding: "10px 12px" }}>
+                    <p style={{ margin: 0, fontSize: "10px", color: "#fde68a" }}>Avg Pass Prob. (No Review)</p>
+                    <p style={{ margin: "3px 0 0", fontSize: "17px", color: "#f8fafc", fontWeight: 800 }}>
+                      {noAvgProb != null ? `${noAvgProb.toFixed(1)}%` : "—"}
+                    </p>
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "10px" }}>
+                  {[
+                    { id: "all", label: `All (${history.length})` },
+                    { id: "yes", label: `With Review (${reviewYesHistory.length})` },
+                    { id: "no", label: `No Review (${reviewNoHistory.length})` },
+                  ].map((opt) => (
+                    <button
+                      key={opt.id}
+                      onClick={() => setHistoryFilter(opt.id)}
+                      style={{
+                        background: historyFilter === opt.id ? "rgba(56,189,248,0.14)" : "rgba(255,255,255,0.04)",
+                        border: historyFilter === opt.id ? "1px solid rgba(56,189,248,0.3)" : "1px solid rgba(255,255,255,0.1)",
+                        borderRadius: "999px",
+                        color: historyFilter === opt.id ? "#38bdf8" : "#94a3b8",
+                        padding: "5px 12px",
+                        fontSize: "11px",
+                        fontWeight: 700,
+                        cursor: "pointer",
+                      }}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                  {history.map((entry, i) => (
+                  {filteredHistory.map((entry, i) => (
                     <HistoryRow key={entry.id || entry.attempt_id || i} entry={entry} index={i} onView={() => handleViewEntry(entry)} />
                   ))}
                 </div>
