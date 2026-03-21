@@ -526,8 +526,8 @@ export default function PredictorForm({ onResult }) {
   };
 
   const handleNext = () => {
+    const current = STEPS[step];
     if (!validateStep()) {
-      const current = STEPS[step];
       if (current.type === "scores") {
         showToast("Please fix the score errors before continuing.", "error");
       } else if (current.type === "background") {
