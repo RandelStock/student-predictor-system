@@ -1343,6 +1343,166 @@ def admin_review_analysis(db: Session = Depends(get_db)):
     return {"items": items}
 
 
+@app.get("/admin/timing-analysis")
+def admin_timing_analysis(db: Session = Depends(get_db), limit: int = 12):
+    rows = (
+        db.query(PredictionAttempt.id, PredictionAttempt.name, PredictionAttempt.created_at, PredictionAttempt.input_json)
+        .filter(PredictionAttempt.input_json.isnot(None))
+        .order_by(PredictionAttempt.created_at.desc())
+        .all()
+    )
+
+    total_questions = 0
+    human_like_count = 0
+    too_fast_count = 0
+    too_slow_count = 0
+
+    section_stats = {}
+    suspicious_attempts = []
+
+    def _section_from_key(key: str) -> str:
+        if key.startswith("KN"):
+            return "Knowledge"
+        if key.startswith("PS"):
+            return "Problem Solving"
+        if key.startswith("MT"):
+            return "Motivation"
+        if key.startswith("MH"):
+            return "Mental Health"
+        if key.startswith("SS"):
+            return "Support"
+        if key.startswith("CU") or key.startswith("FQ") or key.startswith("DR") or key.startswith("FA") or key.startswith("IC"):
+            return "Institutional"
+        return "Other"
+
+    for attempt_id, name, created_at, raw_json in rows:
+        try:
+            payload = json.loads(raw_json or "{}")
+        except Exception:
+            payload = {}
+        timings = payload.get("question_timings") if isinstance(payload, dict) else None
+        if not isinstance(timings, dict) or not timings:
+            continue
+
+        attempt_total = 0
+        attempt_too_fast = 0
+
+        for key, t in timings.items():
+            if not isinstance(t, dict):
+                continue
+            duration = t.get("duration_sec")
+            exp_min = t.get("expected_min_sec")
+            exp_max = t.get("expected_max_sec")
+            is_human = t.get("is_human_like")
+            if duration is None or exp_min is None or exp_max is None:
+                continue
+
+            attempt_total += 1
+            total_questions += 1
+            if is_human is True:
+                human_like_count += 1
+            if duration < exp_min:
+                too_fast_count += 1
+                attempt_too_fast += 1
+            if duration > exp_max:
+                too_slow_count += 1
+
+            section = _section_from_key(key)
+            if section not in section_stats:
+                section_stats[section] = {"count": 0, "duration_sum": 0.0, "human_like_count": 0}
+            section_stats[section]["count"] += 1
+            section_stats[section]["duration_sum"] += float(duration)
+            if is_human is True:
+                section_stats[section]["human_like_count"] += 1
+
+        if attempt_total > 0:
+            too_fast_rate = (attempt_too_fast / attempt_total) * 100
+            if too_fast_rate >= 40:
+                suspicious_attempts.append(
+                    {
+                        "attempt_id": attempt_id,
+                        "name": name,
+                        "created_at": created_at.isoformat() if created_at else None,
+                        "too_fast_rate": round(too_fast_rate, 2),
+                        "timed_questions": attempt_total,
+                    }
+                )
+
+    section_items = []
+    for section, v in section_stats.items():
+        count = v["count"]
+        section_items.append(
+            {
+                "section": section,
+                "timed_questions": count,
+                "avg_duration_sec": round(v["duration_sum"] / count, 2) if count else None,
+                "human_like_rate": round((v["human_like_count"] / count) * 100, 2) if count else None,
+            }
+        )
+    section_items.sort(key=lambda x: x["section"])
+    suspicious_attempts.sort(key=lambda x: x["too_fast_rate"], reverse=True)
+
+    return {
+        "summary": {
+            "timed_questions": total_questions,
+            "human_like_count": human_like_count,
+            "human_like_rate": round((human_like_count / total_questions) * 100, 2) if total_questions else None,
+            "too_fast_count": too_fast_count,
+            "too_fast_rate": round((too_fast_count / total_questions) * 100, 2) if total_questions else None,
+            "too_slow_count": too_slow_count,
+            "too_slow_rate": round((too_slow_count / total_questions) * 100, 2) if total_questions else None,
+        },
+        "sections": section_items,
+        "suspicious_attempts": suspicious_attempts[: max(1, limit)],
+    }
+
+
+@app.get("/admin/attempt-timings")
+def admin_attempt_timings(attempt_id: str, db: Session = Depends(get_db)):
+    row = (
+        db.query(PredictionAttempt.id, PredictionAttempt.name, PredictionAttempt.created_at, PredictionAttempt.input_json)
+        .filter(PredictionAttempt.id == attempt_id)
+        .first()
+    )
+    if not row:
+        raise HTTPException(status_code=404, detail="Attempt not found")
+
+    _, name, created_at, raw_json = row
+    try:
+        payload = json.loads(raw_json or "{}")
+    except Exception:
+        payload = {}
+
+    timings = payload.get("question_timings") if isinstance(payload, dict) else None
+    if not isinstance(timings, dict):
+        timings = {}
+
+    items = []
+    for q_key, t in timings.items():
+        if not isinstance(t, dict):
+            continue
+        items.append(
+            {
+                "question_key": q_key,
+                "step_id": t.get("step_id"),
+                "question_index": t.get("question_index"),
+                "duration_sec": t.get("duration_sec"),
+                "expected_min_sec": t.get("expected_min_sec"),
+                "expected_max_sec": t.get("expected_max_sec"),
+                "is_human_like": t.get("is_human_like"),
+            }
+        )
+    items.sort(key=lambda x: (str(x.get("step_id") or ""), int(x.get("question_index") or 0), str(x.get("question_key") or "")))
+
+    return {
+        "attempt_id": attempt_id,
+        "name": name,
+        "created_at": created_at.isoformat() if created_at else None,
+        "timed_questions": len(items),
+        "items": items,
+    }
+
+
 @app.get("/admin/trend-stats")
 def admin_trend_stats(db: Session = Depends(get_db)):
     rows = (

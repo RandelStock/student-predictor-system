@@ -323,6 +323,11 @@ export default function ProfessorPage({ onLogout }) {
   const [usageLoading, setUsageLoading] = useState(false);
   const [reportLoading, setReportLoading] = useState(false);
   const [reviewAnalysis, setReviewAnalysis] = useState(null);
+  const [timingAnalysis, setTimingAnalysis] = useState(null);
+  const [timingModalOpen, setTimingModalOpen] = useState(false);
+  const [selectedTimingAttempt, setSelectedTimingAttempt] = useState(null);
+  const [selectedTimingData, setSelectedTimingData] = useState(null);
+  const [selectedTimingLoading, setSelectedTimingLoading] = useState(false);
 
   // Final defense / held-out evaluation (2025)
   const [test2025, setTest2025] = useState(null);
@@ -408,6 +413,32 @@ export default function ProfessorPage({ onLogout }) {
       if (res.ok) setReviewAnalysis(await res.json());
     } catch (e) {
       console.error("Review analysis error:", e);
+    }
+  }, []);
+
+  const fetchTimingAnalysis = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/admin/timing-analysis?limit=10`);
+      if (res.ok) setTimingAnalysis(await res.json());
+    } catch (e) {
+      console.error("Timing analysis error:", e);
+    }
+  }, []);
+
+  const openTimingModal = useCallback(async (attempt) => {
+    if (!attempt?.attempt_id) return;
+    setTimingModalOpen(true);
+    setSelectedTimingAttempt(attempt);
+    setSelectedTimingData(null);
+    setSelectedTimingLoading(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/admin/attempt-timings?attempt_id=${encodeURIComponent(attempt.attempt_id)}`);
+      if (!res.ok) throw new Error("Failed to load attempt timings");
+      setSelectedTimingData(await res.json());
+    } catch (e) {
+      setSelectedTimingData({ error: "Could not load attempt timing details." });
+    } finally {
+      setSelectedTimingLoading(false);
     }
   }, []);
 
@@ -506,9 +537,10 @@ export default function ProfessorPage({ onLogout }) {
       fetchAdminFromDb();
       fetchUsage();
       fetchReviewAnalysis();
+      fetchTimingAnalysis();
       if (!trendInsights) fetchTrendInsights();
     }
-  }, [activeTab, fetchAdminFromDb, fetchTrendInsights, trendInsights, fetchUsage, fetchReviewAnalysis]);
+  }, [activeTab, fetchAdminFromDb, fetchTrendInsights, trendInsights, fetchUsage, fetchReviewAnalysis, fetchTimingAnalysis]);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
@@ -1460,6 +1492,81 @@ export default function ProfessorPage({ onLogout }) {
                   </div>
                 )}
 
+                {timingAnalysis?.summary && (
+                  <div style={{ marginBottom: "16px" }}>
+                    <Card title="Predictor Timer Analysis" icon="⏱️" subtitle="Visibility of response timing captured from Predictor Form">
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(160px,1fr))", gap: "10px", marginBottom: "12px" }}>
+                        <KPI label="Timed Questions" value={timingAnalysis.summary.timed_questions ?? 0} color={c.blue} />
+                        <KPI label="Human-like" value={timingAnalysis.summary.human_like_rate != null ? `${timingAnalysis.summary.human_like_rate.toFixed(1)}%` : "—"} color={c.pass} sub={`${timingAnalysis.summary.human_like_count ?? 0} answers`} />
+                        <KPI label="Too Fast" value={timingAnalysis.summary.too_fast_rate != null ? `${timingAnalysis.summary.too_fast_rate.toFixed(1)}%` : "—"} color={c.amber} sub={`${timingAnalysis.summary.too_fast_count ?? 0} answers`} />
+                        <KPI label="Too Slow" value={timingAnalysis.summary.too_slow_rate != null ? `${timingAnalysis.summary.too_slow_rate.toFixed(1)}%` : "—"} color={c.orange} sub={`${timingAnalysis.summary.too_slow_count ?? 0} answers`} />
+                      </div>
+
+                      {(timingAnalysis.sections ?? []).length > 0 && (
+                        <div style={{ marginBottom: "12px" }}>
+                          <p style={{ margin: "0 0 8px", fontSize: "11px", color: "#94a3b8", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                            Timer by Section
+                          </p>
+                          <div style={{ overflowX: "auto" }}>
+                            <table className="att-table">
+                              <thead>
+                                <tr>
+                                  <th>Section</th>
+                                  <th>Timed Questions</th>
+                                  <th>Avg Duration (sec)</th>
+                                  <th>Human-like Rate</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {(timingAnalysis.sections ?? []).map((s, i) => (
+                                  <tr key={i}>
+                                    <td>{s.section}</td>
+                                    <td>{s.timed_questions ?? 0}</td>
+                                    <td>{s.avg_duration_sec != null ? s.avg_duration_sec.toFixed(1) : "—"}</td>
+                                    <td style={{ color: (s.human_like_rate ?? 0) >= 70 ? c.pass : c.amber, fontWeight: 700 }}>
+                                      {s.human_like_rate != null ? `${s.human_like_rate.toFixed(1)}%` : "—"}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      )}
+
+                      {(timingAnalysis.suspicious_attempts ?? []).length > 0 && (
+                        <div>
+                          <p style={{ margin: "0 0 8px", fontSize: "11px", color: "#94a3b8", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                            Potentially Random / Too-fast Attempts
+                          </p>
+                          <div style={{ overflowX: "auto" }}>
+                            <table className="att-table">
+                              <thead>
+                                <tr>
+                                  <th>Name</th>
+                                  <th>Date</th>
+                                  <th>Too Fast Rate</th>
+                                  <th>Timed Questions</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {(timingAnalysis.suspicious_attempts ?? []).map((a, i) => (
+                                  <tr key={i} style={{ cursor: "pointer" }} onClick={() => openTimingModal(a)} title="Click to view per-question timings">
+                                    <td>{a.name || "Unknown"}</td>
+                                    <td>{a.created_at ? new Date(a.created_at).toLocaleDateString("en-PH", { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}</td>
+                                    <td style={{ color: c.fail, fontWeight: 700 }}>{a.too_fast_rate?.toFixed(1)}%</td>
+                                    <td>{a.timed_questions ?? 0}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      )}
+                    </Card>
+                  </div>
+                )}
+
                 {/* ── Monthly Summary ── */}
                 <div style={{ marginBottom: "16px" }}>
                   <Card title="Monthly Summary" icon="📆" subtitle="Pass/fail counts per month for a selected year">
@@ -1583,6 +1690,99 @@ export default function ProfessorPage({ onLogout }) {
           </>
         )}
       </main>
+
+      {timingModalOpen && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(2,6,23,0.75)",
+            backdropFilter: "blur(4px)",
+            zIndex: 80,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "16px",
+          }}
+          onClick={() => setTimingModalOpen(false)}
+        >
+          <div
+            style={{
+              width: "min(980px, 96vw)",
+              maxHeight: "85vh",
+              overflow: "auto",
+              background: "#0b1220",
+              border: "1px solid rgba(148,163,184,0.25)",
+              borderRadius: "14px",
+              padding: "16px",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px", gap: "10px" }}>
+              <div>
+                <p style={{ margin: 0, fontSize: "16px", fontWeight: 800, color: "#f8fafc", fontFamily: "'Syne',sans-serif" }}>
+                  Attempt Timer Drill-down
+                </p>
+                <p style={{ margin: "2px 0 0", fontSize: "12px", color: "#94a3b8" }}>
+                  {selectedTimingAttempt?.name || "Unknown"} · {selectedTimingAttempt?.attempt_id ? selectedTimingAttempt.attempt_id.slice(0, 8) : ""}
+                </p>
+              </div>
+              <button
+                onClick={() => setTimingModalOpen(false)}
+                style={{
+                  background: "rgba(255,255,255,0.04)",
+                  border: "1px solid rgba(255,255,255,0.12)",
+                  borderRadius: "8px",
+                  padding: "6px 10px",
+                  color: "#cbd5e1",
+                  cursor: "pointer",
+                }}
+              >
+                Close
+              </button>
+            </div>
+
+            {selectedTimingLoading ? (
+              <p style={{ margin: 0, color: "#94a3b8" }}>Loading timing details…</p>
+            ) : selectedTimingData?.error ? (
+              <p style={{ margin: 0, color: "#fca5a5" }}>{selectedTimingData.error}</p>
+            ) : (
+              <div style={{ overflowX: "auto" }}>
+                <table className="att-table">
+                  <thead>
+                    <tr>
+                      <th>Question</th>
+                      <th>Section</th>
+                      <th>Order</th>
+                      <th>Actual Duration (sec)</th>
+                      <th>Expected Range (sec)</th>
+                      <th>Human-like?</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(selectedTimingData?.items ?? []).map((t, i) => (
+                      <tr key={i}>
+                        <td>{t.question_key}</td>
+                        <td>{t.step_id || "—"}</td>
+                        <td>{t.question_index ?? "—"}</td>
+                        <td>{t.duration_sec ?? "—"}</td>
+                        <td>
+                          {t.expected_min_sec != null && t.expected_max_sec != null
+                            ? `${t.expected_min_sec} - ${t.expected_max_sec}`
+                            : "—"}
+                        </td>
+                        <td style={{ color: t.is_human_like ? c.pass : c.fail, fontWeight: 700 }}>
+                          {t.is_human_like ? "Yes" : "No"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
