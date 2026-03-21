@@ -568,10 +568,47 @@ export default function PredictorForm({ onResult }) {
   };
 
   const handleSubmit = async () => {
+    const isAtTrueFinalQuestion =
+      currentStep?.type === "likert"
+        ? questionIndex >= (currentStep.fields.length - 1)
+        : true;
+
+    if (!(step === STEPS.length - 1 && isAtTrueFinalQuestion)) {
+      showToast("Please complete all remaining questions before submitting.", "error");
+      return;
+    }
+
     if (!validateStep()) {
       showToast("Please answer all questions before submitting.", "error");
       return;
     }
+
+    const fullErr = {};
+    STEPS.forEach((s) => {
+      if (s.type === "scores") {
+        ["EE", "MATH", "ESAS"].forEach((k) => {
+          const err = validateScore(k, form[k]);
+          if (err) fullErr[k] = err;
+        });
+      } else if (s.type === "background") {
+        const err = validateGWA(form.GWA);
+        if (err) fullErr.GWA = err;
+        if (!form.GWA_Reflection) fullErr.GWA_Reflection = true;
+        if (!form.name?.trim()) fullErr.name = true;
+        if (!form.age) fullErr.age = true;
+        if (!form.year_taking_exam) fullErr.year_taking_exam = true;
+      } else if (s.type === "likert") {
+        s.fields.forEach(({ key }) => {
+          if (!form[key]) fullErr[key] = true;
+        });
+      }
+    });
+    if (Object.keys(fullErr).length > 0) {
+      setErrors(fullErr);
+      showToast("Please complete all required answers before submitting.", "error");
+      return;
+    }
+
     setLoading(true); setResult(null);
 
     const controller = new AbortController();
@@ -655,6 +692,10 @@ export default function PredictorForm({ onResult }) {
   };
 
   const isLastStep     = step === STEPS.length - 1;
+  const isLastQuestionInStep = currentStep?.type === "likert"
+    ? questionIndex >= (currentStep.fields.length - 1)
+    : true;
+  const canSubmitNow = isLastStep && isLastQuestionInStep;
   const isDone         = step >= STEPS.length;
   const unansweredCount = currentStep?.type === "likert" && activeQuestion
     ? (form[activeQuestion.key] ? 0 : 1)
@@ -924,13 +965,13 @@ export default function PredictorForm({ onResult }) {
                     ← Back
                   </button>
                 )}
-                {!isLastStep && (
+                {!canSubmitNow && (
                   <button onClick={handleNext}
                     className="flex-1 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-bold text-sm tracking-wide hover:from-blue-500 hover:to-cyan-500 transition shadow-lg shadow-blue-700/30">
                     Continue →
                   </button>
                 )}
-                {isLastStep && (
+                {canSubmitNow && (
                   <button onClick={handleSubmit} disabled={loading}
                     className="flex-1 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-bold text-sm tracking-wide hover:from-blue-500 hover:to-cyan-500 disabled:opacity-40 disabled:cursor-not-allowed transition shadow-lg shadow-blue-700/30">
                     {loading ? (

@@ -28,6 +28,90 @@ function Bar({ value, max = 100, color = c.blue, height = 6 }) {
   );
 }
 
+function PieDonut({ passers = 0, failers = 0 }) {
+  const total = Math.max(0, passers) + Math.max(0, failers);
+  const passPct = total ? (passers / total) * 100 : 0;
+  const failPct = 100 - passPct;
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+      <div
+        style={{
+          width: "120px",
+          height: "120px",
+          borderRadius: "999px",
+          background: `conic-gradient(${c.pass} 0% ${passPct}%, ${c.fail} ${passPct}% 100%)`,
+          position: "relative",
+          border: "1px solid rgba(255,255,255,0.15)",
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            inset: "22px",
+            borderRadius: "999px",
+            background: "#060b14",
+            border: "1px solid rgba(255,255,255,0.08)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexDirection: "column",
+          }}
+        >
+          <span style={{ fontSize: "11px", color: "#94a3b8" }}>Total</span>
+          <span style={{ fontSize: "18px", fontWeight: 800, color: "#f8fafc", fontFamily: "'Syne',sans-serif" }}>{total}</span>
+        </div>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <span style={{ width: 10, height: 10, borderRadius: 99, background: c.pass, display: "inline-block" }} />
+          <span style={{ fontSize: "12px", color: "#cbd5e1" }}>Passers</span>
+          <strong style={{ color: c.pass }}>{passers}</strong>
+          <span style={{ color: "#64748b" }}>({passPct.toFixed(1)}%)</span>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <span style={{ width: 10, height: 10, borderRadius: 99, background: c.fail, display: "inline-block" }} />
+          <span style={{ fontSize: "12px", color: "#cbd5e1" }}>Failers</span>
+          <strong style={{ color: c.fail }}>{failers}</strong>
+          <span style={{ color: "#64748b" }}>({failPct.toFixed(1)}%)</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StackedPassFailYear({ items = [] }) {
+  const maxTotal = Math.max(...items.map((x) => (x.passers ?? 0) + (x.failers ?? 0)), 1);
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+      {items.map((it, idx) => {
+        const total = (it.passers ?? 0) + (it.failers ?? 0);
+        const passW = total ? ((it.passers ?? 0) / total) * 100 : 0;
+        const failW = 100 - passW;
+        return (
+          <div key={idx}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+              <span style={{ fontSize: "12px", color: "#cbd5e1" }}>{it.label}</span>
+              <span style={{ fontSize: "11px", color: "#94a3b8" }}>
+                {it.passers ?? 0} pass / {it.failers ?? 0} fail (n={total})
+              </span>
+            </div>
+            <div style={{ height: "14px", background: "rgba(255,255,255,0.05)", borderRadius: 99, overflow: "hidden", width: `${(total / maxTotal) * 100}%` }}>
+              <div style={{ display: "flex", height: "100%" }}>
+                <div style={{ width: `${passW}%`, background: c.pass }} />
+                <div style={{ width: `${failW}%`, background: c.fail }} />
+              </div>
+            </div>
+          </div>
+        );
+      })}
+      <div style={{ display: "flex", gap: "14px", marginTop: "4px" }}>
+        <span style={{ fontSize: "10px", color: c.pass, display: "flex", alignItems: "center", gap: "4px" }}><span style={{ width: 8, height: 8, borderRadius: 99, background: c.pass, display: "inline-block" }} />Passers</span>
+        <span style={{ fontSize: "10px", color: c.fail, display: "flex", alignItems: "center", gap: "4px" }}><span style={{ width: 8, height: 8, borderRadius: 99, background: c.fail, display: "inline-block" }} />Failers</span>
+      </div>
+    </div>
+  );
+}
+
 // ── horizontal bar chart ──────────────────────────────────────────────────────
 function HBar({ items, colorFn, maxValue }) {
   const safeItems = items ?? [];
@@ -454,6 +538,8 @@ export default function ProfessorPage({ onLogout }) {
   const sectionScores  = data?.section_scores        ?? [];
   const weakestQ       = data?.weakest_questions     ?? [];
   const subjectTrends  = data?.subject_trends_by_year ?? [];
+  const reviewYesTotal = passByReview.find((x) => String(x.label).toLowerCase().includes("attended"))?.total ?? 0;
+  const reviewNoTotal = passByReview.find((x) => String(x.label).toLowerCase().includes("no formal"))?.total ?? 0;
 
   const weakestSubject = (() => {
     if (!subjectTrends || subjectTrends.length === 0) return null;
@@ -591,7 +677,25 @@ export default function ProfessorPage({ onLogout }) {
                   <KPI label="Avg GWA (Passers)" value={num(ov.avg_gwa_passers)}           color={c.pass} sub="1.0=Highest" />
                   <KPI label="Avg GWA (Failers)" value={num(ov.avg_gwa_failers)}           color={c.fail} sub="1.0=Highest" />
                 </div>
+                <div style={{ marginBottom: "14px" }}>
+                  <Card title="Pass/Fail Distribution" icon="🥧" subtitle="Total passers and failers with percentage share" fullWidth>
+                    <PieDonut
+                      passers={Number(ov.total_passers || 0)}
+                      failers={Number(ov.total_failers || 0)}
+                    />
+                  </Card>
+                </div>
                 <div className="dash-grid">
+                  <Card title="Pass/Fail by Year (Stacked Counts)" icon="📦" subtitle="Each bar shows year total with pass/fail composition" fullWidth>
+                    <StackedPassFailYear
+                      items={passByYear.map((d) => ({
+                        label: d.label,
+                        passers: d.passers ?? Math.round(((d.pass_rate ?? 0) / 100) * (d.total ?? 0)),
+                        failers: d.failers ?? ((d.total ?? 0) - Math.round(((d.pass_rate ?? 0) / 100) * (d.total ?? 0))),
+                      }))}
+                    />
+                  </Card>
+
                   <Card title="GWA: Passers vs Failers" icon="📐" subtitle="Lower GWA = better in PH grading (1.0 is highest)">
                     <div style={{ display: "flex", gap: "12px", marginBottom: "16px" }}>
                       {[
@@ -611,7 +715,7 @@ export default function ProfessorPage({ onLogout }) {
 
                   <Card title="Pass Rate by Year" icon="📅" subtitle="Trend of board exam performance per graduating cohort">
                     <HBar
-                      items={passByYear.map(d => ({ label: d.label, value: d.pass_rate }))}
+                      items={passByYear.map(d => ({ label: `${d.label} (n=${d.total ?? 0})`, value: d.pass_rate }))}
                       colorFn={(item) => item.value >= 70 ? c.pass : item.value >= 55 ? c.amber : c.fail}
                     />
                   </Card>
@@ -636,9 +740,13 @@ export default function ProfessorPage({ onLogout }) {
                     )}
                   </Card>
 
+                  <Card title="Review Attendance Population Share" icon="🥧" subtitle="How many examinees attended formal review vs not attended">
+                    <PieDonut passers={reviewYesTotal} failers={reviewNoTotal} />
+                  </Card>
+
                   <Card title="Pass Rate by Review Duration" icon="⏱️" subtitle="Longer review = higher pass rate?">
                     <HBar
-                      items={passByDuration.map(d => ({ label: d.label, value: d.pass_rate }))}
+                      items={passByDuration.map(d => ({ label: `${d.label} (n=${d.total ?? 0})`, value: d.pass_rate }))}
                       colorFn={(item) => item.value >= 80 ? c.pass : item.value >= 65 ? c.amber : c.fail}
                     />
                   </Card>
@@ -915,7 +1023,7 @@ export default function ProfessorPage({ onLogout }) {
                     <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px", fontFamily: "'DM Sans',sans-serif" }}>
                       <thead>
                         <tr>
-                          {["METRIC", "FOCUS", "WHEN TO USE"].map((h) => (
+                          {["METRIC", "CURRENT SYSTEM VALUE", "FOCUS", "WHEN TO USE"].map((h) => (
                             <th key={h} style={{ padding: "10px 12px", borderBottom: "1px solid rgba(148,163,184,0.2)", textAlign: "left", color: "#cbd5e1", fontWeight: 700, letterSpacing: "0.04em" }}>
                               {h}
                             </th>
@@ -924,20 +1032,28 @@ export default function ProfessorPage({ onLogout }) {
                       </thead>
                       <tbody>
                         {[
-                          ["Accuracy", "Overall correctness", "Balanced classes"],
-                          ["Precision", "Avoid false positives", "Spam/fraud"],
-                          ["Recall", "Catch all positives", "Medical/safety"],
-                          ["F1-Score", "Precision-recall balance", "Imbalanced data"],
+                          ["Accuracy", modelInfo?.classification?.accuracy, "Overall correctness", "Balanced classes"],
+                          ["Precision", modelInfo?.classification?.precision, "Avoid false positives", "Spam/fraud"],
+                          ["Recall", modelInfo?.classification?.recall, "Catch all positives", "Medical/safety"],
+                          ["F1-Score", modelInfo?.classification?.f1, "Precision-recall balance", "Imbalanced data"],
                         ].map((row, i) => (
                           <tr key={i}>
                             <td style={{ padding: "10px 12px", borderBottom: "1px solid rgba(30,41,59,0.7)", color: "#f8fafc", fontWeight: 700 }}>{row[0]}</td>
-                            <td style={{ padding: "10px 12px", borderBottom: "1px solid rgba(30,41,59,0.7)", color: "#cbd5e1" }}>{row[1]}</td>
-                            <td style={{ padding: "10px 12px", borderBottom: "1px solid rgba(30,41,59,0.7)", color: "#94a3b8" }}>{row[2]}</td>
+                            <td style={{ padding: "10px 12px", borderBottom: "1px solid rgba(30,41,59,0.7)", color: c.blue, fontWeight: 700 }}>
+                              {typeof row[1] === "number" ? `${(row[1] * 100).toFixed(2)}%` : "Loading..."}
+                            </td>
+                            <td style={{ padding: "10px 12px", borderBottom: "1px solid rgba(30,41,59,0.7)", color: "#cbd5e1" }}>{row[2]}</td>
+                            <td style={{ padding: "10px 12px", borderBottom: "1px solid rgba(30,41,59,0.7)", color: "#94a3b8" }}>{row[3]}</td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
                   </div>
+                  {modelInfo?.dataset_size && (
+                    <p style={{ marginTop: "10px", color: "#94a3b8" }}>
+                      Dataset size used by current trained model: <strong style={{ color: "#f8fafc" }}>{modelInfo.dataset_size}</strong> records.
+                    </p>
+                  )}
                 </Card>
               </div>
             )}
@@ -957,7 +1073,7 @@ export default function ProfessorPage({ onLogout }) {
                     <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px", fontFamily: "'DM Sans',sans-serif" }}>
                       <thead>
                         <tr>
-                          {["METRIC", "UNITS", "SENSITIVITY TO OUTLIERS", "GOALS"].map((h) => (
+                          {["METRIC", "CURRENT MODEL A", "CURRENT MODEL B", "UNITS", "SENSITIVITY TO OUTLIERS", "GOALS"].map((h) => (
                             <th key={h} style={{ padding: "10px 12px", borderBottom: "1px solid rgba(148,163,184,0.2)", textAlign: "left", color: "#cbd5e1", fontWeight: 700, letterSpacing: "0.04em" }}>
                               {h}
                             </th>
@@ -966,15 +1082,21 @@ export default function ProfessorPage({ onLogout }) {
                       </thead>
                       <tbody>
                         {[
-                          ["MAE", "Same as target", "Low", "Minimize average error"],
-                          ["RMSE", "Same as target", "High", "Avoid large misses"],
-                          ["R^2 SCORE", "None (Percentage)", "Moderate", "Maximize explained variance"],
+                          ["MAE", modelInfo?.regression_a?.mae, modelInfo?.regression_b?.mae, "Same as target", "Low", "Minimize average error"],
+                          ["RMSE", modelInfo?.regression_a?.rmse, modelInfo?.regression_b?.rmse, "Same as target", "High", "Avoid large misses"],
+                          ["R^2 SCORE", modelInfo?.regression_a?.r2, modelInfo?.regression_b?.r2, "None (Percentage)", "Moderate", "Maximize explained variance"],
                         ].map((row, i) => (
                           <tr key={i}>
                             <td style={{ padding: "10px 12px", borderBottom: "1px solid rgba(30,41,59,0.7)", color: "#f8fafc", fontWeight: 700 }}>{row[0]}</td>
-                            <td style={{ padding: "10px 12px", borderBottom: "1px solid rgba(30,41,59,0.7)", color: "#cbd5e1" }}>{row[1]}</td>
-                            <td style={{ padding: "10px 12px", borderBottom: "1px solid rgba(30,41,59,0.7)", color: "#94a3b8" }}>{row[2]}</td>
-                            <td style={{ padding: "10px 12px", borderBottom: "1px solid rgba(30,41,59,0.7)", color: "#94a3b8" }}>{row[3]}</td>
+                            <td style={{ padding: "10px 12px", borderBottom: "1px solid rgba(30,41,59,0.7)", color: c.blue, fontWeight: 700 }}>
+                              {typeof row[1] === "number" ? row[1].toFixed(4) : "Loading..."}
+                            </td>
+                            <td style={{ padding: "10px 12px", borderBottom: "1px solid rgba(30,41,59,0.7)", color: c.indigo, fontWeight: 700 }}>
+                              {typeof row[2] === "number" ? row[2].toFixed(4) : "Loading..."}
+                            </td>
+                            <td style={{ padding: "10px 12px", borderBottom: "1px solid rgba(30,41,59,0.7)", color: "#cbd5e1" }}>{row[3]}</td>
+                            <td style={{ padding: "10px 12px", borderBottom: "1px solid rgba(30,41,59,0.7)", color: "#94a3b8" }}>{row[4]}</td>
+                            <td style={{ padding: "10px 12px", borderBottom: "1px solid rgba(30,41,59,0.7)", color: "#94a3b8" }}>{row[5]}</td>
                           </tr>
                         ))}
                       </tbody>
