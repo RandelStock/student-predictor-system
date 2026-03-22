@@ -334,8 +334,8 @@ export default function ProfessorPage({ onLogout }) {
   const [usageSummary, setUsageSummary] = useState(null);
   const [usageLoading, setUsageLoading] = useState(false);
   const [reportLoading, setReportLoading] = useState(false);
-  const [_reviewAnalysis, setReviewAnalysis] = useState(null);
-  const [_timingAnalysis, setTimingAnalysis] = useState(null);
+  const [, setReviewAnalysis] = useState(null);
+  const [, setTimingAnalysis] = useState(null);
   const [timingModalOpen, setTimingModalOpen] = useState(false);
   const [selectedTimingAttempt, setSelectedTimingAttempt] = useState(null);
   const [selectedTimingData, setSelectedTimingData] = useState(null);
@@ -344,8 +344,8 @@ export default function ProfessorPage({ onLogout }) {
   const [testLoading, setTestLoading] = useState(false);
   const [test2025Records, setTest2025Records] = useState(null);
   const [selectedTestIdx, setSelectedTestIdx] = useState(0);
-  const [_test2025Run, setTest2025Run] = useState(null);
-  const [_test2025RunLoading, setTest2025RunLoading] = useState(false);
+  const [, setTest2025Run] = useState(null);
+  const [, setTest2025RunLoading] = useState(false);
 
   const fetchAnalytics = useCallback(async () => {
     setLoading(true);
@@ -419,7 +419,8 @@ export default function ProfessorPage({ onLogout }) {
     } catch (e) { console.error("Timing analysis error:", e); }
   }, []);
 
-  const _openTimingModal = useCallback(async (attempt) => {
+  // eslint-disable-next-line no-unused-vars
+  const openTimingModal = useCallback(async (attempt) => {
     if (!attempt?.attempt_id) return;
     setTimingModalOpen(true);
     setSelectedTimingAttempt(attempt);
