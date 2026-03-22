@@ -288,19 +288,7 @@ const CustomTooltip = ({ active, payload, label }) => {
   );
 };
 
-// ─────────────────────────────────────────────
-// DELTA BADGE
-// ─────────────────────────────────────────────
-function Delta({ value }) {
-  if (value === undefined || value === null) return null;
-  const up = value > 0, zero = value === 0;
-  const color = zero ? T.textSoft : up ? T.pass : T.fail;
-  return (
-    <span style={{ fontSize: 11, fontWeight: 700, color, background: up ? T.passSoft : zero ? "#f8fafc" : T.failSoft, border: `1px solid ${up ? T.passLight : zero ? T.border : T.failLight}`, borderRadius: 999, padding: "2px 7px", marginLeft: 6 }}>
-      {zero ? "—" : up ? `▲ +${value}` : `▼ ${value}`}
-    </span>
-  );
-}
+
 
 // ─────────────────────────────────────────────
 // SECTION DIVIDER
