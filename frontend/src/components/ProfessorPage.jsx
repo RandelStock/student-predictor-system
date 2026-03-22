@@ -1,15 +1,15 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-// NOTE: ExamineeDetailPanel and API_BASE_URL are imported from your existing project
-// import ExamineeDetailPanel from "./ExamineeDetailPanel";
-// import API_BASE_URL from "../apiBase";
-const API_BASE_URL = "http://localhost:5000"; // placeholder
-
 import {
   LineChart, Line, BarChart, Bar, ScatterChart, Scatter,
-  PieChart, Pie, Cell, RadarChart, Radar, PolarGrid,
-  PolarAngleAxis, PolarRadiusAxis, XAxis, YAxis, CartesianGrid,
-  Tooltip, Legend, ResponsiveContainer, ReferenceLine, Label,
+  PieChart, Pie, Cell,
+  XAxis, YAxis, CartesianGrid,
+  Tooltip, Legend, ResponsiveContainer, ReferenceLine,
 } from "recharts";
+
+// NOTE: Uncomment these when integrating with your real project:
+// import ExamineeDetailPanel from "./ExamineeDetailPanel";
+// import API_BASE_URL from "../apiBase";
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
 
 // ─────────────────────────────────────────────
 // DESIGN TOKENS — Light Academic Palette
