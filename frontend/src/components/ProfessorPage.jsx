@@ -208,44 +208,6 @@ function InsightBox({ insights = [] }) {
   );
 }
 
-// ── Tiny inline bar ───────────────────────────────────────────────────────────
-function MiniBar({ value, max = 100, color = c.blue, height = 6 }) {
-  return (
-    <div style={{ height, background: "rgba(255,255,255,0.06)", borderRadius: 99, overflow: "hidden" }}>
-      <div style={{ height: "100%", width: `${Math.min((value / max) * 100, 100)}%`, background: color, borderRadius: 99, transition: "width 1s ease" }} />
-    </div>
-  );
-}
-
-// ── Delta badge ───────────────────────────────────────────────────────────────
-function Delta({ value }) {
-  if (value === undefined || value === null) return null;
-  const up = value > 0, zero = value === 0;
-  const color = zero ? "#475569" : up ? c.pass : c.fail;
-  return (
-    <span style={{
-      fontSize: 10, fontWeight: 700, color,
-      background: `${color}15`, border: `1px solid ${color}30`,
-      borderRadius: 999, padding: "1px 6px", marginLeft: 6,
-    }}>
-      {zero ? "—" : up ? `▲ +${value}` : `▼ ${value}`}
-    </span>
-  );
-}
-
-// ── KPI chip (legacy compat) ──────────────────────────────────────────────────
-function KPI({ label, value, sub, color = c.blue }) {
-  return (
-    <div style={{
-      background: `${color}10`, border: `1px solid ${color}25`,
-      borderRadius: 12, padding: "14px 16px",
-    }}>
-      <p style={{ margin: "0 0 2px", fontSize: 10, color: "#475569", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "'DM Sans',sans-serif" }}>{label}</p>
-      <p style={{ margin: "0 0 2px", fontSize: 26, fontWeight: 800, color, fontFamily: "'Syne',sans-serif", lineHeight: 1 }}>{value}</p>
-      {sub && <p style={{ margin: 0, fontSize: 10, color: "#475569" }}>{sub}</p>}
-    </div>
-  );
-}
 
 // ── buildMockData — kept identical to original for fallback ──────────────────
 function buildMockData() {
@@ -591,18 +553,19 @@ export default function ProfessorPage({ onLogout }) {
   }, [attPage, attFilter, selectedYear, activeTab]);
 
   // ── safe data accessors ───────────────────────────────────────────────────
-  const ov           = data?.overview ?? {};
-  const passByYear   = data?.pass_rate_by_year     ?? [];
-  const passByStrand = data?.pass_rate_by_strand   ?? [];
-  const passByReview = data?.pass_rate_by_review   ?? [];
-  const passByDur    = data?.pass_rate_by_duration ?? [];
-  const featureImp   = data?.feature_importance    ?? [];
-  const sectionScores= data?.section_scores        ?? [];
-  const weakestQ     = data?.weakest_questions     ?? [];
-  const subjectTrends= data?.subject_trends_by_year ?? [];
+  
+  const ov           = useMemo(() => data?.overview ?? {},                   [data]);
+  const passByYear   = useMemo(() => data?.pass_rate_by_year     ?? [],      [data]);
+  const passByStrand = useMemo(() => data?.pass_rate_by_strand   ?? [],      [data]);
+  const passByReview = useMemo(() => data?.pass_rate_by_review   ?? [],      [data]);
+  const passByDur    = useMemo(() => data?.pass_rate_by_duration ?? [],      [data]);
+  const featureImp   = useMemo(() => data?.feature_importance    ?? [],      [data]);
+  const sectionScores= useMemo(() => data?.section_scores        ?? [],      [data]);
+  const weakestQ     = useMemo(() => data?.weakest_questions     ?? [],      [data]);
+  const subjectTrends= useMemo(() => data?.subject_trends_by_year ?? [],     [data]);
 
-  const reviewYesTotal = passByReview.find(x => String(x.label).toLowerCase().includes("attended"))?.total ?? 0;
-  const reviewNoTotal  = passByReview.find(x => String(x.label).toLowerCase().includes("no formal"))?.total ?? 0;
+  const reviewYesTotal = useMemo(() => passByReview.find(x => String(x.label).toLowerCase().includes("attended"))?.total ?? 0, [passByReview]);
+  const reviewNoTotal  = useMemo(() => passByReview.find(x => String(x.label).toLowerCase().includes("no formal"))?.total ?? 0, [passByReview]);
 
   // ── filter pass_rate_by_review by dashFilter.review ──────────────────────
   const filteredReview = useMemo(() => {
