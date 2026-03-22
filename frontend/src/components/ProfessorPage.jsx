@@ -222,18 +222,6 @@ function InsightBox({ insights = [] }) {
   );
 }
 
-function ChartContainer({ title, subtitle, children, height = 240, fullWidth = false }) {
-  return (
-    <Card title={title} subtitle={subtitle} fullWidth={fullWidth}>
-      <div style={{ width: "100%", height }}>
-        <ResponsiveContainer width="100%" height="100%">
-          {children}
-        </ResponsiveContainer>
-      </div>
-    </Card>
-  );
-}
-
 const CHART_COLORS = [T.blue, T.pass, T.indigo, T.teal, T.pink, T.orange, T.amber];
 
 const CustomTooltipStyle = {
@@ -332,7 +320,6 @@ export default function ProfessorPage({ onLogout }) {
   const [activeTab, setActiveTab]     = useState("overview");
   const [modelInfo, setModelInfo]     = useState(null);
   const [correlation, setCorrelation] = useState(null);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [filters, setFilters] = useState({ year: "", month: "", review: "all", subject: "all" });
 
   // Phase 4 state (kept as-is from original)
@@ -347,8 +334,8 @@ export default function ProfessorPage({ onLogout }) {
   const [usageSummary, setUsageSummary] = useState(null);
   const [usageLoading, setUsageLoading] = useState(false);
   const [reportLoading, setReportLoading] = useState(false);
-  const [reviewAnalysis, setReviewAnalysis] = useState(null);
-  const [timingAnalysis, setTimingAnalysis] = useState(null);
+  const [_reviewAnalysis, setReviewAnalysis] = useState(null);
+  const [_timingAnalysis, setTimingAnalysis] = useState(null);
   const [timingModalOpen, setTimingModalOpen] = useState(false);
   const [selectedTimingAttempt, setSelectedTimingAttempt] = useState(null);
   const [selectedTimingData, setSelectedTimingData] = useState(null);
@@ -357,8 +344,8 @@ export default function ProfessorPage({ onLogout }) {
   const [testLoading, setTestLoading] = useState(false);
   const [test2025Records, setTest2025Records] = useState(null);
   const [selectedTestIdx, setSelectedTestIdx] = useState(0);
-  const [test2025Run, setTest2025Run] = useState(null);
-  const [test2025RunLoading, setTest2025RunLoading] = useState(false);
+  const [_test2025Run, setTest2025Run] = useState(null);
+  const [_test2025RunLoading, setTest2025RunLoading] = useState(false);
 
   const fetchAnalytics = useCallback(async () => {
     setLoading(true);
@@ -432,7 +419,7 @@ export default function ProfessorPage({ onLogout }) {
     } catch (e) { console.error("Timing analysis error:", e); }
   }, []);
 
-  const openTimingModal = useCallback(async (attempt) => {
+  const _openTimingModal = useCallback(async (attempt) => {
     if (!attempt?.attempt_id) return;
     setTimingModalOpen(true);
     setSelectedTimingAttempt(attempt);
@@ -1122,7 +1109,6 @@ export default function ProfessorPage({ onLogout }) {
                   {weakestQ.map((q, i) => {
                     const severity = q.avg >= 2.7 ? "high" : q.avg >= 2.55 ? "medium" : "low";
                     const sColor   = severity === "high" ? T.fail : severity === "medium" ? T.amber : T.orange;
-                    const sBg      = severity === "high" ? T.failLight : severity === "medium" ? T.amberLight : T.orangeLight;
                     const barPct   = ((q.avg - 1) / 3) * 100;
                     return (
                       <div key={i} style={{ background: T.surface, border: `1px solid ${sColor}30`, borderRadius: "14px", padding: "16px", boxShadow: T.shadow, borderLeft: `4px solid ${sColor}` }}>
