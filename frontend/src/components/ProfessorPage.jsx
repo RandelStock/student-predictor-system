@@ -209,7 +209,7 @@ function InsightBox({ insights = [] }) {
 }
 
 // ── Tiny inline bar ───────────────────────────────────────────────────────────
-function Bar({ value, max = 100, color = c.blue, height = 6 }) {
+function MiniBar({ value, max = 100, color = c.blue, height = 6 }) {
   return (
     <div style={{ height, background: "rgba(255,255,255,0.06)", borderRadius: 99, overflow: "hidden" }}>
       <div style={{ height: "100%", width: `${Math.min((value / max) * 100, 100)}%`, background: color, borderRadius: 99, transition: "width 1s ease" }} />
