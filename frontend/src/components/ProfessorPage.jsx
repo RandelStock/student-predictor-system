@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
   ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -522,73 +522,83 @@ export default function ProfessorPage({ onLogout }) {
     if (activeTab === "trends") fetchAdminFromDb();
   }, [attPage, attFilter, selectedYear, activeTab, fetchAdminFromDb]);
 
-  // ─── Derived / filtered data ─────────────────────────────────────────────
-  const ov              = data?.overview ?? {};
-  const passByYear      = data?.pass_rate_by_year     ?? [];
-  const passByStrand    = data?.pass_rate_by_strand   ?? [];
-  const passByReview    = data?.pass_rate_by_review   ?? [];
-  const passByDuration  = data?.pass_rate_by_duration ?? [];
-  const featureImp      = data?.feature_importance    ?? [];
-  const sectionScores   = data?.section_scores        ?? [];
-  const weakestQ        = data?.weakest_questions     ?? [];
-  const subjectTrends   = data?.subject_trends_by_year ?? [];
+  // ─── Derived / filtered data (useMemo to satisfy react-hooks/exhaustive-deps) ──
+  const ov = useMemo(() => data?.overview ?? {}, [data]);
 
-  // Apply review filter
-  const filteredPassByYear = filters.year
-    ? passByYear.filter(d => String(d.label) === filters.year)
-    : passByYear;
-  const filteredPassByReview = filters.review === "all" ? passByReview
-    : filters.review === "yes" ? passByReview.filter(d => d.label.toLowerCase().includes("attended"))
-    : passByReview.filter(d => d.label.toLowerCase().includes("no formal"));
+  const passByYear     = useMemo(() => data?.pass_rate_by_year     ?? [], [data]);
+  const passByStrand   = useMemo(() => data?.pass_rate_by_strand   ?? [], [data]);
+  const passByReview   = useMemo(() => data?.pass_rate_by_review   ?? [], [data]);
+  const passByDuration = useMemo(() => data?.pass_rate_by_duration ?? [], [data]);
+  const featureImp     = useMemo(() => data?.feature_importance    ?? [], [data]);
+  const sectionScores  = useMemo(() => data?.section_scores        ?? [], [data]);
+  const weakestQ       = useMemo(() => data?.weakest_questions     ?? [], [data]);
+  const subjectTrends  = useMemo(() => data?.subject_trends_by_year ?? [], [data]);
+
+  // Apply review / year filter
+  const filteredPassByYear = useMemo(
+    () => filters.year ? passByYear.filter(d => String(d.label) === filters.year) : passByYear,
+    [filters.year, passByYear]
+  );
+
+  const filteredPassByReview = useMemo(() => {
+    if (filters.review === "yes") return passByReview.filter(d => d.label.toLowerCase().includes("attended"));
+    if (filters.review === "no")  return passByReview.filter(d => d.label.toLowerCase().includes("no formal"));
+    return passByReview;
+  }, [filters.review, passByReview]);
 
   // Subject filter
-  const subjectKeys = filters.subject === "all"
-    ? ["EE_avg", "MATH_avg", "ESAS_avg"]
-    : [`${filters.subject}_avg`];
-
-  const filteredSubjectTrends = subjectTrends.map(row => {
-    const base = { year: String(row.year) };
-    subjectKeys.forEach(k => { base[k.replace("_avg","")] = row[k]; });
-    return base;
-  });
+  const filteredSubjectTrends = useMemo(() => {
+    const keys = filters.subject === "all"
+      ? ["EE_avg", "MATH_avg", "ESAS_avg"]
+      : [`${filters.subject}_avg`];
+    return subjectTrends.map(row => {
+      const base = { year: String(row.year) };
+      keys.forEach(k => { base[k.replace("_avg", "")] = row[k]; });
+      return base;
+    });
+  }, [filters.subject, subjectTrends]);
 
   // Auto AI insights
-  const generateInsights = () => {
-    const insights = [];
+  const insights = useMemo(() => {
+    const list = [];
     if (passByYear.length >= 2) {
-      const first = passByYear[0], last = passByYear[passByYear.length - 1];
-      const diff = last.pass_rate - first.pass_rate;
-      insights.push({
+      const oldest = passByYear[0];
+      const newest = passByYear[passByYear.length - 1];
+      const diff = newest.pass_rate - oldest.pass_rate;
+      list.push({
         icon: diff > 0 ? "📈" : "📉",
-        text: `Passing rate ${diff > 0 ? "increased" : "decreased"} by ${Math.abs(diff).toFixed(1)}% from ${first.label} to ${last.label}.`
+        text: `Passing rate ${diff > 0 ? "increased" : "decreased"} by ${Math.abs(diff).toFixed(1)}% from ${oldest.label} to ${newest.label}.`,
       });
     }
     if (subjectTrends.length >= 2) {
-      const last = subjectTrends[subjectTrends.length - 1];
+      const newest = subjectTrends[subjectTrends.length - 1];
       const candidates = [
-        { id: "EE",   v: last.EE_avg },
-        { id: "MATH", v: last.MATH_avg },
-        { id: "ESAS", v: last.ESAS_avg },
+        { id: "EE",   v: newest.EE_avg },
+        { id: "MATH", v: newest.MATH_avg },
+        { id: "ESAS", v: newest.ESAS_avg },
       ].sort((a, b) => a.v - b.v);
-      insights.push({ icon: "⚠️", text: `${candidates[0].id} has the lowest average score (${candidates[0].v}) — prioritize this subject.` });
+      list.push({ icon: "⚠️", text: `${candidates[0].id} has the lowest average score (${candidates[0].v}) — prioritize this subject.` });
     }
     if (passByReview.length >= 2) {
       const diff = passByReview[0].pass_rate - passByReview[1].pass_rate;
-      insights.push({ icon: "📚", text: `Students who attended formal review outperformed non-reviewers by ${Math.abs(diff).toFixed(1)}%.` });
+      list.push({ icon: "📚", text: `Students who attended formal review outperformed non-reviewers by ${Math.abs(diff).toFixed(1)}%.` });
     }
     if (ov.overall_pass_rate < 70)
-      insights.push({ icon: "🚨", text: `Overall pass rate is below the 70% threshold — immediate intervention recommended.` });
+      list.push({ icon: "🚨", text: `Overall pass rate is below the 70% threshold — immediate intervention recommended.` });
     else
-      insights.push({ icon: "✅", text: `Overall pass rate of ${pct(ov.overall_pass_rate)} meets the 70% passing benchmark.` });
-    return insights;
-  };
+      list.push({ icon: "✅", text: `Overall pass rate of ${pct(ov.overall_pass_rate)} meets the 70% passing benchmark.` });
+    return list;
+  }, [passByYear, subjectTrends, passByReview, ov]);
 
-  // Scatter data (Actual vs Predicted) — generated from existing records
-  const scatterData = passByYear.map(d => ({
-    actual: d.pass_rate,
-    predicted: d.pass_rate + (Math.random() - 0.5) * 8,
-    year: d.label,
-  }));
+  // Scatter data — stable ref (no Math.random on every render)
+  const scatterData = useMemo(
+    () => passByYear.map((d, i) => ({
+      actual: d.pass_rate,
+      predicted: d.pass_rate + (i % 2 === 0 ? 3.2 : -2.8),
+      year: d.label,
+    })),
+    [passByYear]
+  );
 
   // Distribution for histogram
   const histogramData = [
@@ -599,14 +609,15 @@ export default function ProfessorPage({ onLogout }) {
     { range: "90–95", count: 5 }, { range: "95–100", count: 3 },
   ];
 
-  const radarData = sectionScores.slice(0, 7).map(s => ({
-    section: s.label, Passers: s.pass, Failers: s.fail,
-  }));
+  const radarData = useMemo(
+    () => sectionScores.slice(0, 7).map(s => ({ section: s.label, Passers: s.pass, Failers: s.fail })),
+    [sectionScores]
+  );
 
-  const donutData = [
+  const donutData = useMemo(() => [
     { name: "Passers", value: ov.total_passers || 61 },
     { name: "Failers", value: ov.total_failers || 26 },
-  ];
+  ], [ov]);
 
   return (
     <div style={{
@@ -885,7 +896,7 @@ export default function ProfessorPage({ onLogout }) {
                 </div>
 
                 {/* AI Insights */}
-                <InsightBox insights={generateInsights()} />
+                <InsightBox insights={insights} />
               </div>
             )}
 
@@ -1017,7 +1028,7 @@ export default function ProfessorPage({ onLogout }) {
                 </div>
 
                 <div style={{ marginTop: "16px" }}>
-                  <InsightBox insights={generateInsights()} />
+                  <InsightBox insights={insights} />
                 </div>
               </div>
             )}
