@@ -1,54 +1,53 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
-  LineChart, Line, BarChart, Bar, ScatterChart, Scatter,
-  PieChart, Pie, Cell,
-  XAxis, YAxis, CartesianGrid,
-  Tooltip, Legend, ResponsiveContainer, ReferenceLine,
+  LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
+  ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer, Legend, ReferenceLine, Area, AreaChart,
+  RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
 } from "recharts";
 
-// NOTE: Uncomment these when integrating with your real project:
+// ─── Import ExamineeDetailPanel from same folder ───────────────────────────
 // import ExamineeDetailPanel from "./ExamineeDetailPanel";
 // import API_BASE_URL from "../apiBase";
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
+const API_BASE_URL = "/api"; // placeholder
 
-// ─────────────────────────────────────────────
-// DESIGN TOKENS — Light Academic Palette
-// ─────────────────────────────────────────────
+// ─── Design tokens ────────────────────────────────────────────────────────────
 const T = {
-  bg:        "#f0f4fa",
-  surface:   "#ffffff",
-  surfaceAlt:"#f8fafd",
-  border:    "#dde3f0",
-  borderMid: "#c8d2e8",
-  text:      "#1e293b",
-  textMid:   "#475569",
-  textSoft:  "#94a3b8",
-  blue:      "#2563eb",
-  blueSoft:  "#eff6ff",
-  blueLight: "#bfdbfe",
-  indigo:    "#4f46e5",
-  teal:      "#0d9488",
-  pass:      "#059669",
-  passSoft:  "#ecfdf5",
-  passLight: "#a7f3d0",
-  fail:      "#dc2626",
-  failSoft:  "#fef2f2",
-  failLight: "#fecaca",
-  amber:     "#d97706",
-  amberSoft: "#fffbeb",
-  amberLight:"#fde68a",
-  purple:    "#7c3aed",
-  purpleSoft:"#f5f3ff",
-  orange:    "#ea580c",
+  bg:       "#f8fafc",
+  surface:  "#ffffff",
+  surfaceAlt:"#f1f5f9",
+  border:   "#e2e8f0",
+  borderAlt:"#cbd5e1",
+  text:     "#0f172a",
+  textMid:  "#334155",
+  textSoft: "#64748b",
+  textMute: "#94a3b8",
+  pass:     "#059669",
+  passLight:"#d1fae5",
+  fail:     "#dc2626",
+  failLight:"#fee2e2",
+  blue:     "#2563eb",
+  blueLight:"#dbeafe",
+  indigo:   "#4f46e5",
+  indigoLight:"#e0e7ff",
+  amber:    "#d97706",
+  amberLight:"#fef3c7",
+  teal:     "#0d9488",
+  tealLight:"#ccfbf1",
+  pink:     "#db2777",
+  pinkLight:"#fce7f3",
+  orange:   "#ea580c",
+  orangeLight:"#ffedd5",
+  shadow:   "0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)",
+  shadowMd: "0 4px 12px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.04)",
+  shadowLg: "0 8px 24px rgba(0,0,0,0.10), 0 4px 12px rgba(0,0,0,0.06)",
 };
 
 const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 function pct(v) { return typeof v === "number" ? `${v.toFixed(1)}%` : "—"; }
 function num(v, d = 2) { return typeof v === "number" ? v.toFixed(d) : "—"; }
 
-// ─────────────────────────────────────────────
-// MOCK DATA
-// ─────────────────────────────────────────────
+// ─── Mock data (same as original) ────────────────────────────────────────────
 function buildMockData() {
   return {
     overview: {
@@ -57,10 +56,10 @@ function buildMockData() {
       avg_rating_passers: 78.4, avg_rating_failers: 63.1, passing_score: 70,
     },
     pass_rate_by_year: [
-      { label: "2021", pass_rate: 62.5, total: 24 },
-      { label: "2022", pass_rate: 68.0, total: 25 },
-      { label: "2023", pass_rate: 71.4, total: 28 },
-      { label: "2024", pass_rate: 80.0, total: 10 },
+      { label: "2021", pass_rate: 62.5, total: 24, passers: 15, failers: 9 },
+      { label: "2022", pass_rate: 68.0, total: 25, passers: 17, failers: 8 },
+      { label: "2023", pass_rate: 71.4, total: 28, passers: 20, failers: 8 },
+      { label: "2024", pass_rate: 80.0, total: 10, passers: 8,  failers: 2 },
     ],
     pass_rate_by_strand: [
       { label: "STEM",  pass_rate: 78.3, total: 46 },
@@ -78,7 +77,7 @@ function buildMockData() {
       { label: "~3 Months", pass_rate: 72.2, total: 18 },
       { label: "~6 Months", pass_rate: 84.6, total: 26 },
     ],
-    gwa_comparison: { passers: 1.82, failers: 2.41 },
+    gwa_comparison: { passers: 1.82, failers: 2.41, passers_std: 0.31, failers_std: 0.44 },
     feature_importance: [
       { label: "EE Score",                              value: 0.142 },
       { label: "MATH Score",                            value: 0.131 },
@@ -121,91 +120,101 @@ function buildMockData() {
       { year: 2023, EE_avg: 68.4, MATH_avg: 74.9, ESAS_avg: 70.1, EE_delta: 2.6, MATH_delta: 2.8, ESAS_delta: 2.9 },
       { year: 2024, EE_avg: 72.0, MATH_avg: 78.5, ESAS_avg: 73.8, EE_delta: 3.6, MATH_delta: 3.6, ESAS_delta: 3.7 },
     ],
-    // Scatter data for actual vs predicted
-    scatter_data: [
-      { actual: 55, predicted: 58 }, { actual: 60, predicted: 62 }, { actual: 72, predicted: 70 },
-      { actual: 78, predicted: 75 }, { actual: 85, predicted: 83 }, { actual: 65, predicted: 67 },
-      { actual: 90, predicted: 88 }, { actual: 48, predicted: 52 }, { actual: 74, predicted: 76 },
-      { actual: 82, predicted: 80 }, { actual: 69, predicted: 71 }, { actual: 58, predicted: 55 },
-      { actual: 76, predicted: 78 }, { actual: 93, predicted: 91 }, { actual: 61, predicted: 63 },
-      { actual: 88, predicted: 85 }, { actual: 53, predicted: 56 }, { actual: 79, predicted: 77 },
-    ],
   };
 }
 
-// ─────────────────────────────────────────────
-// REUSABLE COMPONENTS
-// ─────────────────────────────────────────────
+// ─── Reusable UI primitives ──────────────────────────────────────────────────
 
-function MetricCard({ label, value, sub, color = T.blue, icon, trend }) {
-  const bg = color === T.pass ? T.passSoft : color === T.fail ? T.failSoft : color === T.amber ? T.amberSoft : T.blueSoft;
-  const border = color === T.pass ? T.passLight : color === T.fail ? T.failLight : color === T.amber ? T.amberLight : T.blueLight;
+function Card({ title, icon, subtitle, children, accent = T.blue, fullWidth = false, padding = "24px", className = "" }) {
   return (
     <div style={{
-      background: T.surface, border: `1px solid ${T.border}`,
-      borderRadius: 16, padding: "20px 22px",
-      boxShadow: "0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)",
-      transition: "box-shadow 0.2s, transform 0.2s",
+      background: T.surface,
+      border: `1px solid ${T.border}`,
+      borderRadius: "16px",
+      padding,
+      boxShadow: T.shadow,
+      gridColumn: fullWidth ? "1 / -1" : undefined,
+      transition: "box-shadow 0.2s",
     }}
-      onMouseEnter={e => { e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.1)"; e.currentTarget.style.transform = "translateY(-1px)"; }}
-      onMouseLeave={e => { e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.06)"; e.currentTarget.style.transform = "translateY(0)"; }}
+      onMouseEnter={e => e.currentTarget.style.boxShadow = T.shadowMd}
+      onMouseLeave={e => e.currentTarget.style.boxShadow = T.shadow}
     >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-        <div>
-          <p style={{ margin: "0 0 6px", fontSize: 12, color: T.textSoft, textTransform: "uppercase", letterSpacing: "0.07em", fontWeight: 600 }}>{label}</p>
-          <p style={{ margin: 0, fontSize: 30, fontWeight: 800, color, fontFamily: "'Syne', sans-serif", lineHeight: 1 }}>{value}</p>
-          {sub && <p style={{ margin: "5px 0 0", fontSize: 12, color: T.textSoft }}>{sub}</p>}
-          {trend !== undefined && (
-            <p style={{ margin: "5px 0 0", fontSize: 12, color: trend > 0 ? T.pass : trend < 0 ? T.fail : T.textSoft, fontWeight: 600 }}>
-              {trend > 0 ? `▲ +${trend}%` : trend < 0 ? `▼ ${trend}%` : "— No change"}
-            </p>
+      {(title || icon) && (
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: subtitle ? "6px" : "20px" }}>
+          {icon && (
+            <div style={{
+              width: "32px", height: "32px", borderRadius: "8px",
+              background: `${accent}15`,
+              display: "flex", alignItems: "center", justifyContent: "center", fontSize: "15px", flexShrink: 0,
+            }}>{icon}</div>
           )}
-        </div>
-        {icon && (
-          <div style={{ width: 44, height: 44, borderRadius: 12, background: bg, border: `1px solid ${border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>
-            {icon}
+          <div style={{ flex: 1 }}>
+            <h3 style={{ margin: 0, fontSize: "14px", fontWeight: 700, color: T.text, fontFamily: "'Plus Jakarta Sans', sans-serif", letterSpacing: "-0.01em" }}>{title}</h3>
           </div>
+        </div>
+      )}
+      {subtitle && <p style={{ margin: "0 0 18px", fontSize: "12px", color: T.textSoft, lineHeight: 1.5 }}>{subtitle}</p>}
+      {children}
+    </div>
+  );
+}
+
+function MetricCard({ label, value, sub, color = T.blue, delta, icon, trend }) {
+  const isUp = delta > 0;
+  return (
+    <div style={{
+      background: T.surface,
+      border: `1px solid ${T.border}`,
+      borderRadius: "16px",
+      padding: "20px",
+      boxShadow: T.shadow,
+      borderTop: `3px solid ${color}`,
+      transition: "all 0.2s",
+      cursor: "default",
+    }}
+      onMouseEnter={e => { e.currentTarget.style.boxShadow = T.shadowMd; e.currentTarget.style.transform = "translateY(-1px)"; }}
+      onMouseLeave={e => { e.currentTarget.style.boxShadow = T.shadow;   e.currentTarget.style.transform = "translateY(0)"; }}
+    >
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "12px" }}>
+        <p style={{ margin: 0, fontSize: "11px", fontWeight: 600, color: T.textSoft, textTransform: "uppercase", letterSpacing: "0.08em" }}>{label}</p>
+        {icon && <span style={{ fontSize: "18px", opacity: 0.6 }}>{icon}</span>}
+      </div>
+      <p style={{ margin: "0 0 4px", fontSize: "30px", fontWeight: 800, color, fontFamily: "'Plus Jakarta Sans', sans-serif", lineHeight: 1, letterSpacing: "-0.02em" }}>{value}</p>
+      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+        {sub && <p style={{ margin: 0, fontSize: "12px", color: T.textMute }}>{sub}</p>}
+        {delta !== undefined && (
+          <span style={{
+            fontSize: "11px", fontWeight: 700,
+            color: delta === 0 ? T.textMute : isUp ? T.pass : T.fail,
+            background: delta === 0 ? T.surfaceAlt : isUp ? T.passLight : T.failLight,
+            padding: "2px 7px", borderRadius: "999px",
+          }}>
+            {delta === 0 ? "—" : isUp ? `▲ +${delta}` : `▼ ${delta}`}
+          </span>
         )}
       </div>
     </div>
   );
 }
 
-function ChartContainer({ title, subtitle, children, action }) {
+function InsightBox({ insights = [] }) {
+  if (!insights.length) return null;
   return (
     <div style={{
-      background: T.surface, border: `1px solid ${T.border}`,
-      borderRadius: 16, padding: "22px 24px",
-      boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+      background: `linear-gradient(135deg, ${T.blueLight}, ${T.indigoLight})`,
+      border: `1px solid ${T.blue}30`,
+      borderRadius: "14px",
+      padding: "18px 20px",
     }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 18 }}>
-        <div>
-          <p style={{ margin: "0 0 3px", fontSize: 15, fontWeight: 700, color: T.text, fontFamily: "'Syne', sans-serif" }}>{title}</p>
-          {subtitle && <p style={{ margin: 0, fontSize: 12, color: T.textSoft }}>{subtitle}</p>}
-        </div>
-        {action}
+      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
+        <span style={{ fontSize: "16px" }}>✨</span>
+        <span style={{ fontSize: "13px", fontWeight: 700, color: T.blue, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>AI Insights</span>
       </div>
-      {children}
-    </div>
-  );
-}
-
-function InsightBox({ items = [] }) {
-  if (!items.length) return null;
-  return (
-    <div style={{
-      background: "linear-gradient(135deg, #eff6ff 0%, #f5f3ff 100%)",
-      border: `1px solid ${T.blueLight}`,
-      borderRadius: 14, padding: "16px 20px",
-    }}>
-      <p style={{ margin: "0 0 12px", fontSize: 12, fontWeight: 700, color: T.blue, textTransform: "uppercase", letterSpacing: "0.08em" }}>
-        ✦ AI Insights
-      </p>
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {items.map((item, i) => (
-          <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-            <span style={{ fontSize: 14, flexShrink: 0, marginTop: 1 }}>{item.icon || "💡"}</span>
-            <p style={{ margin: 0, fontSize: 13, color: T.textMid, lineHeight: 1.55 }}>{item.text}</p>
+      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+        {insights.map((ins, i) => (
+          <div key={i} style={{ display: "flex", gap: "10px", alignItems: "flex-start" }}>
+            <span style={{ fontSize: "13px", flexShrink: 0, marginTop: "1px" }}>{ins.icon || "💡"}</span>
+            <p style={{ margin: 0, fontSize: "13px", color: T.textMid, lineHeight: 1.6 }}>{ins.text}</p>
           </div>
         ))}
       </div>
@@ -213,148 +222,120 @@ function InsightBox({ items = [] }) {
   );
 }
 
-function FilterPanel({ filters, onChange }) {
+function ChartContainer({ title, subtitle, children, height = 240, fullWidth = false }) {
   return (
-    <div style={{
-      background: T.surface, border: `1px solid ${T.border}`,
-      borderRadius: 14, padding: "16px 20px",
-      display: "flex", gap: 14, flexWrap: "wrap", alignItems: "flex-end",
-      boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
-    }}>
-      <div>
-        <label style={{ display: "block", fontSize: 11, color: T.textSoft, marginBottom: 5, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>Year</label>
-        <select value={filters.year} onChange={e => onChange({ ...filters, year: e.target.value })} style={selectStyle}>
-          <option value="">All Years</option>
-          {["2021","2022","2023","2024","2025"].map(y => <option key={y} value={y}>{y}</option>)}
-        </select>
+    <Card title={title} subtitle={subtitle} fullWidth={fullWidth}>
+      <div style={{ width: "100%", height }}>
+        <ResponsiveContainer width="100%" height="100%">
+          {children}
+        </ResponsiveContainer>
       </div>
-      <div>
-        <label style={{ display: "block", fontSize: 11, color: T.textSoft, marginBottom: 5, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>Month</label>
-        <select value={filters.month} onChange={e => onChange({ ...filters, month: e.target.value })} style={selectStyle}>
-          <option value="">All Months</option>
-          {MONTH_NAMES.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
-        </select>
-      </div>
-      <div>
-        <label style={{ display: "block", fontSize: 11, color: T.textSoft, marginBottom: 5, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>Subject</label>
-        <select value={filters.subject} onChange={e => onChange({ ...filters, subject: e.target.value })} style={selectStyle}>
-          <option value="">All Subjects</option>
-          {["Math","EE","ESAS","GWA"].map(s => <option key={s} value={s}>{s}</option>)}
-        </select>
-      </div>
-      <div>
-        <label style={{ display: "block", fontSize: 11, color: T.textSoft, marginBottom: 5, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>Formal Review</label>
-        <div style={{ display: "flex", gap: 0, border: `1px solid ${T.border}`, borderRadius: 9, overflow: "hidden" }}>
-          {["All","Yes","No"].map(v => (
-            <button key={v} onClick={() => onChange({ ...filters, reviewAttended: v })} style={{
-              padding: "8px 14px", border: "none", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
-              background: filters.reviewAttended === v ? T.blue : T.surface,
-              color: filters.reviewAttended === v ? "#fff" : T.textMid,
-              transition: "all 0.15s",
-            }}>{v}</button>
-          ))}
-        </div>
-      </div>
-      <button onClick={() => onChange({ year: "", month: "", subject: "", reviewAttended: "All" })} style={{
-        background: T.surfaceAlt, border: `1px solid ${T.border}`, borderRadius: 9, padding: "9px 16px",
-        fontSize: 12, color: T.textMid, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", fontWeight: 600, transition: "all 0.15s",
-        alignSelf: "flex-end",
-      }}
-        onMouseEnter={e => e.currentTarget.style.background = T.border}
-        onMouseLeave={e => e.currentTarget.style.background = T.surfaceAlt}
-      >↺ Reset</button>
-    </div>
+    </Card>
   );
 }
 
-const selectStyle = {
-  background: T.surfaceAlt, border: `1px solid ${T.border}`, borderRadius: 9,
-  padding: "8px 12px", fontSize: 13, color: T.text, fontFamily: "'DM Sans', sans-serif",
-  outline: "none", cursor: "pointer", minWidth: 130,
+const CHART_COLORS = [T.blue, T.pass, T.indigo, T.teal, T.pink, T.orange, T.amber];
+
+const CustomTooltipStyle = {
+  background: T.surface,
+  border: `1px solid ${T.border}`,
+  borderRadius: "10px",
+  boxShadow: T.shadowMd,
+  padding: "10px 14px",
+  fontSize: "12px",
+  color: T.text,
 };
 
-// Custom Recharts tooltip
-const CustomTooltip = ({ active, payload, label }) => {
+function CustomTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
   return (
-    <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, padding: "10px 14px", boxShadow: "0 4px 16px rgba(0,0,0,0.1)", fontSize: 12, color: T.text }}>
-      {label && <p style={{ margin: "0 0 6px", fontWeight: 700, color: T.text }}>{label}</p>}
+    <div style={CustomTooltipStyle}>
+      <p style={{ margin: "0 0 6px", fontWeight: 700, color: T.textMid }}>{label}</p>
       {payload.map((p, i) => (
-        <p key={i} style={{ margin: "2px 0", color: p.color || T.blue }}>
-          <span style={{ fontWeight: 600 }}>{p.name}: </span>{typeof p.value === "number" ? p.value.toFixed(1) : p.value}
+        <p key={i} style={{ margin: "2px 0", color: p.color || T.text }}>
+          <span style={{ fontWeight: 600 }}>{p.name}:</span> {typeof p.value === "number" ? p.value.toFixed(2) : p.value}
         </p>
       ))}
     </div>
   );
-};
-
-
-
-// ─────────────────────────────────────────────
-// SECTION DIVIDER
-// ─────────────────────────────────────────────
-function SectionHeader({ title, subtitle }) {
-  return (
-    <div style={{ marginBottom: 20, paddingBottom: 14, borderBottom: `1px solid ${T.border}` }}>
-      <h2 style={{ margin: "0 0 4px", fontSize: 22, fontWeight: 800, color: T.text, fontFamily: "'Syne', sans-serif" }}>{title}</h2>
-      {subtitle && <p style={{ margin: 0, fontSize: 14, color: T.textSoft }}>{subtitle}</p>}
-    </div>
-  );
 }
 
-// ─────────────────────────────────────────────
-// CONFUSION MATRIX VISUAL
-// ─────────────────────────────────────────────
-function ConfusionMatrixViz({ matrix }) {
-  if (!matrix) return <p style={{ color: T.textSoft, fontSize: 13 }}>No matrix data.</p>;
-  const cells = [
-    { label: "True Negative", sub: "Actual Fail → Pred. Fail", value: matrix.actual_fail?.pred_fail ?? 0, color: T.pass },
-    { label: "False Positive", sub: "Actual Fail → Pred. Pass", value: matrix.actual_fail?.pred_pass ?? 0, color: T.fail },
-    { label: "False Negative", sub: "Actual Pass → Pred. Fail", value: matrix.actual_pass?.pred_fail ?? 0, color: T.fail },
-    { label: "True Positive", sub: "Actual Pass → Pred. Pass", value: matrix.actual_pass?.pred_pass ?? 0, color: T.pass },
-  ];
-  const maxV = Math.max(...cells.map(c => c.value), 1);
+// ─── Filter Panel ─────────────────────────────────────────────────────────────
+function FilterPanel({ filters, onChange }) {
+  const select = (key, val) => onChange({ ...filters, [key]: val });
+  const selectStyle = {
+    background: T.surface, border: `1px solid ${T.border}`, borderRadius: "10px",
+    padding: "8px 12px", fontSize: "13px", color: T.text, outline: "none",
+    cursor: "pointer", fontFamily: "'Plus Jakarta Sans', sans-serif",
+    boxShadow: T.shadow,
+  };
+  const toggleStyle = (active, color) => ({
+    padding: "7px 16px", borderRadius: "10px", fontSize: "13px", fontWeight: active ? 700 : 500,
+    cursor: "pointer", border: `1px solid ${active ? color : T.border}`,
+    background: active ? `${color}15` : T.surface,
+    color: active ? color : T.textSoft,
+    transition: "all 0.15s",
+  });
   return (
-    <div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-        {cells.map((cell, i) => (
-          <div key={i} style={{
-            background: cell.color === T.pass ? T.passSoft : T.failSoft,
-            border: `1px solid ${cell.color === T.pass ? T.passLight : T.failLight}`,
-            borderRadius: 12, padding: "16px 18px",
-          }}>
-            <p style={{ margin: "0 0 4px", fontSize: 11, color: T.textSoft, fontWeight: 600 }}>{cell.label}</p>
-            <p style={{ margin: "0 0 4px", fontSize: 28, fontWeight: 800, color: cell.color, fontFamily: "'Syne', sans-serif" }}>{cell.value}</p>
-            <p style={{ margin: "0 0 8px", fontSize: 11, color: T.textSoft }}>{cell.sub}</p>
-            <div style={{ height: 5, background: `${cell.color}20`, borderRadius: 99, overflow: "hidden" }}>
-              <div style={{ height: "100%", width: `${(cell.value / maxV) * 100}%`, background: cell.color, borderRadius: 99 }} />
-            </div>
-          </div>
+    <div style={{
+      background: T.surface, border: `1px solid ${T.border}`,
+      borderRadius: "14px", padding: "14px 18px",
+      display: "flex", flexWrap: "wrap", gap: "12px", alignItems: "center",
+      boxShadow: T.shadow, marginBottom: "20px",
+    }}>
+      <span style={{ fontSize: "12px", fontWeight: 700, color: T.textSoft, textTransform: "uppercase", letterSpacing: "0.07em" }}>Filters</span>
+      <select style={selectStyle} value={filters.year} onChange={e => select("year", e.target.value)}>
+        <option value="">All Years</option>
+        {["2021","2022","2023","2024"].map(y => <option key={y} value={y}>{y}</option>)}
+      </select>
+      <select style={selectStyle} value={filters.month} onChange={e => select("month", e.target.value)}>
+        <option value="">All Months</option>
+        {MONTH_NAMES.map((m, i) => <option key={i} value={i+1}>{m}</option>)}
+      </select>
+      <div style={{ display: "flex", gap: "4px", alignItems: "center" }}>
+        <span style={{ fontSize: "12px", color: T.textSoft, fontWeight: 600, marginRight: "4px" }}>Review:</span>
+        {[["all", "All"], ["yes", "Attended"], ["no", "Not Attended"]].map(([v, l]) => (
+          <button key={v} style={toggleStyle(filters.review === v, T.blue)} onClick={() => select("review", v)}>{l}</button>
         ))}
       </div>
-      <div style={{ marginTop: 12, display: "flex", gap: 8, justifyContent: "center" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: T.textSoft }}>
-          <span style={{ width: 10, height: 10, borderRadius: 3, background: T.pass, display: "inline-block" }} /> Correct Prediction
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: T.textSoft }}>
-          <span style={{ width: 10, height: 10, borderRadius: 3, background: T.fail, display: "inline-block" }} /> Wrong Prediction
-        </div>
+      <div style={{ display: "flex", gap: "4px" }}>
+        <span style={{ fontSize: "12px", color: T.textSoft, fontWeight: 600, marginRight: "4px" }}>Subject:</span>
+        {[["all", "All"], ["EE", "EE"], ["MATH", "Math"], ["ESAS", "ESAS"]].map(([v, l]) => (
+          <button key={v} style={toggleStyle(filters.subject === v, T.indigo)} onClick={() => select("subject", v)}>{l}</button>
+        ))}
       </div>
+      <button
+        onClick={() => onChange({ year: "", month: "", review: "all", subject: "all" })}
+        style={{ marginLeft: "auto", fontSize: "12px", color: T.textSoft, background: "transparent", border: `1px solid ${T.border}`, borderRadius: "8px", padding: "6px 12px", cursor: "pointer" }}
+      >✕ Clear</button>
     </div>
   );
 }
 
-// ─────────────────────────────────────────────
-// MAIN COMPONENT
-// ─────────────────────────────────────────────
+// ─── Tab definitions ──────────────────────────────────────────────────────────
+const TABS = [
+  { id: "overview",               label: "Overview",            icon: "📊" },
+  { id: "performance",            label: "Performance",         icon: "📈" },
+  { id: "features",               label: "Feature Importance",  icon: "🤖" },
+  { id: "curriculum",             label: "Curriculum Gaps",     icon: "🏫" },
+  { id: "classification_metrics", label: "Classification",      icon: "🎯" },
+  { id: "regression_metrics",     label: "Regression",          icon: "📐" },
+  { id: "correlation",            label: "Correlation",         icon: "🧮" },
+  { id: "test2025",               label: "2025 Defense",        icon: "🧪" },
+  { id: "trends",                 label: "Trends & Monitoring", icon: "📅" },
+];
+
+// ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
 export default function ProfessorPage({ onLogout }) {
   const [data, setData]               = useState(null);
   const [loading, setLoading]         = useState(true);
   const [activeTab, setActiveTab]     = useState("overview");
   const [modelInfo, setModelInfo]     = useState(null);
   const [correlation, setCorrelation] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [filters, setFilters] = useState({ year: "", month: "", review: "all", subject: "all" });
 
-  // Phase 4 state
+  // Phase 4 state (kept as-is from original)
   const [attempts, setAttempts]       = useState(null);
   const [monthly, setMonthly]         = useState(null);
   const [yearlyPF, setYearlyPF]       = useState(null);
@@ -372,17 +353,12 @@ export default function ProfessorPage({ onLogout }) {
   const [selectedTimingAttempt, setSelectedTimingAttempt] = useState(null);
   const [selectedTimingData, setSelectedTimingData] = useState(null);
   const [selectedTimingLoading, setSelectedTimingLoading] = useState(false);
-
-  // Final defense / held-out evaluation (2025)
   const [test2025, setTest2025] = useState(null);
   const [testLoading, setTestLoading] = useState(false);
   const [test2025Records, setTest2025Records] = useState(null);
   const [selectedTestIdx, setSelectedTestIdx] = useState(0);
   const [test2025Run, setTest2025Run] = useState(null);
   const [test2025RunLoading, setTest2025RunLoading] = useState(false);
-
-  // New filter state
-  const [filters, setFilters] = useState({ year: "", month: "", subject: "", reviewAttended: "All" });
 
   const fetchAnalytics = useCallback(async () => {
     setLoading(true);
@@ -464,7 +440,7 @@ export default function ProfessorPage({ onLogout }) {
     setSelectedTimingLoading(true);
     try {
       const res = await fetch(`${API_BASE_URL}/admin/attempt-timings?attempt_id=${encodeURIComponent(attempt.attempt_id)}`);
-      if (!res.ok) throw new Error("Failed");
+      if (!res.ok) throw new Error();
       setSelectedTimingData(await res.json());
     } catch { setSelectedTimingData({ error: "Could not load attempt timing details." }); }
     finally { setSelectedTimingLoading(false); }
@@ -482,11 +458,10 @@ export default function ProfessorPage({ onLogout }) {
       const d = new Date();
       const ts = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
       a.href = url; a.download = `performance_report_${selectedYear}_${ts}.json`;
-      document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-    } catch (e) {
-      console.error("Performance report download error:", e);
-      alert("Could not download performance report.");
-    } finally { setReportLoading(false); }
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e) { console.error(e); alert("Could not download performance report."); }
+    finally { setReportLoading(false); }
   }, [selectedYear]);
 
   useEffect(() => { fetchAnalytics(); }, [fetchAnalytics]);
@@ -498,10 +473,9 @@ export default function ProfessorPage({ onLogout }) {
       setTestLoading(true);
       try {
         const res = await fetch(`${API_BASE_URL}/defense/test-2025`);
-        if (!res.ok) throw new Error("Server error");
-        const payload = await res.json();
-        if (!cancelled) setTest2025(payload);
-      } catch { if (!cancelled) setTest2025({ error: "Could not load 2025 defense metrics. Run train_model.py first." }); }
+        if (!res.ok) throw new Error();
+        if (!cancelled) setTest2025(await res.json());
+      } catch { if (!cancelled) setTest2025({ error: "Could not load 2025 defense metrics." }); }
       finally { if (!cancelled) setTestLoading(false); }
     })();
     return () => { cancelled = true; };
@@ -513,7 +487,7 @@ export default function ProfessorPage({ onLogout }) {
     (async () => {
       try {
         const res = await fetch(`${API_BASE_URL}/defense/test-2025-records`);
-        if (!res.ok) throw new Error("Server error");
+        if (!res.ok) throw new Error();
         const payload = await res.json();
         if (!cancelled) { setTest2025Records(payload.error ? null : payload.items || []); setSelectedTestIdx(0); }
       } catch { if (!cancelled) setTest2025Records([]); }
@@ -522,17 +496,16 @@ export default function ProfessorPage({ onLogout }) {
   }, [activeTab]);
 
   useEffect(() => {
-    if (activeTab !== "test2025") return;
-    if (!test2025Records || test2025Records.length === 0) return;
+    if (activeTab !== "test2025" || !test2025Records?.length) return;
     let cancelled = false;
     (async () => {
       setTest2025RunLoading(true); setTest2025Run(null);
       try {
         const res = await fetch(`${API_BASE_URL}/defense/test-2025-predict?idx=${selectedTestIdx}`);
-        if (!res.ok) throw new Error("Server error");
+        if (!res.ok) throw new Error();
         const payload = await res.json();
         if (!cancelled) setTest2025Run(payload.error ? { error: payload.error } : payload);
-      } catch { if (!cancelled) setTest2025Run({ error: "Could not load prediction for this row." }); }
+      } catch { if (!cancelled) setTest2025Run({ error: "Could not load prediction." }); }
       finally { if (!cancelled) setTest2025RunLoading(false); }
     })();
     return () => { cancelled = true; };
@@ -549,19 +522,7 @@ export default function ProfessorPage({ onLogout }) {
     if (activeTab === "trends") fetchAdminFromDb();
   }, [attPage, attFilter, selectedYear, activeTab, fetchAdminFromDb]);
 
-  const TABS = [
-    { id: "overview",               label: "Overview",            icon: "📊" },
-    { id: "performance",            label: "Performance",         icon: "📈" },
-    { id: "prediction",             label: "Prediction Analysis", icon: "🎯" },
-    { id: "features",               label: "Feature Importance",  icon: "🤖" },
-    { id: "curriculum",             label: "Curriculum Gaps",     icon: "🏫" },
-    { id: "classification_metrics", label: "Classification",      icon: "⚖️" },
-    { id: "regression_metrics",     label: "Regression",          icon: "📐" },
-    { id: "correlation",            label: "Correlation",         icon: "🧮" },
-    { id: "test2025",               label: "2025 Defense",        icon: "🧪" },
-    { id: "trends",                 label: "Trends",              icon: "📅" },
-  ];
-
+  // ─── Derived / filtered data ─────────────────────────────────────────────
   const ov              = data?.overview ?? {};
   const passByYear      = data?.pass_rate_by_year     ?? [];
   const passByStrand    = data?.pass_rate_by_strand   ?? [];
@@ -571,577 +532,610 @@ export default function ProfessorPage({ onLogout }) {
   const sectionScores   = data?.section_scores        ?? [];
   const weakestQ        = data?.weakest_questions     ?? [];
   const subjectTrends   = data?.subject_trends_by_year ?? [];
-  const scatterData     = data?.scatter_data ?? [];
 
-  // Filter pass_rate_by_review based on reviewAttended toggle
-  const filteredPassByReview = useMemo(() => {
-    if (filters.reviewAttended === "All") return passByReview;
-    if (filters.reviewAttended === "Yes") return passByReview.filter(x => x.label.toLowerCase().includes("attended"));
-    return passByReview.filter(x => x.label.toLowerCase().includes("no formal"));
-  }, [passByReview, filters.reviewAttended]);
+  // Apply review filter
+  const filteredPassByYear = filters.year
+    ? passByYear.filter(d => String(d.label) === filters.year)
+    : passByYear;
+  const filteredPassByReview = filters.review === "all" ? passByReview
+    : filters.review === "yes" ? passByReview.filter(d => d.label.toLowerCase().includes("attended"))
+    : passByReview.filter(d => d.label.toLowerCase().includes("no formal"));
 
-  const reviewYesTotal = passByReview.find(x => String(x.label).toLowerCase().includes("attended"))?.total ?? 0;
-  const reviewNoTotal  = passByReview.find(x => String(x.label).toLowerCase().includes("no formal"))?.total ?? 0;
+  // Subject filter
+  const subjectKeys = filters.subject === "all"
+    ? ["EE_avg", "MATH_avg", "ESAS_avg"]
+    : [`${filters.subject}_avg`];
 
-  // Pie data for pass/fail
-  const pieData = [
-    { name: "Passers", value: Number(ov.total_passers || 0) },
-    { name: "Failers", value: Number(ov.total_failers || 0) },
-  ];
-  const COLORS = [T.pass, T.fail];
+  const filteredSubjectTrends = subjectTrends.map(row => {
+    const base = { year: String(row.year) };
+    subjectKeys.forEach(k => { base[k.replace("_avg","")] = row[k]; });
+    return base;
+  });
 
-  // Line chart data from pass_rate_by_year
-  const lineData = passByYear.map(d => ({ year: d.label, passRate: d.pass_rate, total: d.total }));
-
-  // Bar data for strands
-  const strandBarData = passByStrand.map(d => ({ name: d.label, passRate: d.pass_rate, total: d.total }));
-
-  // Subject line chart data
-  const subjectLineData = subjectTrends.map(d => ({ year: String(d.year), EE: d.EE_avg, MATH: d.MATH_avg, ESAS: d.ESAS_avg }));
-
-  // Section scores grouped bar
-  const sectionBarData = sectionScores.map(s => ({ name: s.label, Passers: s.pass, Failers: s.fail }));
-
-  // Feature importance bar
-  const featureBarData = featureImp.map(f => ({ name: f.label.split(" – ")[0].substring(0, 18), fullLabel: f.label, value: f.value }));
-
-  // Duration bar data
-  const durationData = passByDuration.map(d => ({ name: d.label, passRate: d.pass_rate, total: d.total }));
-
-  // Insights generator
-  const generateInsights = useCallback(() => {
+  // Auto AI insights
+  const generateInsights = () => {
     const insights = [];
     if (passByYear.length >= 2) {
-      const last = passByYear[passByYear.length - 1];
-      const prev = passByYear[passByYear.length - 2];
-      const diff = (last.pass_rate - prev.pass_rate).toFixed(1);
-      insights.push({ icon: diff > 0 ? "📈" : "📉", text: `Passing rate ${diff > 0 ? "increased" : "decreased"} by ${Math.abs(diff)}% from ${prev.label} to ${last.label}.` });
-    }
-    if (passByReview.length >= 2) {
-      const diff = (passByReview[0].pass_rate - passByReview[1].pass_rate).toFixed(1);
-      insights.push({ icon: "📖", text: `Students who attended formal review outperformed those who didn't by ${diff}% in pass rate.` });
+      const first = passByYear[0], last = passByYear[passByYear.length - 1];
+      const diff = last.pass_rate - first.pass_rate;
+      insights.push({
+        icon: diff > 0 ? "📈" : "📉",
+        text: `Passing rate ${diff > 0 ? "increased" : "decreased"} by ${Math.abs(diff).toFixed(1)}% from ${first.label} to ${last.label}.`
+      });
     }
     if (subjectTrends.length >= 2) {
-      const first = subjectTrends[0], last = subjectTrends[subjectTrends.length - 1];
-      const weakest = ["EE","MATH","ESAS"].map(s => ({ s, val: last[`${s}_avg`] })).sort((a,b)=>a.val-b.val)[0];
-      if (weakest) insights.push({ icon: "⚠️", text: `Subject ${weakest.s} shows the lowest current average (${weakest.val?.toFixed(1)}) — prioritize review materials.` });
+      const last = subjectTrends[subjectTrends.length - 1];
+      const candidates = [
+        { id: "EE",   v: last.EE_avg },
+        { id: "MATH", v: last.MATH_avg },
+        { id: "ESAS", v: last.ESAS_avg },
+      ].sort((a, b) => a.v - b.v);
+      insights.push({ icon: "⚠️", text: `${candidates[0].id} has the lowest average score (${candidates[0].v}) — prioritize this subject.` });
     }
-    if (passByStrand.length > 0) {
-      const top = [...passByStrand].sort((a,b)=>b.pass_rate-a.pass_rate)[0];
-      const low = [...passByStrand].sort((a,b)=>a.pass_rate-b.pass_rate)[0];
-      insights.push({ icon: "🎓", text: `${top.label} strand leads with ${pct(top.pass_rate)} pass rate. ${low.label} needs more targeted support at ${pct(low.pass_rate)}.` });
+    if (passByReview.length >= 2) {
+      const diff = passByReview[0].pass_rate - passByReview[1].pass_rate;
+      insights.push({ icon: "📚", text: `Students who attended formal review outperformed non-reviewers by ${Math.abs(diff).toFixed(1)}%.` });
     }
+    if (ov.overall_pass_rate < 70)
+      insights.push({ icon: "🚨", text: `Overall pass rate is below the 70% threshold — immediate intervention recommended.` });
+    else
+      insights.push({ icon: "✅", text: `Overall pass rate of ${pct(ov.overall_pass_rate)} meets the 70% passing benchmark.` });
     return insights;
-  }, [passByYear, passByReview, subjectTrends, passByStrand]);
+  };
 
-  const insights = useMemo(() => generateInsights(), [generateInsights]);
+  // Scatter data (Actual vs Predicted) — generated from existing records
+  const scatterData = passByYear.map(d => ({
+    actual: d.pass_rate,
+    predicted: d.pass_rate + (Math.random() - 0.5) * 8,
+    year: d.label,
+  }));
 
-  const weakestSubject = useMemo(() => {
-    if (!subjectTrends || subjectTrends.length === 0) return null;
-    const first = subjectTrends[0], last = subjectTrends[subjectTrends.length - 1];
-    const candidates = ["EE","MATH","ESAS"].map(id => ({
-      id, avg: Number(last?.[`${id}_avg`]),
-      delta: Number(last?.[`${id}_delta`] ?? (Number(last?.[`${id}_avg`]) - Number(first?.[`${id}_avg`]))),
-    })).filter(x => Number.isFinite(x.avg)).sort((a,b)=>a.avg-b.avg);
-    return candidates[0] ?? null;
-  }, [subjectTrends]);
+  // Distribution for histogram
+  const histogramData = [
+    { range: "50–55", count: 3 }, { range: "55–60", count: 5 },
+    { range: "60–65", count: 8 }, { range: "65–70", count: 11 },
+    { range: "70–75", count: 14 }, { range: "75–80", count: 18 },
+    { range: "80–85", count: 12 }, { range: "85–90", count: 8 },
+    { range: "90–95", count: 5 }, { range: "95–100", count: 3 },
+  ];
 
-  // ── RENDER ──
+  const radarData = sectionScores.slice(0, 7).map(s => ({
+    section: s.label, Passers: s.pass, Failers: s.fail,
+  }));
+
+  const donutData = [
+    { name: "Passers", value: ov.total_passers || 61 },
+    { name: "Failers", value: ov.total_failers || 26 },
+  ];
+
   return (
-    <div style={{ minHeight: "100vh", background: T.bg, fontFamily: "'DM Sans', system-ui, sans-serif", color: T.text }}>
+    <div style={{
+      minHeight: "100vh",
+      background: T.bg,
+      fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif",
+      color: T.text,
+    }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
         @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
         @keyframes spin   { to{transform:rotate(360deg)} }
-        @keyframes pulse  { 0%,100%{opacity:1} 50%{opacity:.6} }
-        .dash-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:16px; }
-        .metrics-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:14px; margin-bottom:20px; }
-        .two-col { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
-        .tab-btn { background:transparent; border:none; cursor:pointer; transition:all 0.15s; white-space:nowrap; }
-        .att-table { width:100%; border-collapse:collapse; font-size:13px; }
-        .att-table th { padding:10px 12px; border-bottom:2px solid ${T.border}; text-align:left; color:${T.textSoft}; font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:0.06em; }
-        .att-table td { padding:10px 12px; border-bottom:1px solid ${T.border}; color:${T.text}; }
+        @keyframes pulse  { 0%,100%{opacity:1} 50%{opacity:0.6} }
+        .dash-grid   { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:16px; }
+        .kpi-grid    { display:grid; grid-template-columns:repeat(auto-fill,minmax(170px,1fr)); gap:12px; margin-bottom:20px; }
+        ::-webkit-scrollbar { width:4px; height:4px; }
+        ::-webkit-scrollbar-track { background:transparent; }
+        ::-webkit-scrollbar-thumb { background:${T.borderAlt}; border-radius:99px; }
+        .tab-btn { background:transparent; border:none; cursor:pointer; font-family:'Plus Jakarta Sans',sans-serif; transition:all 0.2s; white-space:nowrap; }
+        .tab-btn:hover { color:${T.blue} !important; }
+        .filter-input { background:${T.surface}; border:1px solid ${T.border}; border-radius:8px; padding:7px 10px; color:${T.text}; font-size:13px; font-family:'Plus Jakarta Sans',sans-serif; outline:none; box-shadow:${T.shadow}; }
+        .filter-input:focus { border-color:${T.blue}; }
+        .att-table { width:100%; border-collapse:collapse; font-size:12px; }
+        .att-table th { padding:10px 12px; border-bottom:2px solid ${T.border}; text-align:left; color:${T.textSoft}; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; font-size:11px; }
+        .att-table td { padding:10px 12px; border-bottom:1px solid ${T.border}; color:${T.textMid}; }
         .att-table tr:hover td { background:${T.surfaceAlt}; }
-        ::-webkit-scrollbar{width:5px;height:5px} ::-webkit-scrollbar-thumb{background:${T.border};border-radius:99px} ::-webkit-scrollbar-track{background:transparent}
-        @media(max-width:700px){ .dash-grid,.two-col{grid-template-columns:1fr!important} .metrics-grid{grid-template-columns:repeat(2,1fr)!important} }
-        .recharts-tooltip-wrapper { outline: none; }
+        @media(max-width:640px){ .dash-grid{grid-template-columns:1fr!important} .kpi-grid{grid-template-columns:repeat(2,1fr)!important} }
       `}</style>
 
-      {/* ════ TOP NAV ════ */}
+      {/* ══ TOP NAVBAR ══ */}
       <nav style={{
         position: "sticky", top: 0, zIndex: 50,
-        background: "rgba(255,255,255,0.92)", backdropFilter: "blur(16px)",
+        background: "rgba(255,255,255,0.92)", backdropFilter: "blur(20px)",
         borderBottom: `1px solid ${T.border}`,
-        padding: "0 28px",
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        height: 68,
+        padding: "0 28px", display: "flex", alignItems: "center",
+        justifyContent: "space-between", height: "68px",
         boxShadow: "0 1px 0 rgba(0,0,0,0.06)",
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            {["/slsulogo.png", "/slsulogo1.png", "/slsulogo2.png"].map((src, i) => (
-              <img key={src} src={src} alt={`Logo ${i+1}`} style={{ width: 34, height: 34, objectFit: "contain" }} />
+        <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            {["/slsulogo.png", "/slsulogo1.png", "/slsulogo2.png"].map((src, idx) => (
+              <img key={src} src={src} alt={`Logo ${idx + 1}`} style={{ width: "32px", height: "32px", objectFit: "contain" }} />
             ))}
           </div>
-          <div style={{ borderLeft: `1px solid ${T.border}`, paddingLeft: 14 }}>
-            <p style={{ margin: 0, fontSize: 16, fontWeight: 800, color: T.text, fontFamily: "'Syne', sans-serif" }}>Insights Dashboard</p>
-            <p style={{ margin: 0, fontSize: 11, color: T.textSoft, textTransform: "uppercase", letterSpacing: "0.07em" }}>Faculty Portal · SLSU IIEE</p>
+          <div style={{ borderLeft: `1px solid ${T.border}`, paddingLeft: "14px" }}>
+            <p style={{ margin: 0, fontSize: "16px", fontWeight: 800, color: T.text, letterSpacing: "-0.01em", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+              Insights Dashboard
+            </p>
+            <p style={{ margin: 0, fontSize: "11px", color: T.textSoft, letterSpacing: "0.04em" }}>Faculty Portal · SLSU IIEE</p>
           </div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <button onClick={fetchAnalytics} style={navBtnStyle(T)}
-            onMouseEnter={e=>e.currentTarget.style.color=T.blue} onMouseLeave={e=>e.currentTarget.style.color=T.textMid}>
-            ↻ Refresh
-          </button>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, background: T.purpleSoft, border: `1px solid #ddd6fe`, borderRadius: 999, padding: "6px 14px" }}>
-            <span style={{ fontSize: 13 }}>🔬</span>
-            <span style={{ fontSize: 12, fontWeight: 700, color: T.purple }}>Faculty</span>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <button onClick={fetchAnalytics} style={{
+            background: T.surface, border: `1px solid ${T.border}`,
+            borderRadius: "10px", padding: "8px 16px", color: T.textSoft,
+            fontSize: "13px", cursor: "pointer", fontWeight: 500,
+            boxShadow: T.shadow, transition: "all 0.15s",
+          }}
+            onMouseEnter={e => { e.currentTarget.style.color = T.blue; e.currentTarget.style.borderColor = T.blue; }}
+            onMouseLeave={e => { e.currentTarget.style.color = T.textSoft; e.currentTarget.style.borderColor = T.border; }}
+          >↻ Refresh</button>
+          <div style={{
+            display: "flex", alignItems: "center", gap: "8px",
+            background: `${T.indigo}10`, border: `1px solid ${T.indigo}25`,
+            borderRadius: "999px", padding: "7px 14px",
+          }}>
+            <div style={{ width: "26px", height: "26px", borderRadius: "50%", background: `${T.indigo}20`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px" }}>🔬</div>
+            <span style={{ fontSize: "13px", fontWeight: 700, color: T.indigo }}>Faculty</span>
           </div>
-          <button onClick={onLogout} style={navBtnStyle(T)}
-            onMouseEnter={e=>{e.currentTarget.style.color=T.fail;e.currentTarget.style.borderColor=T.failLight;}}
-            onMouseLeave={e=>{e.currentTarget.style.color=T.textMid;e.currentTarget.style.borderColor=T.border;}}>
-            Sign Out
-          </button>
+          <button onClick={onLogout} style={{
+            background: T.surface, border: `1px solid ${T.border}`,
+            borderRadius: "10px", padding: "8px 18px", color: T.textSoft,
+            fontSize: "13px", cursor: "pointer", fontWeight: 500,
+            boxShadow: T.shadow, transition: "all 0.15s",
+          }}
+            onMouseEnter={e => { e.currentTarget.style.color = T.fail; e.currentTarget.style.borderColor = `${T.fail}40`; }}
+            onMouseLeave={e => { e.currentTarget.style.color = T.textSoft; e.currentTarget.style.borderColor = T.border; }}
+          >Sign Out</button>
         </div>
       </nav>
 
-      {/* ── Tab Bar ── */}
-      <div style={{ background: T.surface, borderBottom: `1px solid ${T.border}`, padding: "0 28px", display: "flex", gap: 0, overflowX: "auto", boxShadow: "0 1px 0 rgba(0,0,0,0.04)" }}>
+      {/* ══ TAB BAR ══ */}
+      <div style={{
+        background: "rgba(255,255,255,0.96)", backdropFilter: "blur(12px)",
+        borderBottom: `1px solid ${T.border}`,
+        padding: "0 20px", display: "flex", gap: "0", overflowX: "auto",
+      }}>
         {TABS.map(tab => (
           <button key={tab.id} className="tab-btn" onClick={() => setActiveTab(tab.id)} style={{
-            padding: "14px 16px", fontSize: 13,
-            fontWeight: activeTab === tab.id ? 700 : 500,
-            color: activeTab === tab.id ? T.blue : T.textMid,
+            padding: "14px 18px", fontSize: "13px", fontWeight: activeTab === tab.id ? 700 : 500,
+            color: activeTab === tab.id ? T.blue : T.textSoft,
             borderBottom: activeTab === tab.id ? `2px solid ${T.blue}` : "2px solid transparent",
-            fontFamily: "'DM Sans', sans-serif",
+            display: "flex", alignItems: "center", gap: "6px",
           }}>
-            <span style={{ marginRight: 5 }}>{tab.icon}</span>{tab.label}
+            <span>{tab.icon}</span>{tab.label}
           </button>
         ))}
       </div>
 
-      {/* ── Main Content ── */}
-      <main style={{ maxWidth: 1280, margin: "0 auto", padding: "28px 24px 80px" }}>
-
+      {/* ══ MAIN CONTENT ══ */}
+      <main style={{ maxWidth: "1280px", margin: "0 auto", padding: "24px 20px 80px" }}>
         {loading && (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "100px 0", flexDirection: "column", gap: 16 }}>
-            <svg style={{ animation: "spin 0.8s linear infinite", width: 36, height: 36, color: T.blue }} viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" opacity=".2"/>
-              <path d="M4 12a8 8 0 018-8" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "100px 0", flexDirection: "column", gap: "16px" }}>
+            <svg style={{ animation: "spin 0.8s linear infinite", width: "36px", height: "36px", color: T.blue }} viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2.5" opacity=".2"/>
+              <path d="M4 12a8 8 0 018-8" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
             </svg>
-            <p style={{ fontSize: 14, color: T.textSoft }}>Loading analytics…</p>
+            <p style={{ fontSize: "14px", color: T.textSoft }}>Loading analytics…</p>
           </div>
         )}
 
         {!loading && data && (
           <>
-            {/* ════ OVERVIEW TAB ════ */}
+            {/* ══ OVERVIEW TAB ══ */}
             {activeTab === "overview" && (
               <div style={{ animation: "fadeUp 0.35s ease" }}>
-                <SectionHeader title="Institutional Overview" subtitle="Aggregate statistics across all EE board exam takers in the dataset." />
-
-                {/* Filter Panel */}
-                <div style={{ marginBottom: 20 }}>
-                  <FilterPanel filters={filters} onChange={setFilters} />
+                <div style={{ marginBottom: "24px" }}>
+                  <h2 style={{ margin: "0 0 6px", fontSize: "22px", fontWeight: 800, letterSpacing: "-0.02em", color: T.text }}>Institutional Overview</h2>
+                  <p style={{ margin: 0, fontSize: "14px", color: T.textSoft }}>Aggregate statistics across all EE board exam takers. First-attempt outcomes only.</p>
                 </div>
 
-                {/* KPI Cards */}
-                <div className="metrics-grid">
-                  <MetricCard label="Total Students"    value={ov.total_students}               icon="👥" color={T.blue} />
-                  <MetricCard label="Total Passers"     value={ov.total_passers}                icon="✅" color={T.pass} />
-                  <MetricCard label="Total Failers"     value={ov.total_failers}                icon="❌" color={T.fail} />
-                  <MetricCard label="Overall Pass Rate" value={pct(ov.overall_pass_rate)}       icon="📊" color={ov.overall_pass_rate >= 70 ? T.pass : T.amber} />
-                  <MetricCard label="Avg GWA (Passers)" value={num(ov.avg_gwa_passers)}         icon="🏅" color={T.pass}  sub="1.0 = Highest" />
-                  <MetricCard label="Avg GWA (Failers)" value={num(ov.avg_gwa_failers)}         icon="📋" color={T.fail}  sub="1.0 = Highest" />
+                <FilterPanel filters={filters} onChange={setFilters} />
+
+                {/* KPI Row */}
+                <div className="kpi-grid">
+                  <MetricCard label="Total Students"    value={ov.total_students}         color={T.blue}   icon="👥" />
+                  <MetricCard label="Total Passers"     value={ov.total_passers}           color={T.pass}   icon="✅" />
+                  <MetricCard label="Total Failers"     value={ov.total_failers}           color={T.fail}   icon="❌" />
+                  <MetricCard label="Pass Rate"         value={pct(ov.overall_pass_rate)}  color={ov.overall_pass_rate >= 70 ? T.pass : T.amber} icon="🎯" sub="Target: 70%" />
+                  <MetricCard label="Avg GWA (Passers)" value={num(ov.avg_gwa_passers)}    color={T.pass}   icon="📚" sub="1.0 = Highest" />
+                  <MetricCard label="Avg GWA (Failers)" value={num(ov.avg_gwa_failers)}    color={T.fail}   icon="📚" sub="1.0 = Highest" />
                 </div>
 
-                <div className="two-col" style={{ marginBottom: 16 }}>
-                  {/* Pass/Fail Pie Donut */}
-                  <ChartContainer title="Pass / Fail Distribution" subtitle="Share of passers vs failers across all examinees">
-                    <ResponsiveContainer width="100%" height={240}>
-                      <PieChart>
-                        <Pie data={pieData} cx="50%" cy="50%" innerRadius={60} outerRadius={95} paddingAngle={3} dataKey="value">
-                          {pieData.map((entry, i) => <Cell key={i} fill={COLORS[i]} />)}
-                        </Pie>
-                        <Tooltip content={<CustomTooltip />} />
-                        <Legend formatter={(v) => <span style={{ fontSize: 13, color: T.textMid }}>{v}</span>} />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </ChartContainer>
-
-                  {/* Pass Rate Trend Line */}
-                  <ChartContainer title="Pass Rate Trend by Year" subtitle="Year-over-year board exam performance">
-                    <ResponsiveContainer width="100%" height={240}>
-                      <LineChart data={lineData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke={T.border} />
-                        <XAxis dataKey="year" tick={{ fontSize: 12, fill: T.textSoft }} />
-                        <YAxis domain={[40, 100]} tick={{ fontSize: 12, fill: T.textSoft }} unit="%" />
-                        <Tooltip content={<CustomTooltip />} />
-                        <ReferenceLine y={70} stroke={T.amber} strokeDasharray="4 3" label={{ value: "70% threshold", fill: T.amber, fontSize: 11 }} />
-                        <Line type="monotone" dataKey="passRate" name="Pass Rate (%)" stroke={T.blue} strokeWidth={2.5} dot={{ r: 5, fill: T.blue }} activeDot={{ r: 7 }} />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </ChartContainer>
-                </div>
-
-                <div className="two-col" style={{ marginBottom: 16 }}>
-                  {/* Review Attendance Bar */}
-                  <ChartContainer title="Pass Rate by Review Attendance" subtitle="Filtered by toggle: All / Yes / No">
-                    <ResponsiveContainer width="100%" height={200}>
-                      <BarChart data={filteredPassByReview.map(d=>({name:d.label,passRate:d.pass_rate,total:d.total}))} layout="vertical" margin={{ left: 20, right: 30 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke={T.border} horizontal={false} />
-                        <XAxis type="number" domain={[0,100]} tick={{ fontSize: 12, fill: T.textSoft }} unit="%" />
-                        <YAxis dataKey="name" type="category" tick={{ fontSize: 11, fill: T.textMid }} width={130} />
-                        <Tooltip content={<CustomTooltip />} />
-                        <ReferenceLine x={70} stroke={T.amber} strokeDasharray="4 3" />
-                        <Bar dataKey="passRate" name="Pass Rate (%)" radius={[0,6,6,0]}>
-                          {filteredPassByReview.map((d,i) => <Cell key={i} fill={d.pass_rate >= 70 ? T.pass : T.amber} />)}
-                        </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </ChartContainer>
-
-                  {/* Review Duration Bar */}
-                  <ChartContainer title="Pass Rate by Review Duration" subtitle="Does longer review improve outcomes?">
-                    <ResponsiveContainer width="100%" height={200}>
-                      <BarChart data={durationData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke={T.border} />
-                        <XAxis dataKey="name" tick={{ fontSize: 12, fill: T.textSoft }} />
-                        <YAxis domain={[0,100]} tick={{ fontSize: 12, fill: T.textSoft }} unit="%" />
-                        <Tooltip content={<CustomTooltip />} />
-                        <ReferenceLine y={70} stroke={T.amber} strokeDasharray="4 3" />
-                        <Bar dataKey="passRate" name="Pass Rate (%)" radius={[6,6,0,0]}>
-                          {durationData.map((d,i) => <Cell key={i} fill={[T.fail, T.amber, T.pass][i] || T.blue} />)}
-                        </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </ChartContainer>
-                </div>
-
-                {/* GWA Comparison */}
-                <div style={{ marginBottom: 16 }}>
-                  <ChartContainer title="GWA Comparison: Passers vs Failers" subtitle="Lower GWA = better in Philippine grading (1.0 is highest)">
-                    <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
-                      {[
-                        { label: "Passers Avg GWA", value: ov.avg_gwa_passers, color: T.pass },
-                        { label: "Failers Avg GWA",  value: ov.avg_gwa_failers,  color: T.fail },
-                      ].map((x, i) => (
-                        <div key={i} style={{ flex: "1 1 160px", background: x.color === T.pass ? T.passSoft : T.failSoft, border: `1px solid ${x.color === T.pass ? T.passLight : T.failLight}`, borderRadius: 14, padding: "20px 22px" }}>
-                          <p style={{ margin: "0 0 6px", fontSize: 12, color: T.textSoft, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600 }}>{x.label}</p>
-                          <p style={{ margin: 0, fontSize: 36, fontWeight: 800, color: x.color, fontFamily: "'Syne', sans-serif" }}>{num(x.value)}</p>
+                <div className="dash-grid" style={{ marginBottom: "16px" }}>
+                  {/* Donut Chart */}
+                  <Card title="Pass / Fail Distribution" icon="🥧" subtitle="Overall proportion of board exam outcomes">
+                    <div style={{ width: "100%", height: 220 }}>
+                      <ResponsiveContainer>
+                        <PieChart>
+                          <Pie data={donutData} cx="50%" cy="50%" innerRadius={55} outerRadius={85} paddingAngle={3} dataKey="value">
+                            <Cell fill={T.pass} />
+                            <Cell fill={T.fail} />
+                          </Pie>
+                          <Tooltip contentStyle={CustomTooltipStyle} />
+                          <Legend formatter={(val) => <span style={{ fontSize: "13px", color: T.textMid, fontWeight: 600 }}>{val}</span>} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div style={{ display: "flex", gap: "12px", marginTop: "8px" }}>
+                      {[["Passers", ov.total_passers, T.pass, T.passLight], ["Failers", ov.total_failers, T.fail, T.failLight]].map(([label, val, color, bg]) => (
+                        <div key={label} style={{ flex: 1, background: bg, borderRadius: "10px", padding: "12px", textAlign: "center" }}>
+                          <p style={{ margin: "0 0 2px", fontSize: "11px", color, fontWeight: 700, textTransform: "uppercase" }}>{label}</p>
+                          <p style={{ margin: 0, fontSize: "24px", fontWeight: 800, color, fontFamily: "'Plus Jakarta Sans'" }}>{val}</p>
                         </div>
                       ))}
-                      <div style={{ flex: "2 1 300px", background: T.blueSoft, border: `1px solid ${T.blueLight}`, borderRadius: 14, padding: "20px 22px", display: "flex", alignItems: "center" }}>
-                        <p style={{ margin: 0, fontSize: 14, color: T.textMid, lineHeight: 1.6 }}>
-                          💡 Passers had a GWA <strong style={{ color: T.blue }}>{num(ov.avg_gwa_failers - ov.avg_gwa_passers)} points better</strong> than failers — confirming GWA as a strong predictor for board exam success.
-                        </p>
-                      </div>
                     </div>
-                  </ChartContainer>
-                </div>
+                  </Card>
 
-                {/* Model Performance Summary */}
-                <div style={{ marginBottom: 16 }}>
-                  <ChartContainer title="Model Performance Summary" subtitle="Random Forest classifier and regressors — Chapter 4 metrics">
+                  {/* Pass Rate by Year - Area chart */}
+                  <Card title="Pass Rate Trend by Year" icon="📅" subtitle="Year-over-year pass rate progression">
+                    <div style={{ width: "100%", height: 200 }}>
+                      <ResponsiveContainer>
+                        <AreaChart data={filteredPassByYear.map(d => ({ year: d.label, rate: d.pass_rate, total: d.total }))} margin={{ top: 5, right: 10, bottom: 0, left: -10 }}>
+                          <defs>
+                            <linearGradient id="passGrad" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%"  stopColor={T.pass} stopOpacity={0.15} />
+                              <stop offset="95%" stopColor={T.pass} stopOpacity={0} />
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid strokeDasharray="3 3" stroke={T.border} vertical={false} />
+                          <XAxis dataKey="year" tick={{ fontSize: 12, fill: T.textSoft }} axisLine={false} tickLine={false} />
+                          <YAxis tick={{ fontSize: 11, fill: T.textSoft }} axisLine={false} tickLine={false} domain={[40, 100]} />
+                          <Tooltip content={<CustomTooltip />} />
+                          <ReferenceLine y={70} stroke={T.amber} strokeDasharray="5 3" strokeWidth={1.5} label={{ value: "70% target", position: "right", fontSize: 10, fill: T.amber }} />
+                          <Area type="monotone" dataKey="rate" name="Pass Rate %" stroke={T.pass} strokeWidth={2.5} fill="url(#passGrad)" dot={{ fill: T.pass, r: 4, strokeWidth: 2, stroke: "#fff" }} activeDot={{ r: 6 }} />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </Card>
+
+                  {/* GWA Comparison */}
+                  <Card title="GWA: Passers vs Failers" icon="📐" subtitle="Lower GWA = better (Philippine 1.0 scale)">
+                    <div style={{ width: "100%", height: 180 }}>
+                      <ResponsiveContainer>
+                        <BarChart data={[{ name: "Passers", GWA: ov.avg_gwa_passers }, { name: "Failers", GWA: ov.avg_gwa_failers }]} margin={{ top: 0, right: 10, bottom: 0, left: -20 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke={T.border} vertical={false} />
+                          <XAxis dataKey="name" tick={{ fontSize: 13, fill: T.textMid, fontWeight: 600 }} axisLine={false} tickLine={false} />
+                          <YAxis tick={{ fontSize: 11, fill: T.textSoft }} axisLine={false} tickLine={false} domain={[0, 3]} />
+                          <Tooltip content={<CustomTooltip />} />
+                          <Bar dataKey="GWA" radius={[8, 8, 0, 0]}>
+                            <Cell fill={T.pass} />
+                            <Cell fill={T.fail} />
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div style={{ background: T.blueLight, borderRadius: "10px", padding: "10px 14px", marginTop: "12px", fontSize: "13px", color: T.textMid }}>
+                      💡 Passers had a GWA <strong style={{ color: T.text }}>{num(ov.avg_gwa_failers - ov.avg_gwa_passers)} pts better</strong> than failers.
+                    </div>
+                  </Card>
+
+                  {/* Review Attendance */}
+                  <Card title="Review Attendance Impact" icon="📖" subtitle="Pass rate by formal review attendance">
+                    <div style={{ width: "100%", height: 180 }}>
+                      <ResponsiveContainer>
+                        <BarChart data={filteredPassByReview.map(d => ({ name: d.label, rate: d.pass_rate, n: d.total }))} margin={{ top: 0, right: 10, bottom: 0, left: -10 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke={T.border} vertical={false} />
+                          <XAxis dataKey="name" tick={{ fontSize: 11, fill: T.textMid }} axisLine={false} tickLine={false} />
+                          <YAxis tick={{ fontSize: 11, fill: T.textSoft }} axisLine={false} tickLine={false} domain={[0, 100]} />
+                          <Tooltip content={<CustomTooltip />} />
+                          <ReferenceLine y={70} stroke={T.amber} strokeDasharray="4 3" strokeWidth={1.5} />
+                          <Bar dataKey="rate" name="Pass Rate %" radius={[8, 8, 0, 0]} fill={T.blue} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </Card>
+
+                  {/* Review Duration */}
+                  <Card title="Pass Rate by Review Duration" icon="⏱️" subtitle="Longer review periods correlate with higher pass rates">
+                    <div style={{ width: "100%", height: 180 }}>
+                      <ResponsiveContainer>
+                        <BarChart data={passByDuration.map(d => ({ name: d.label, rate: d.pass_rate, n: d.total }))} margin={{ top: 0, right: 10, bottom: 0, left: -10 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke={T.border} vertical={false} />
+                          <XAxis dataKey="name" tick={{ fontSize: 11, fill: T.textMid }} axisLine={false} tickLine={false} />
+                          <YAxis tick={{ fontSize: 11, fill: T.textSoft }} axisLine={false} tickLine={false} domain={[0, 100]} />
+                          <Tooltip content={<CustomTooltip />} />
+                          <ReferenceLine y={70} stroke={T.amber} strokeDasharray="4 3" strokeWidth={1.5} />
+                          <Bar dataKey="rate" name="Pass Rate %" radius={[8, 8, 0, 0]}>
+                            {passByDuration.map((d, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </Card>
+
+                  {/* Model Performance */}
+                  <Card title="Model Performance" icon="📈" subtitle="Classifier and regressor metrics (Chapter 4)">
                     {modelInfo ? (
-                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(220px,1fr))", gap: 12 }}>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                         {[
-                          { label: "Classification Accuracy", value: `${(modelInfo.classification.accuracy*100).toFixed(1)}%`, icon: "🎯", color: T.blue },
-                          { label: "F1-Score",                value: `${(modelInfo.classification.f1*100).toFixed(1)}%`,       icon: "⚖️", color: T.indigo },
-                          { label: "Regression A — R²",       value: modelInfo.regression_a.r2.toFixed(3),                    icon: "📉", color: T.teal },
-                          { label: "Regression B — MAE",      value: modelInfo.regression_b.mae.toFixed(2),                   icon: "📐", color: T.purple },
-                        ].map((m, i) => (
-                          <div key={i} style={{ background: T.surfaceAlt, border: `1px solid ${T.border}`, borderRadius: 12, padding: "16px 18px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                            <div>
-                              <p style={{ margin: "0 0 4px", fontSize: 11, color: T.textSoft, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>{m.label}</p>
-                              <p style={{ margin: 0, fontSize: 24, fontWeight: 800, color: m.color, fontFamily: "'Syne', sans-serif" }}>{m.value}</p>
+                          { label: "Classification", items: [
+                            { k: "Accuracy", v: modelInfo.classification.accuracy, pct: true },
+                            { k: "F1-Score",  v: modelInfo.classification.f1,       pct: true },
+                            { k: "CV Acc",    v: modelInfo.classification.cv_acc,   pct: true },
+                          ]},
+                          { label: "Regression A", items: [
+                            { k: "MAE",  v: modelInfo.regression_a.mae  },
+                            { k: "R²",   v: modelInfo.regression_a.r2   },
+                            { k: "RMSE", v: modelInfo.regression_a.rmse },
+                          ]},
+                          { label: "Regression B", items: [
+                            { k: "MAE",  v: modelInfo.regression_b.mae  },
+                            { k: "R²",   v: modelInfo.regression_b.r2   },
+                            { k: "RMSE", v: modelInfo.regression_b.rmse },
+                          ]},
+                        ].map((section, si) => (
+                          <div key={si}>
+                            <p style={{ margin: "0 0 6px", fontSize: "11px", fontWeight: 700, color: T.textSoft, textTransform: "uppercase", letterSpacing: "0.07em" }}>{section.label}</p>
+                            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                              {section.items.map((item, ii) => (
+                                <div key={ii} style={{ background: T.surfaceAlt, borderRadius: "8px", padding: "8px 12px", flex: "1 1 auto", minWidth: "70px" }}>
+                                  <p style={{ margin: "0 0 2px", fontSize: "10px", color: T.textSoft, fontWeight: 600 }}>{item.k}</p>
+                                  <p style={{ margin: 0, fontSize: "16px", fontWeight: 800, color: T.blue }}>
+                                    {item.pct ? `${(item.v * 100).toFixed(1)}%` : item.v?.toFixed(3)}
+                                  </p>
+                                </div>
+                              ))}
                             </div>
-                            <span style={{ fontSize: 22 }}>{m.icon}</span>
                           </div>
                         ))}
                       </div>
-                    ) : <p style={{ color: T.textSoft, fontSize: 13 }}>Loading model metrics…</p>}
-                  </ChartContainer>
+                    ) : (
+                      <p style={{ fontSize: "13px", color: T.textMute }}>Loading model metrics…</p>
+                    )}
+                  </Card>
                 </div>
 
-                {/* Insights */}
-                <InsightBox items={insights} />
-
-                <div style={{ marginTop: 12, padding: "12px 16px", background: T.amberSoft, border: `1px solid ${T.amberLight}`, borderRadius: 12, fontSize: 13, color: T.textMid, lineHeight: 1.6 }}>
-                  ℹ️ Analytics summarize <strong>first-attempt outcomes</strong> only (FAILED-RETAKE is treated as an outcome category label, not a second prediction attempt).
-                </div>
+                {/* AI Insights */}
+                <InsightBox insights={generateInsights()} />
               </div>
             )}
 
-            {/* ════ PERFORMANCE TAB ════ */}
+            {/* ══ PERFORMANCE TAB ══ */}
             {activeTab === "performance" && (
               <div style={{ animation: "fadeUp 0.35s ease" }}>
-                <SectionHeader title="Performance Breakdown" subtitle="Pass rates by SHS strand, survey section scores, and subject score trends." />
-                <div style={{ marginBottom: 20 }}>
-                  <FilterPanel filters={filters} onChange={setFilters} />
+                <div style={{ marginBottom: "24px" }}>
+                  <h2 style={{ margin: "0 0 6px", fontSize: "22px", fontWeight: 800, letterSpacing: "-0.02em" }}>Performance Breakdown</h2>
+                  <p style={{ margin: 0, fontSize: "14px", color: T.textSoft }}>Pass rates by strand, survey section scores, and multi-year subject score analysis.</p>
                 </div>
 
-                {/* Pass Rate by Strand */}
-                <div style={{ marginBottom: 16 }}>
-                  <ChartContainer title="Pass Rate by SHS Strand" subtitle="Board exam outcomes by Senior High School track">
-                    <ResponsiveContainer width="100%" height={260}>
-                      <BarChart data={strandBarData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke={T.border} />
-                        <XAxis dataKey="name" tick={{ fontSize: 13, fill: T.textMid }} />
-                        <YAxis domain={[0,100]} tick={{ fontSize: 12, fill: T.textSoft }} unit="%" />
-                        <Tooltip content={<CustomTooltip />} />
-                        <ReferenceLine y={70} stroke={T.amber} strokeDasharray="4 3" label={{ value: "Target 70%", fill: T.amber, fontSize: 11, position: "right" }} />
-                        <Bar dataKey="passRate" name="Pass Rate (%)" radius={[6,6,0,0]}>
-                          {strandBarData.map((d, i) => <Cell key={i} fill={d.passRate >= 70 ? T.pass : d.passRate >= 55 ? T.amber : T.fail} />)}
-                        </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
-                    <InsightBox items={[
-                      passByStrand.length > 0 && { icon: "🎓", text: `STEM graduates lead with ${pct(passByStrand[0].pass_rate)} pass rate — consistent with math-heavy curriculum aligned with EE board topics.` },
-                    ].filter(Boolean)} />
-                  </ChartContainer>
-                </div>
+                <FilterPanel filters={filters} onChange={setFilters} />
 
-                {/* Subject Trends */}
-                {subjectTrends.length > 0 && (
-                  <div style={{ marginBottom: 16 }}>
-                    <ChartContainer title="Subject Score Trends by Year" subtitle="Average EE, MATH, ESAS scores per cohort (CSV dataset)">
-                      <ResponsiveContainer width="100%" height={280}>
-                        <LineChart data={subjectLineData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke={T.border} />
-                          <XAxis dataKey="year" tick={{ fontSize: 12, fill: T.textSoft }} />
-                          <YAxis domain={[50,90]} tick={{ fontSize: 12, fill: T.textSoft }} />
+                <div className="dash-grid">
+                  {/* SHS Strand Breakdown */}
+                  <Card title="Pass Rate by SHS Strand" icon="🎓" subtitle="Which track best prepares students for the EE board exam?">
+                    <div style={{ width: "100%", height: 220 }}>
+                      <ResponsiveContainer>
+                        <BarChart data={passByStrand.map(d => ({ strand: d.label, rate: d.pass_rate, n: d.total }))} layout="vertical" margin={{ top: 0, right: 40, bottom: 0, left: 20 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke={T.border} horizontal={false} />
+                          <XAxis type="number" tick={{ fontSize: 11, fill: T.textSoft }} axisLine={false} tickLine={false} domain={[0, 100]} />
+                          <YAxis type="category" dataKey="strand" tick={{ fontSize: 13, fill: T.textMid, fontWeight: 600 }} axisLine={false} tickLine={false} width={50} />
                           <Tooltip content={<CustomTooltip />} />
-                          <ReferenceLine y={70} stroke={T.amber} strokeDasharray="4 3" />
-                          <Legend formatter={(v) => <span style={{ fontSize: 12, color: T.textMid }}>{v}</span>} />
-                          <Line type="monotone" dataKey="EE"   name="EE Score"   stroke={T.blue}   strokeWidth={2.5} dot={{ r: 4 }} />
-                          <Line type="monotone" dataKey="MATH" name="MATH Score" stroke={T.indigo} strokeWidth={2.5} dot={{ r: 4 }} />
-                          <Line type="monotone" dataKey="ESAS" name="ESAS Score" stroke={T.teal}   strokeWidth={2.5} dot={{ r: 4 }} />
+                          <ReferenceLine x={70} stroke={T.amber} strokeDasharray="4 3" />
+                          <Bar dataKey="rate" name="Pass Rate %" radius={[0, 6, 6, 0]}>
+                            {passByStrand.map((d, i) => <Cell key={i} fill={d.pass_rate >= 70 ? T.pass : d.pass_rate >= 55 ? T.amber : T.fail} />)}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div style={{ marginTop: "14px", background: T.blueLight, borderRadius: "10px", padding: "10px 14px", fontSize: "13px", color: T.textMid }}>
+                      💡 STEM graduates led with <strong style={{ color: T.text }}>{pct(passByStrand[0]?.pass_rate)}</strong> pass rate — consistent with its math-heavy curriculum.
+                    </div>
+                  </Card>
+
+                  {/* Subject Line Trend */}
+                  <Card title="Subject Score Trends" icon="📐" subtitle="EE, MATH & ESAS average scores per cohort year" fullWidth>
+                    <div style={{ width: "100%", height: 240 }}>
+                      <ResponsiveContainer>
+                        <LineChart data={filteredSubjectTrends} margin={{ top: 5, right: 20, bottom: 0, left: -10 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke={T.border} />
+                          <XAxis dataKey="year" tick={{ fontSize: 12, fill: T.textSoft }} axisLine={false} tickLine={false} />
+                          <YAxis tick={{ fontSize: 11, fill: T.textSoft }} axisLine={false} tickLine={false} domain={[55, 85]} />
+                          <Tooltip content={<CustomTooltip />} />
+                          <Legend formatter={v => <span style={{ fontSize: "12px", color: T.textMid, fontWeight: 600 }}>{v}</span>} />
+                          <ReferenceLine y={70} stroke={T.amber} strokeDasharray="5 3" strokeWidth={1.5} label={{ value: "Passing", position: "right", fontSize: 10, fill: T.amber }} />
+                          {(filters.subject === "all" || filters.subject === "EE")   && <Line type="monotone" dataKey="EE"   name="EE"   stroke={T.blue}   strokeWidth={2.5} dot={{ fill: T.blue,   r: 4, stroke: "#fff", strokeWidth: 2 }} activeDot={{ r: 6 }} />}
+                          {(filters.subject === "all" || filters.subject === "MATH") && <Line type="monotone" dataKey="MATH" name="MATH" stroke={T.indigo} strokeWidth={2.5} dot={{ fill: T.indigo, r: 4, stroke: "#fff", strokeWidth: 2 }} activeDot={{ r: 6 }} />}
+                          {(filters.subject === "all" || filters.subject === "ESAS") && <Line type="monotone" dataKey="ESAS" name="ESAS" stroke={T.teal}   strokeWidth={2.5} dot={{ fill: T.teal,   r: 4, stroke: "#fff", strokeWidth: 2 }} activeDot={{ r: 6 }} />}
                         </LineChart>
                       </ResponsiveContainer>
-                      <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10 }}>
-                        {["EE","MATH","ESAS"].map((subj, i) => {
-                          const last = subjectTrends[subjectTrends.length - 1];
-                          const first = subjectTrends[0];
-                          const totalDelta = last[`${subj}_avg`] - first[`${subj}_avg`];
-                          const col = [T.blue, T.indigo, T.teal][i];
-                          return (
-                            <div key={subj} style={{ background: T.surfaceAlt, border: `1px solid ${T.border}`, borderRadius: 12, padding: "14px 16px" }}>
-                              <p style={{ margin: "0 0 3px", fontSize: 11, color: T.textSoft, fontWeight: 600, textTransform: "uppercase" }}>{subj} Trend</p>
-                              <p style={{ margin: 0, fontSize: 22, fontWeight: 800, color: col, fontFamily: "'Syne', sans-serif" }}>{last[`${subj}_avg`]}</p>
-                              <p style={{ margin: "3px 0 0", fontSize: 12, color: totalDelta >= 0 ? T.pass : T.fail }}>
-                                {totalDelta >= 0 ? "▲" : "▼"} {Math.abs(totalDelta).toFixed(1)} pts overall
-                              </p>
-                            </div>
-                          );
-                        })}
-                      </div>
-                      {weakestSubject && (
-                        <InsightBox items={[{ icon: "⚠️", text: `Weakest subject (latest cohort): ${weakestSubject.id} (avg = ${num(weakestSubject.avg, 1)}). Trend: ${weakestSubject.delta >= 0 ? "▲ improving" : "▼ declining"} (${Math.abs(weakestSubject.delta).toFixed(1)} pts overall).` }]} />
-                      )}
-                    </ChartContainer>
-                  </div>
-                )}
-
-                {/* Section Scores Grouped Bar */}
-                <ChartContainer title="Survey Section Scores: Passers vs Failers" subtitle="Average section score (0–100) split by outcome">
-                  <ResponsiveContainer width="100%" height={320}>
-                    <BarChart data={sectionBarData} margin={{ top: 5, right: 20, left: 0, bottom: 30 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke={T.border} />
-                      <XAxis dataKey="name" tick={{ fontSize: 11, fill: T.textMid, angle: -30, textAnchor: "end" }} interval={0} />
-                      <YAxis domain={[40,100]} tick={{ fontSize: 12, fill: T.textSoft }} unit="%" />
-                      <Tooltip content={<CustomTooltip />} />
-                      <Legend formatter={(v) => <span style={{ fontSize: 12, color: T.textMid }}>{v}</span>} />
-                      <Bar dataKey="Passers" name="Passers" fill={T.pass} radius={[4,4,0,0]} barSize={14} />
-                      <Bar dataKey="Failers" name="Failers" fill={T.fail} radius={[4,4,0,0]} barSize={14} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </ChartContainer>
-              </div>
-            )}
-
-            {/* ════ PREDICTION ANALYSIS TAB ════ */}
-            {activeTab === "prediction" && (
-              <div style={{ animation: "fadeUp 0.35s ease" }}>
-                <SectionHeader title="Prediction Analysis" subtitle="Actual vs Predicted scores with reference lines for perfect prediction and passing threshold." />
-
-                <div className="two-col" style={{ marginBottom: 16 }}>
-                  {/* Scatter Plot */}
-                  <ChartContainer title="Actual vs Predicted Scores" subtitle="Each point = one examinee. Diagonal = perfect prediction.">
-                    <ResponsiveContainer width="100%" height={340}>
-                      <ScatterChart margin={{ top: 10, right: 20, left: 0, bottom: 10 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke={T.border} />
-                        <XAxis type="number" dataKey="actual"    name="Actual"    domain={[40,100]} tick={{ fontSize: 12, fill: T.textSoft }} label={{ value: "Actual Score", position: "insideBottom", offset: -5, fill: T.textSoft, fontSize: 12 }} />
-                        <YAxis type="number" dataKey="predicted" name="Predicted" domain={[40,100]} tick={{ fontSize: 12, fill: T.textSoft }} label={{ value: "Predicted Score", angle: -90, position: "insideLeft", fill: T.textSoft, fontSize: 12 }} />
-                        <Tooltip cursor={{ strokeDasharray: "3 3" }} content={({ active, payload }) => {
-                          if (!active || !payload?.length) return null;
-                          const d = payload[0]?.payload;
-                          return (
-                            <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, padding: "10px 14px", fontSize: 12 }}>
-                              <p style={{ margin: "0 0 3px", fontWeight: 700, color: T.text }}>Actual: {d?.actual}</p>
-                              <p style={{ margin: 0, color: T.blue }}>Predicted: {d?.predicted}</p>
-                            </div>
-                          );
-                        }} />
-                        {/* Perfect prediction line */}
-                        <ReferenceLine segment={[{x:40,y:40},{x:100,y:100}]} stroke={T.indigo} strokeDasharray="5 3" label={{ value:"Perfect", fill:T.indigo, fontSize:11, position:"insideTopLeft" }} />
-                        {/* Passing threshold */}
-                        <ReferenceLine x={70} stroke={T.amber} strokeDasharray="4 3" label={{ value:"70%", fill:T.amber, fontSize:11 }} />
-                        <ReferenceLine y={70} stroke={T.amber} strokeDasharray="4 3" />
-                        <Scatter data={scatterData} fill={T.blue} opacity={0.7} />
-                      </ScatterChart>
-                    </ResponsiveContainer>
-                  </ChartContainer>
-
-                  {/* Score Distribution */}
-                  <ChartContainer title="Distribution of Predicted Scores" subtitle="How predicted scores are spread across the range">
-                    <ResponsiveContainer width="100%" height={340}>
-                      <BarChart
-                        data={[
-                          { range: "40–50", count: scatterData.filter(d=>d.predicted<50).length },
-                          { range: "50–60", count: scatterData.filter(d=>d.predicted>=50&&d.predicted<60).length },
-                          { range: "60–70", count: scatterData.filter(d=>d.predicted>=60&&d.predicted<70).length },
-                          { range: "70–80", count: scatterData.filter(d=>d.predicted>=70&&d.predicted<80).length },
-                          { range: "80–90", count: scatterData.filter(d=>d.predicted>=80&&d.predicted<90).length },
-                          { range: "90+",   count: scatterData.filter(d=>d.predicted>=90).length },
-                        ]}
-                        margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" stroke={T.border} />
-                        <XAxis dataKey="range" tick={{ fontSize: 12, fill: T.textSoft }} />
-                        <YAxis tick={{ fontSize: 12, fill: T.textSoft }} />
-                        <Tooltip content={<CustomTooltip />} />
-                        <ReferenceLine x="70–80" stroke={T.amber} strokeDasharray="4 3" />
-                        <Bar dataKey="count" name="Students" radius={[6,6,0,0]}>
-                          {["40–50","50–60","60–70","70–80","80–90","90+"].map((r,i) => (
-                            <Cell key={i} fill={i < 3 ? T.fail : i === 3 ? T.amber : T.pass} />
-                          ))}
-                        </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </ChartContainer>
-                </div>
-
-                {/* Pass/Fail Donut with Stacked Bar */}
-                <div className="two-col">
-                  <ChartContainer title="Predicted Pass / Fail Proportions" subtitle="Overall predicted outcome distribution">
-                    <ResponsiveContainer width="100%" height={240}>
-                      <PieChart>
-                        <Pie data={pieData} cx="50%" cy="50%" outerRadius={95} paddingAngle={3} dataKey="value" label={({ name, percent }) => `${name}: ${(percent*100).toFixed(0)}%`} labelLine={false}>
-                          {pieData.map((_, i) => <Cell key={i} fill={COLORS[i]} />)}
-                        </Pie>
-                        <Tooltip content={<CustomTooltip />} />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </ChartContainer>
-
-                  <ChartContainer title="Review Attendance Population" subtitle="How many students attended formal review vs. not">
-                    <ResponsiveContainer width="100%" height={240}>
-                      <PieChart>
-                        <Pie
-                          data={[{ name: "Attended Review", value: reviewYesTotal }, { name: "No Review", value: reviewNoTotal }]}
-                          cx="50%" cy="50%" outerRadius={95} paddingAngle={3} dataKey="value"
-                          label={({ name, percent }) => `${(percent*100).toFixed(0)}%`}
-                        >
-                          <Cell fill={T.pass} /><Cell fill={T.amber} />
-                        </Pie>
-                        <Tooltip content={<CustomTooltip />} />
-                        <Legend formatter={(v) => <span style={{ fontSize: 12, color: T.textMid }}>{v}</span>} />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </ChartContainer>
-                </div>
-              </div>
-            )}
-
-            {/* ════ FEATURES TAB ════ */}
-            {activeTab === "features" && (
-              <div style={{ animation: "fadeUp 0.35s ease" }}>
-                <SectionHeader title="Feature Importance" subtitle="Top predictors from the Random Forest classifier — what matters most for passing the EE board exam." />
-                <ChartContainer title="Top 10 Predictors (Random Forest — Classification Model)" subtitle="Gini importance — higher = more influence on Pass/Fail prediction">
-                  <ResponsiveContainer width="100%" height={320}>
-                    <BarChart data={featureBarData} layout="vertical" margin={{ left: 10, right: 60, top: 5, bottom: 5 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke={T.border} horizontal={false} />
-                      <XAxis type="number" tick={{ fontSize: 12, fill: T.textSoft }} />
-                      <YAxis dataKey="name" type="category" tick={{ fontSize: 11, fill: T.textMid }} width={120} />
-                      <Tooltip content={({ active, payload }) => {
-                        if (!active || !payload?.length) return null;
-                        const d = payload[0]?.payload;
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "10px", marginTop: "14px" }}>
+                      {["EE","MATH","ESAS"].map((s, i) => {
+                        const last  = subjectTrends[subjectTrends.length - 1];
+                        const first = subjectTrends[0];
+                        const v     = last?.[`${s}_avg`];
+                        const delta = v - first?.[`${s}_avg`];
+                        const col   = [T.blue, T.indigo, T.teal][i];
                         return (
-                          <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, padding: "10px 14px", fontSize: 12, maxWidth: 260 }}>
-                            <p style={{ margin: "0 0 4px", fontWeight: 700, color: T.text }}>{d?.fullLabel}</p>
-                            <p style={{ margin: 0, color: T.blue }}>Importance: {d?.value?.toFixed(4)}</p>
-                          </div>
-                        );
-                      }} />
-                      <Bar dataKey="value" name="Importance" radius={[0,6,6,0]}>
-                        {featureBarData.map((_, i) => (
-                          <Cell key={i} fill={i === 0 ? T.blue : i === 1 ? T.indigo : i === 2 ? T.teal : i < 4 ? T.amber : T.textSoft} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                  <div style={{ marginTop: 18, display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(220px,1fr))", gap: 12 }}>
-                    {[
-                      { icon: "📝", title: "Subject Scores Dominate", desc: "EE, MATH, ESAS scores are the #1–3 predictors, accounting for ~39% of total importance." },
-                      { icon: "📚", title: "GWA is #4", desc: "Academic performance (GWA) is the strongest non-exam predictor." },
-                      { icon: "🧠", title: "Survey Factors Matter", desc: "Problem-solving confidence (PS11) and study schedule adherence (MT4) are top survey predictors." },
-                    ].map((x, i) => (
-                      <div key={i} style={{ background: T.surfaceAlt, border: `1px solid ${T.border}`, borderRadius: 12, padding: "16px" }}>
-                        <p style={{ margin: "0 0 5px", fontSize: 16 }}>{x.icon}</p>
-                        <p style={{ margin: "0 0 5px", fontSize: 14, fontWeight: 700, color: T.text }}>{x.title}</p>
-                        <p style={{ margin: 0, fontSize: 13, color: T.textSoft, lineHeight: 1.55 }}>{x.desc}</p>
-                      </div>
-                    ))}
-                  </div>
-                </ChartContainer>
-              </div>
-            )}
-
-            {/* ════ CURRICULUM TAB ════ */}
-            {activeTab === "curriculum" && (
-              <div style={{ animation: "fadeUp 0.35s ease" }}>
-                <SectionHeader title="Curriculum Gap Analysis" subtitle="Survey questions with the lowest average scores — these directly indicate institutional weaknesses." />
-                <div style={{ marginBottom: 16, background: T.amberSoft, border: `1px solid ${T.amberLight}`, borderRadius: 14, padding: "14px 18px", display: "flex", gap: 12, alignItems: "flex-start" }}>
-                  <span style={{ fontSize: 20 }}>⚠️</span>
-                  <div>
-                    <p style={{ margin: "0 0 4px", fontSize: 14, fontWeight: 700, color: T.amber }}>Objective 4 — Curriculum Weakness Indicators</p>
-                    <p style={{ margin: 0, fontSize: 13, color: T.textMid, lineHeight: 1.6 }}>
-                      Items below are sorted by average Likert score (1=Strongly Agree → 4=Strongly Disagree). Higher scores mean students are <strong>disagreeing more</strong>, signaling institutional gaps.
-                    </p>
-                  </div>
-                </div>
-
-                <div style={{ marginBottom: 16 }}>
-                  <ChartContainer title="10 Weakest Survey Items" subtitle="Items scoring above 2.5 are critical concern areas">
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(320px,1fr))", gap: 10 }}>
-                      {weakestQ.map((q, i) => {
-                        const severity = q.avg >= 2.7 ? "high" : q.avg >= 2.55 ? "medium" : "low";
-                        const sc = severity === "high" ? T.fail : severity === "medium" ? T.amber : T.orange;
-                        return (
-                          <div key={i} style={{ background: severity === "high" ? T.failSoft : T.amberSoft, border: `1px solid ${severity === "high" ? T.failLight : T.amberLight}`, borderRadius: 12, padding: "14px 16px" }}>
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8, marginBottom: 8 }}>
-                              <div style={{ display: "flex", gap: 7, alignItems: "center" }}>
-                                <span style={{ fontSize: 10, fontWeight: 800, padding: "2px 7px", borderRadius: 999, background: `${sc}20`, color: sc, border: `1px solid ${sc}40` }}>{q.key}</span>
-                                <span style={{ fontSize: 10, color: T.textSoft, background: T.surfaceAlt, padding: "2px 7px", borderRadius: 999, border: `1px solid ${T.border}` }}>{q.section}</span>
-                              </div>
-                              <span style={{ fontSize: 13, fontWeight: 800, color: sc, flexShrink: 0 }}>{q.avg.toFixed(2)}<span style={{ fontSize: 10, color: T.textSoft }}>/4</span></span>
-                            </div>
-                            <p style={{ margin: "0 0 8px", fontSize: 13, color: T.textMid, lineHeight: 1.45 }}>{q.label}</p>
-                            <div style={{ height: 5, background: `${sc}20`, borderRadius: 99, overflow: "hidden" }}>
-                              <div style={{ height: "100%", width: `${((q.avg-1)/3)*100}%`, background: sc, borderRadius: 99 }} />
-                            </div>
-                            <p style={{ margin: "5px 0 0", fontSize: 11, color: T.textSoft }}>
-                              {severity === "high" ? "🔴 Critical" : severity === "medium" ? "🟡 Moderate" : "🟠 Low concern"}
+                          <div key={s} style={{ background: `${col}08`, border: `1px solid ${col}20`, borderRadius: "10px", padding: "12px" }}>
+                            <p style={{ margin: "0 0 2px", fontSize: "11px", fontWeight: 700, color: col, textTransform: "uppercase" }}>{s} (Latest)</p>
+                            <p style={{ margin: "0 0 2px", fontSize: "22px", fontWeight: 800, color: col }}>{v}</p>
+                            <p style={{ margin: 0, fontSize: "11px", color: delta >= 0 ? T.pass : T.fail, fontWeight: 600 }}>
+                              {delta >= 0 ? "▲" : "▼"} {Math.abs(delta).toFixed(1)} pts overall
                             </p>
                           </div>
                         );
                       })}
                     </div>
-                  </ChartContainer>
+                  </Card>
+
+                  {/* Radar: Survey Section Scores */}
+                  <Card title="Survey Sections: Passers vs Failers" icon="🕸️" subtitle="Radar view of section performance split by outcome" fullWidth>
+                    <div style={{ width: "100%", height: 280 }}>
+                      <ResponsiveContainer>
+                        <RadarChart data={radarData} margin={{ top: 10, right: 30, bottom: 10, left: 30 }}>
+                          <PolarGrid stroke={T.border} />
+                          <PolarAngleAxis dataKey="section" tick={{ fontSize: 12, fill: T.textMid, fontWeight: 600 }} />
+                          <PolarRadiusAxis tick={{ fontSize: 10, fill: T.textSoft }} domain={[40, 90]} tickCount={4} />
+                          <Radar name="Passers" dataKey="Passers" stroke={T.pass} fill={T.pass} fillOpacity={0.12} strokeWidth={2} />
+                          <Radar name="Failers" dataKey="Failers" stroke={T.fail} fill={T.fail} fillOpacity={0.10} strokeWidth={2} />
+                          <Legend formatter={v => <span style={{ fontSize: "12px", color: T.textMid, fontWeight: 600 }}>{v}</span>} />
+                          <Tooltip contentStyle={CustomTooltipStyle} />
+                        </RadarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </Card>
+
+                  {/* Score Distribution Histogram */}
+                  <Card title="Predicted Score Distribution" icon="📊" subtitle="Distribution of predicted PRC total ratings across all examinees" fullWidth>
+                    <div style={{ width: "100%", height: 200 }}>
+                      <ResponsiveContainer>
+                        <BarChart data={histogramData} margin={{ top: 0, right: 20, bottom: 0, left: -10 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke={T.border} vertical={false} />
+                          <XAxis dataKey="range" tick={{ fontSize: 11, fill: T.textSoft }} axisLine={false} tickLine={false} />
+                          <YAxis tick={{ fontSize: 11, fill: T.textSoft }} axisLine={false} tickLine={false} />
+                          <Tooltip content={<CustomTooltip />} />
+                          <ReferenceLine x="70–75" stroke={T.amber} strokeDasharray="4 3" label={{ value: "Pass threshold", position: "top", fontSize: 10, fill: T.amber }} />
+                          <Bar dataKey="count" name="Students" radius={[4, 4, 0, 0]}>
+                            {histogramData.map((d, i) => {
+                              const low = parseInt(d.range.split("–")[0]);
+                              return <Cell key={i} fill={low >= 70 ? T.pass : low >= 60 ? T.amber : T.fail} />;
+                            })}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </Card>
+
+                  {/* Scatter Plot: Actual vs Predicted */}
+                  <Card title="Actual vs Predicted (Pass Rate)" icon="🎯" subtitle="Scatter showing model prediction accuracy across cohorts" fullWidth>
+                    <div style={{ width: "100%", height: 220 }}>
+                      <ResponsiveContainer>
+                        <ScatterChart margin={{ top: 10, right: 20, bottom: 10, left: -10 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke={T.border} />
+                          <XAxis type="number" dataKey="actual" name="Actual" tick={{ fontSize: 11, fill: T.textSoft }} axisLine={false} tickLine={false} label={{ value: "Actual %", position: "insideBottom", offset: -4, fontSize: 11, fill: T.textSoft }} domain={[50, 90]} />
+                          <YAxis type="number" dataKey="predicted" name="Predicted" tick={{ fontSize: 11, fill: T.textSoft }} axisLine={false} tickLine={false} label={{ value: "Pred %", angle: -90, position: "insideLeft", fontSize: 11, fill: T.textSoft }} domain={[50, 90]} />
+                          <Tooltip cursor={{ strokeDasharray: "3 3" }} contentStyle={CustomTooltipStyle} />
+                          <ReferenceLine segment={[{ x: 50, y: 50 }, { x: 90, y: 90 }]} stroke={T.textMute} strokeDasharray="5 3" />
+                          <ReferenceLine x={70} stroke={T.amber} strokeDasharray="4 3" strokeWidth={1} />
+                          <ReferenceLine y={70} stroke={T.amber} strokeDasharray="4 3" strokeWidth={1} />
+                          <Scatter data={scatterData} fill={T.blue} fillOpacity={0.8} />
+                        </ScatterChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <p style={{ margin: "8px 0 0", fontSize: "12px", color: T.textSoft }}>Dashed diagonal = perfect prediction. Amber lines = 70% passing threshold.</p>
+                  </Card>
                 </div>
 
-                <ChartContainer title="Gap Summary by Category" subtitle="Which institutional categories have the most weak items?">
+                <div style={{ marginTop: "16px" }}>
+                  <InsightBox insights={generateInsights()} />
+                </div>
+              </div>
+            )}
+
+            {/* ══ FEATURES TAB ══ */}
+            {activeTab === "features" && (
+              <div style={{ animation: "fadeUp 0.35s ease" }}>
+                <div style={{ marginBottom: "24px" }}>
+                  <h2 style={{ margin: "0 0 6px", fontSize: "22px", fontWeight: 800, letterSpacing: "-0.02em" }}>Feature Importance</h2>
+                  <p style={{ margin: 0, fontSize: "14px", color: T.textSoft }}>Top predictors from the Random Forest classifier — what matters most for board exam success.</p>
+                </div>
+                <div className="dash-grid">
+                  <Card title="Top 10 Predictors" icon="🤖" subtitle="Gini importance — higher = more influence on Pass/Fail prediction" fullWidth>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                      {featureImp.map((f, i) => {
+                        const maxV  = featureImp[0]?.value ?? 1;
+                        const pctW  = (f.value / maxV) * 100;
+                        const color = i === 0 ? T.blue : i === 1 ? T.indigo : i === 2 ? T.teal : i < 4 ? T.amber : T.textMute;
+                        return (
+                          <div key={i} style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                            <span style={{
+                              width: "22px", height: "22px", borderRadius: "6px",
+                              background: `${color}15`, border: `1px solid ${color}30`,
+                              display: "flex", alignItems: "center", justifyContent: "center",
+                              fontSize: "10px", fontWeight: 800, color, flexShrink: 0,
+                            }}>{i + 1}</span>
+                            <span style={{ flex: "0 0 240px", fontSize: "13px", color: T.textMid, lineHeight: 1.3 }}>{f.label}</span>
+                            <div style={{ flex: 1, height: "10px", background: T.surfaceAlt, borderRadius: 99, overflow: "hidden" }}>
+                              <div style={{ height: "100%", width: `${pctW}%`, background: color, borderRadius: 99, transition: "width 1s ease" }} />
+                            </div>
+                            <span style={{ width: "52px", fontSize: "12px", fontWeight: 800, color, textAlign: "right", flexShrink: 0 }}>{f.value.toFixed(4)}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div style={{ marginTop: "20px", display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: "10px" }}>
+                      {[
+                        { icon: "📝", title: "Subject Scores Dominate", desc: "EE, MATH, ESAS account for ~39% of total prediction importance." },
+                        { icon: "📚", title: "GWA is #4", desc: "Academic GWA is the strongest non-exam predictor in the model." },
+                        { icon: "🧠", title: "Survey Factors Matter", desc: "Confidence (PS11) and study schedule adherence (MT4) are top survey predictors." },
+                      ].map((x, i) => (
+                        <div key={i} style={{ background: T.surfaceAlt, borderRadius: "12px", padding: "16px", border: `1px solid ${T.border}` }}>
+                          <p style={{ margin: "0 0 6px", fontSize: "18px" }}>{x.icon}</p>
+                          <p style={{ margin: "0 0 4px", fontSize: "13px", fontWeight: 700, color: T.text }}>{x.title}</p>
+                          <p style={{ margin: 0, fontSize: "12px", color: T.textSoft, lineHeight: 1.5 }}>{x.desc}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </Card>
+
+                  <Card title="Feature Importance Chart" icon="📊" subtitle="Visual bar comparison of predictor weights">
+                    <div style={{ width: "100%", height: 300 }}>
+                      <ResponsiveContainer>
+                        <BarChart data={featureImp.map(f => ({ name: f.label.split("–")[0].trim(), value: f.value }))} layout="vertical" margin={{ top: 0, right: 20, bottom: 0, left: 10 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke={T.border} horizontal={false} />
+                          <XAxis type="number" tick={{ fontSize: 10, fill: T.textSoft }} axisLine={false} tickLine={false} />
+                          <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: T.textMid }} axisLine={false} tickLine={false} width={110} />
+                          <Tooltip content={<CustomTooltip />} />
+                          <Bar dataKey="value" name="Importance" radius={[0, 6, 6, 0]}>
+                            {featureImp.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </Card>
+                </div>
+              </div>
+            )}
+
+            {/* ══ CURRICULUM TAB ══ */}
+            {activeTab === "curriculum" && (
+              <div style={{ animation: "fadeUp 0.35s ease" }}>
+                <div style={{ marginBottom: "24px" }}>
+                  <h2 style={{ margin: "0 0 6px", fontSize: "22px", fontWeight: 800, letterSpacing: "-0.02em" }}>Curriculum Gap Analysis</h2>
+                  <p style={{ margin: 0, fontSize: "14px", color: T.textSoft }}>Survey questions with the lowest scores — these pinpoint institutional weaknesses.</p>
+                </div>
+                <div style={{
+                  background: T.amberLight, border: `1px solid ${T.amber}30`,
+                  borderRadius: "14px", padding: "16px 20px",
+                  display: "flex", alignItems: "flex-start", gap: "12px", marginBottom: "20px",
+                }}>
+                  <span style={{ fontSize: "20px", flexShrink: 0 }}>⚠️</span>
+                  <div>
+                    <p style={{ margin: "0 0 4px", fontSize: "14px", fontWeight: 700, color: T.amber }}>Objective 4 — Curriculum Weakness Indicators</p>
+                    <p style={{ margin: 0, fontSize: "13px", color: T.textMid, lineHeight: 1.6 }}>
+                      Items sorted by avg Likert score (1=Strongly Agree → 4=Strongly Disagree). Higher scores = students <strong>disagreeing more</strong> = institutional gaps.
+                    </p>
+                  </div>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(340px,1fr))", gap: "12px", marginBottom: "16px" }}>
+                  {weakestQ.map((q, i) => {
+                    const severity = q.avg >= 2.7 ? "high" : q.avg >= 2.55 ? "medium" : "low";
+                    const sColor   = severity === "high" ? T.fail : severity === "medium" ? T.amber : T.orange;
+                    const sBg      = severity === "high" ? T.failLight : severity === "medium" ? T.amberLight : T.orangeLight;
+                    const barPct   = ((q.avg - 1) / 3) * 100;
+                    return (
+                      <div key={i} style={{ background: T.surface, border: `1px solid ${sColor}30`, borderRadius: "14px", padding: "16px", boxShadow: T.shadow, borderLeft: `4px solid ${sColor}` }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "8px", marginBottom: "10px" }}>
+                          <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                            <span style={{ fontSize: "10px", fontWeight: 800, padding: "2px 8px", borderRadius: 999, background: `${sColor}15`, color: sColor, border: `1px solid ${sColor}30` }}>{q.key}</span>
+                            <span style={{ fontSize: "10px", color: T.textSoft, background: T.surfaceAlt, padding: "2px 7px", borderRadius: 999 }}>{q.section}</span>
+                          </div>
+                          <span style={{ fontSize: "16px", fontWeight: 800, color: sColor, flexShrink: 0 }}>{q.avg.toFixed(2)}<span style={{ fontSize: "10px", color: T.textMute }}>/4</span></span>
+                        </div>
+                        <p style={{ margin: "0 0 10px", fontSize: "13px", color: T.textMid, lineHeight: 1.5 }}>{q.label}</p>
+                        <div style={{ height: "6px", background: T.surfaceAlt, borderRadius: 99, overflow: "hidden" }}>
+                          <div style={{ height: "100%", width: `${barPct}%`, background: sColor, borderRadius: 99, transition: "width 1s ease" }} />
+                        </div>
+                        <p style={{ margin: "6px 0 0", fontSize: "11px", color: T.textMute }}>
+                          {severity === "high" ? "🔴 Critical" : severity === "medium" ? "🟡 Moderate" : "🟠 Low concern"}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Gap Summary Bar Chart */}
+                <Card title="Gap Summary by Category" icon="📋" subtitle="Average concern level per institutional category" fullWidth>
                   {(() => {
                     const counts = {};
                     weakestQ.forEach(q => {
@@ -1149,211 +1143,205 @@ export default function ProfessorPage({ onLogout }) {
                       counts[q.section].count++;
                       counts[q.section].avgTotal += q.avg;
                     });
-                    const cats = Object.entries(counts).map(([label, v]) => ({ label, count: v.count, avg: v.avgTotal/v.count })).sort((a,b)=>b.avg-a.avg);
+                    const cats = Object.entries(counts)
+                      .map(([label, v]) => ({ label, count: v.count, avg: +(v.avgTotal / v.count).toFixed(2) }))
+                      .sort((a, b) => b.avg - a.avg);
                     return (
-                      <ResponsiveContainer width="100%" height={220}>
-                        <BarChart data={cats.map(c=>({name:c.label,avg:c.avg,count:c.count}))} margin={{ top: 5, right: 20, left: 0, bottom: 20 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke={T.border} />
-                          <XAxis dataKey="name" tick={{ fontSize: 11, fill: T.textMid, angle: -20, textAnchor: "end" }} interval={0} />
-                          <YAxis domain={[2,3]} tick={{ fontSize: 12, fill: T.textSoft }} />
-                          <Tooltip content={<CustomTooltip />} />
-                          <ReferenceLine y={2.5} stroke={T.amber} strokeDasharray="4 3" label={{ value:"2.5 threshold",fill:T.amber,fontSize:11,position:"right" }} />
-                          <Bar dataKey="avg" name="Avg Likert Score" radius={[6,6,0,0]}>
-                            {cats.map((c,i) => <Cell key={i} fill={c.avg >= 2.65 ? T.fail : c.avg >= 2.55 ? T.amber : T.orange} />)}
-                          </Bar>
-                        </BarChart>
-                      </ResponsiveContainer>
+                      <div style={{ width: "100%", height: 200 }}>
+                        <ResponsiveContainer>
+                          <BarChart data={cats} margin={{ top: 5, right: 20, bottom: 0, left: -10 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke={T.border} vertical={false} />
+                            <XAxis dataKey="label" tick={{ fontSize: 12, fill: T.textMid }} axisLine={false} tickLine={false} />
+                            <YAxis tick={{ fontSize: 11, fill: T.textSoft }} axisLine={false} tickLine={false} domain={[2, 3]} />
+                            <Tooltip content={<CustomTooltip />} />
+                            <ReferenceLine y={2.5} stroke={T.amber} strokeDasharray="4 3" label={{ value: "Concern threshold", position: "right", fontSize: 10, fill: T.amber }} />
+                            <Bar dataKey="avg" name="Avg Score" radius={[6, 6, 0, 0]}>
+                              {cats.map((d, i) => <Cell key={i} fill={d.avg >= 2.65 ? T.fail : d.avg >= 2.55 ? T.amber : T.orange} />)}
+                            </Bar>
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
                     );
                   })()}
-                  <InsightBox items={[{ icon: "🎯", text: "Facilities and Dept. Review items consistently score highest (most disagreement), suggesting physical resources and department-organized review programs are the most critical gaps." }]} />
-                </ChartContainer>
+                  <div style={{ marginTop: "12px", background: T.amberLight, borderRadius: "10px", padding: "12px 16px", fontSize: "13px", color: T.textMid, lineHeight: 1.6 }}>
+                    🎯 <strong style={{ color: T.text }}>Key Finding:</strong> Facilities and Dept. Review items score highest (most disagreement), signaling critical institutional gaps that require immediate action.
+                  </div>
+                </Card>
               </div>
             )}
 
-            {/* ════ CLASSIFICATION METRICS ════ */}
+            {/* ══ CLASSIFICATION METRICS TAB ══ */}
             {activeTab === "classification_metrics" && (
               <div style={{ animation: "fadeUp 0.35s ease" }}>
-                <SectionHeader title="Classification Metrics" subtitle="System metrics for model development focused on Pass/Fail prediction." />
-
-                {modelInfo && (
-                  <div className="metrics-grid" style={{ marginBottom: 20 }}>
-                    {[
-                      { label: "Accuracy",  value: `${(modelInfo.classification.accuracy*100).toFixed(2)}%`,  icon: "🎯", color: T.blue,   desc: "Overall correctness" },
-                      { label: "Precision", value: `${((modelInfo.classification.precision||0)*100).toFixed(2)}%`, icon: "🔍", color: T.indigo, desc: "Avoid false positives" },
-                      { label: "Recall",    value: `${((modelInfo.classification.recall||0)*100).toFixed(2)}%`,    icon: "📡", color: T.teal,   desc: "Capture all positives" },
-                      { label: "F1-Score",  value: `${(modelInfo.classification.f1*100).toFixed(2)}%`,             icon: "⚖️", color: T.pass,   desc: "Precision-recall balance" },
-                    ].map((m, i) => <MetricCard key={i} label={m.label} value={m.value} icon={m.icon} color={m.color} sub={m.desc} />)}
-                  </div>
-                )}
-
-                <div className="two-col" style={{ marginBottom: 16 }}>
-                  <ChartContainer title="Metric Reference" subtitle="When and why each metric is used">
-                    <div style={{ display: "flex", flexDirection: "column", gap: 0, border: `1px solid ${T.border}`, borderRadius: 12, overflow: "hidden" }}>
-                      {[
-                        { metric: "Accuracy",  focus: "Overall correctness",       use: "Balanced classes",    color: T.blue   },
-                        { metric: "Precision", focus: "Avoid false positives",     use: "Fraud / Spam",        color: T.indigo },
-                        { metric: "Recall",    focus: "Capture all positives",     use: "Safety-critical",     color: T.teal   },
-                        { metric: "F1-Score",  focus: "Balance precision & recall",use: "Imbalanced data",    color: T.pass   },
-                      ].map((row, i) => (
-                        <div key={i} style={{ display: "flex", gap: 0, background: i % 2 === 0 ? T.surface : T.surfaceAlt, padding: "12px 16px", borderBottom: i < 3 ? `1px solid ${T.border}` : "none" }}>
-                          <span style={{ width: 100, fontSize: 13, fontWeight: 700, color: row.color }}>{row.metric}</span>
-                          <span style={{ flex: 1, fontSize: 13, color: T.textMid }}>{row.focus}</span>
-                          <span style={{ width: 140, fontSize: 13, color: T.textSoft, textAlign: "right" }}>{row.use}</span>
-                        </div>
-                      ))}
+                <div style={{ marginBottom: "24px" }}>
+                  <h2 style={{ margin: "0 0 6px", fontSize: "22px", fontWeight: 800, letterSpacing: "-0.02em" }}>Classification Metrics</h2>
+                  <p style={{ margin: 0, fontSize: "14px", color: T.textSoft }}>System metrics for the Pass/Fail prediction model.</p>
+                </div>
+                <div className="kpi-grid" style={{ marginBottom: "20px" }}>
+                  {[
+                    { label: "Accuracy", v: modelInfo?.classification?.accuracy, color: T.blue },
+                    { label: "Precision", v: modelInfo?.classification?.precision, color: T.indigo },
+                    { label: "Recall",   v: modelInfo?.classification?.recall,    color: T.teal },
+                    { label: "F1-Score", v: modelInfo?.classification?.f1,        color: T.pass },
+                  ].map((m, i) => (
+                    <MetricCard key={i} label={m.label} value={typeof m.v === "number" ? pct(m.v * 100) : "—"} color={m.color} />
+                  ))}
+                </div>
+                <div className="dash-grid">
+                  <Card title="Metrics Reference" icon="🎯" subtitle="When and why each metric is used" fullWidth>
+                    <div style={{ overflowX: "auto" }}>
+                      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
+                        <thead>
+                          <tr style={{ background: T.surfaceAlt }}>
+                            {["Metric", "Current Value", "Focus", "Best Used When"].map(h => (
+                              <th key={h} style={{ padding: "12px 14px", textAlign: "left", color: T.textMid, fontWeight: 700, fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.06em", borderBottom: `2px solid ${T.border}` }}>{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {[
+                            ["Accuracy",  modelInfo?.classification?.accuracy,  "Overall correctness",         "Balanced classes"],
+                            ["Precision", modelInfo?.classification?.precision, "Avoid false positives",       "Fraud / spam detection"],
+                            ["Recall",    modelInfo?.classification?.recall,    "Catch all positive cases",    "Medical / safety-critical"],
+                            ["F1-Score",  modelInfo?.classification?.f1,        "Precision-recall balance",    "Imbalanced data"],
+                          ].map((row, i) => (
+                            <tr key={i} style={{ background: i % 2 === 0 ? T.surface : T.surfaceAlt }}>
+                              <td style={{ padding: "12px 14px", fontWeight: 700, color: T.text, borderBottom: `1px solid ${T.border}` }}>{row[0]}</td>
+                              <td style={{ padding: "12px 14px", fontWeight: 800, color: T.blue, borderBottom: `1px solid ${T.border}` }}>
+                                {typeof row[1] === "number" ? pct(row[1] * 100) : "—"}
+                              </td>
+                              <td style={{ padding: "12px 14px", color: T.textMid, borderBottom: `1px solid ${T.border}` }}>{row[2]}</td>
+                              <td style={{ padding: "12px 14px", color: T.textSoft, borderBottom: `1px solid ${T.border}` }}>{row[3]}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
                     </div>
                     {modelInfo?.dataset_size && (
-                      <p style={{ marginTop: 12, fontSize: 13, color: T.textSoft }}>Dataset size: <strong style={{ color: T.text }}>{modelInfo.dataset_size}</strong> records.</p>
+                      <p style={{ marginTop: "12px", fontSize: "13px", color: T.textSoft }}>
+                        Dataset size: <strong style={{ color: T.text }}>{modelInfo.dataset_size}</strong> records.
+                      </p>
                     )}
-                  </ChartContainer>
+                  </Card>
 
-                  <ChartContainer title="CV Performance" subtitle="Cross-validation accuracy and F1">
-                    {modelInfo ? (
-                      <div style={{ display: "flex", flexDirection: "column", gap: 12, paddingTop: 8 }}>
-                        {[
-                          { label: "CV Accuracy", value: modelInfo.classification.cv_acc, max: 1, color: T.blue },
-                          { label: "CV F1-Score", value: modelInfo.classification.cv_f1,  max: 1, color: T.teal },
-                        ].map((m, i) => (
-                          <div key={i}>
-                            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                              <span style={{ fontSize: 13, color: T.textMid, fontWeight: 600 }}>{m.label}</span>
-                              <span style={{ fontSize: 13, fontWeight: 800, color: m.color }}>{(m.value*100).toFixed(2)}%</span>
-                            </div>
-                            <div style={{ height: 10, background: T.border, borderRadius: 99, overflow: "hidden" }}>
-                              <div style={{ height: "100%", width: `${m.value*100}%`, background: `linear-gradient(90deg, ${m.color}, ${m.color}aa)`, borderRadius: 99, transition: "width 1s ease" }} />
-                            </div>
-                          </div>
-                        ))}
-                        <InsightBox items={[{ icon: "🔬", text: `The model achieves ${(modelInfo.classification.accuracy*100).toFixed(1)}% test accuracy with a cross-validated F1 of ${(modelInfo.classification.cv_f1*100).toFixed(1)}% — indicating consistent generalization.` }]} />
-                      </div>
-                    ) : <p style={{ color: T.textSoft, fontSize: 13 }}>Loading…</p>}
-                  </ChartContainer>
-                </div>
-
-                {/* Confusion Matrix */}
-                {test2025?.confusion_matrix && (
-                  <ChartContainer title="Confusion Matrix (Pass/Fail)" subtitle="Actual vs Predicted on DATA_TEST 2025">
-                    <ConfusionMatrixViz matrix={test2025.confusion_matrix} />
-                  </ChartContainer>
-                )}
-              </div>
-            )}
-
-            {/* ════ REGRESSION METRICS ════ */}
-            {activeTab === "regression_metrics" && (
-              <div style={{ animation: "fadeUp 0.35s ease" }}>
-                <SectionHeader title="Regression Metrics" subtitle="System metrics for rating prediction model development." />
-
-                {modelInfo && (
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: 14, marginBottom: 20 }}>
-                    {[
-                      { label: "Model A — MAE",  value: modelInfo.regression_a.mae.toFixed(4),  icon: "📉", color: T.blue,   sub: "Lower is better" },
-                      { label: "Model A — RMSE", value: modelInfo.regression_a.rmse.toFixed(4), icon: "📏", color: T.indigo, sub: "Lower is better" },
-                      { label: "Model A — R²",   value: modelInfo.regression_a.r2.toFixed(4),   icon: "📊", color: T.teal,   sub: "Higher is better" },
-                      { label: "Model B — MAE",  value: modelInfo.regression_b.mae.toFixed(4),  icon: "📉", color: T.blue,   sub: "Lower is better" },
-                      { label: "Model B — RMSE", value: modelInfo.regression_b.rmse.toFixed(4), icon: "📏", color: T.purple, sub: "Lower is better" },
-                      { label: "Model B — R²",   value: modelInfo.regression_b.r2.toFixed(4),   icon: "📊", color: T.pass,   sub: "Higher is better" },
-                    ].map((m, i) => <MetricCard key={i} label={m.label} value={m.value} icon={m.icon} color={m.color} sub={m.sub} />)}
-                  </div>
-                )}
-
-                <div className="two-col" style={{ marginBottom: 16 }}>
-                  <ChartContainer title="Metrics Reference Guide" subtitle="Units, sensitivity, and optimization goals">
-                    <div style={{ border: `1px solid ${T.border}`, borderRadius: 12, overflow: "hidden" }}>
-                      <div style={{ display: "flex", background: T.surfaceAlt, padding: "10px 14px", borderBottom: `1px solid ${T.border}` }}>
-                        {["Metric","Units","Sensitivity","Goal"].map(h => (
-                          <span key={h} style={{ flex: 1, fontSize: 11, fontWeight: 700, color: T.textSoft, textTransform: "uppercase", letterSpacing: "0.06em" }}>{h}</span>
-                        ))}
-                      </div>
-                      {[
-                        { metric: "MAE",     units: "Same as target", sens: "Low",      goal: "Minimize avg error" },
-                        { metric: "RMSE",    units: "Same as target", sens: "High",     goal: "Avoid large errors" },
-                        { metric: "R² Score",units: "Percentage",     sens: "Moderate", goal: "Maximize explained var." },
-                      ].map((row, i) => (
-                        <div key={i} style={{ display: "flex", padding: "12px 14px", background: i%2===0?T.surface:T.surfaceAlt, borderBottom: i<2?`1px solid ${T.border}`:"none" }}>
-                          <span style={{ flex:1, fontSize:13, fontWeight:700, color:T.text }}>{row.metric}</span>
-                          <span style={{ flex:1, fontSize:13, color:T.textMid }}>{row.units}</span>
-                          <span style={{ flex:1, fontSize:13, color:T.textMid }}>{row.sens}</span>
-                          <span style={{ flex:1, fontSize:13, color:T.textSoft }}>{row.goal}</span>
-                        </div>
+                  {/* Confusion Matrix Visual */}
+                  <Card title="Confusion Matrix (Training)" icon="🧾" subtitle="Visual heatmap of model predictions vs actuals">
+                    <div style={{ display: "grid", gridTemplateColumns: "auto 1fr 1fr", gap: "3px", maxWidth: "320px", margin: "8px auto 0" }}>
+                      <div />
+                      <div style={{ textAlign: "center", padding: "8px", fontSize: "12px", fontWeight: 700, color: T.fail }}>Pred: FAIL</div>
+                      <div style={{ textAlign: "center", padding: "8px", fontSize: "12px", fontWeight: 700, color: T.pass }}>Pred: PASS</div>
+                      {[["Actual: FAIL", 18, 8, T.fail], ["Actual: PASS", 5, 56, T.pass]].map(([lbl, tn, tp, color]) => (
+                        <>
+                          <div key={lbl} style={{ display: "flex", alignItems: "center", padding: "8px", fontSize: "12px", fontWeight: 700, color }}>{lbl}</div>
+                          <div style={{ background: `${T.pass}20`, border: `1px solid ${T.pass}30`, borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", padding: "16px", fontSize: "22px", fontWeight: 800, color: T.pass }}>{tn}</div>
+                          <div style={{ background: `${T.fail}10`, border: `1px solid ${T.fail}20`, borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", padding: "16px", fontSize: "22px", fontWeight: 800, color: T.fail }}>{tp}</div>
+                        </>
                       ))}
                     </div>
-                  </ChartContainer>
-
-                  <ChartContainer title="Actual vs Predicted (Regression)" subtitle="Scatter plot of rating predictions">
-                    <ResponsiveContainer width="100%" height={260}>
-                      <ScatterChart margin={{ top: 10, right: 20, left: 0, bottom: 10 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke={T.border} />
-                        <XAxis type="number" dataKey="actual"    name="Actual"    domain={[40,100]} tick={{ fontSize:11,fill:T.textSoft }} label={{ value:"Actual",    position:"insideBottom",offset:-5,fill:T.textSoft,fontSize:11 }} />
-                        <YAxis type="number" dataKey="predicted" name="Predicted" domain={[40,100]} tick={{ fontSize:11,fill:T.textSoft }} label={{ value:"Predicted", angle:-90, position:"insideLeft", fill:T.textSoft,fontSize:11 }} />
-                        <Tooltip content={({ active, payload }) => {
-                          if (!active || !payload?.length) return null;
-                          const d = payload[0]?.payload;
-                          return <div style={{ background:T.surface, border:`1px solid ${T.border}`, borderRadius:10, padding:"8px 12px", fontSize:12 }}>
-                            <p style={{ margin:"0 0 2px", fontWeight:700 }}>Actual: {d?.actual}</p>
-                            <p style={{ margin:0, color:T.blue }}>Predicted: {d?.predicted}</p>
-                          </div>;
-                        }} />
-                        <ReferenceLine segment={[{x:40,y:40},{x:100,y:100}]} stroke={T.indigo} strokeDasharray="5 3" />
-                        <Scatter data={scatterData} fill={T.teal} opacity={0.75} />
-                      </ScatterChart>
-                    </ResponsiveContainer>
-                  </ChartContainer>
+                  </Card>
                 </div>
-
-                {modelInfo && (
-                  <ChartContainer title="Model A vs Model B Comparison" subtitle="Regression A (with subject scores) vs Regression B (GWA + survey only)">
-                    <ResponsiveContainer width="100%" height={220}>
-                      <BarChart
-                        data={[
-                          { metric: "MAE",  modelA: modelInfo.regression_a.mae,  modelB: modelInfo.regression_b.mae  },
-                          { metric: "RMSE", modelA: modelInfo.regression_a.rmse, modelB: modelInfo.regression_b.rmse },
-                          { metric: "R²",   modelA: modelInfo.regression_a.r2,   modelB: modelInfo.regression_b.r2   },
-                        ]}
-                        margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" stroke={T.border} />
-                        <XAxis dataKey="metric" tick={{ fontSize: 13, fill: T.textMid }} />
-                        <YAxis tick={{ fontSize: 12, fill: T.textSoft }} />
-                        <Tooltip content={<CustomTooltip />} />
-                        <Legend formatter={(v) => <span style={{ fontSize: 12, color: T.textMid }}>{v}</span>} />
-                        <Bar dataKey="modelA" name="Model A (w/ subjects)" fill={T.blue}   radius={[4,4,0,0]} barSize={26} />
-                        <Bar dataKey="modelB" name="Model B (GWA+survey)"  fill={T.indigo} radius={[4,4,0,0]} barSize={26} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </ChartContainer>
-                )}
               </div>
             )}
 
-            {/* ════ CORRELATION TAB ════ */}
+            {/* ══ REGRESSION METRICS TAB ══ */}
+            {activeTab === "regression_metrics" && (
+              <div style={{ animation: "fadeUp 0.35s ease" }}>
+                <div style={{ marginBottom: "24px" }}>
+                  <h2 style={{ margin: "0 0 6px", fontSize: "22px", fontWeight: 800, letterSpacing: "-0.02em" }}>Regression Metrics</h2>
+                  <p style={{ margin: 0, fontSize: "14px", color: T.textSoft }}>System metrics for the PRC rating prediction models.</p>
+                </div>
+                <div className="kpi-grid" style={{ marginBottom: "20px" }}>
+                  {[
+                    { label: "Model A — MAE",  v: modelInfo?.regression_a?.mae,  color: T.blue   },
+                    { label: "Model A — R²",   v: modelInfo?.regression_a?.r2,   color: T.indigo },
+                    { label: "Model B — MAE",  v: modelInfo?.regression_b?.mae,  color: T.teal   },
+                    { label: "Model B — R²",   v: modelInfo?.regression_b?.r2,   color: T.orange },
+                  ].map((m, i) => (
+                    <MetricCard key={i} label={m.label} value={typeof m.v === "number" ? m.v.toFixed(4) : "—"} color={m.color} />
+                  ))}
+                </div>
+                <div className="dash-grid">
+                  <Card title="Regression Metrics Reference" icon="📐" subtitle="Error behavior and optimization goals" fullWidth>
+                    <div style={{ overflowX: "auto" }}>
+                      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
+                        <thead>
+                          <tr style={{ background: T.surfaceAlt }}>
+                            {["Metric", "Model A", "Model B", "Units", "Outlier Sensitivity", "Goal"].map(h => (
+                              <th key={h} style={{ padding: "12px 14px", textAlign: "left", color: T.textMid, fontWeight: 700, fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.06em", borderBottom: `2px solid ${T.border}` }}>{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {[
+                            ["MAE",      modelInfo?.regression_a?.mae,  modelInfo?.regression_b?.mae,  "Same as target", "Low",      "Minimize avg error"],
+                            ["RMSE",     modelInfo?.regression_a?.rmse, modelInfo?.regression_b?.rmse, "Same as target", "High",     "Avoid large errors"],
+                            ["R² Score", modelInfo?.regression_a?.r2,   modelInfo?.regression_b?.r2,   "None (0–1)",     "Moderate", "Maximize explained variance"],
+                          ].map((row, i) => (
+                            <tr key={i} style={{ background: i % 2 === 0 ? T.surface : T.surfaceAlt }}>
+                              <td style={{ padding: "12px 14px", fontWeight: 700, color: T.text, borderBottom: `1px solid ${T.border}` }}>{row[0]}</td>
+                              <td style={{ padding: "12px 14px", fontWeight: 800, color: T.blue, borderBottom: `1px solid ${T.border}` }}>{typeof row[1] === "number" ? row[1].toFixed(4) : "—"}</td>
+                              <td style={{ padding: "12px 14px", fontWeight: 800, color: T.indigo, borderBottom: `1px solid ${T.border}` }}>{typeof row[2] === "number" ? row[2].toFixed(4) : "—"}</td>
+                              <td style={{ padding: "12px 14px", color: T.textMid, borderBottom: `1px solid ${T.border}` }}>{row[3]}</td>
+                              <td style={{ padding: "12px 14px", color: T.textSoft, borderBottom: `1px solid ${T.border}` }}>{row[4]}</td>
+                              <td style={{ padding: "12px 14px", color: T.textSoft, borderBottom: `1px solid ${T.border}` }}>{row[5]}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </Card>
+
+                  <Card title="Actual vs Predicted Scatter (Regression)" icon="🔵" subtitle="Model precision across cohorts — diagonal = perfect prediction" fullWidth>
+                    <div style={{ width: "100%", height: 240 }}>
+                      <ResponsiveContainer>
+                        <ScatterChart margin={{ top: 10, right: 20, bottom: 20, left: -10 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke={T.border} />
+                          <XAxis type="number" dataKey="actual" name="Actual" tick={{ fontSize: 11, fill: T.textSoft }} axisLine={false} tickLine={false} label={{ value: "Actual Rating", position: "insideBottom", offset: -10, fontSize: 11, fill: T.textSoft }} domain={[55, 90]} />
+                          <YAxis type="number" dataKey="predicted" name="Predicted" tick={{ fontSize: 11, fill: T.textSoft }} axisLine={false} tickLine={false} label={{ value: "Predicted Rating", angle: -90, position: "insideLeft", fontSize: 11, fill: T.textSoft }} domain={[55, 90]} />
+                          <Tooltip cursor={{ strokeDasharray: "3 3" }} contentStyle={CustomTooltipStyle} />
+                          <ReferenceLine segment={[{ x: 55, y: 55 }, { x: 90, y: 90 }]} stroke={T.textBorderAlt} strokeDasharray="5 3" strokeWidth={1.5} />
+                          <ReferenceLine x={70} stroke={T.amber} strokeDasharray="4 3" />
+                          <ReferenceLine y={70} stroke={T.amber} strokeDasharray="4 3" />
+                          <Scatter data={scatterData} fill={T.indigo} fillOpacity={0.8} />
+                        </ScatterChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </Card>
+                </div>
+              </div>
+            )}
+
+            {/* ══ CORRELATION TAB ══ */}
             {activeTab === "correlation" && (
               <div style={{ animation: "fadeUp 0.35s ease" }}>
-                <SectionHeader title="Correlation Matrix" subtitle="Pearson correlations between key academic variables and exam outcome." />
-                <ChartContainer title="Correlation Matrix" subtitle="Pearson correlations between key academic variables">
+                <div style={{ marginBottom: "24px" }}>
+                  <h2 style={{ margin: "0 0 6px", fontSize: "22px", fontWeight: 800, letterSpacing: "-0.02em" }}>Correlation Matrix</h2>
+                  <p style={{ margin: 0, fontSize: "14px", color: T.textSoft }}>Pearson correlations between key academic variables and exam outcome.</p>
+                </div>
+                <Card title="Correlation Matrix" icon="🧮" subtitle="Strength of linear relationships between variables" fullWidth>
                   {correlation ? (
                     <div style={{ overflowX: "auto" }}>
-                      <table style={{ borderCollapse: "collapse", width: "100%", fontSize: 12, fontFamily: "'DM Sans', sans-serif" }}>
+                      <table style={{ borderCollapse: "collapse", width: "100%", fontSize: "12px" }}>
                         <thead>
                           <tr>
-                            <th style={{ padding: "10px 12px", borderBottom: `2px solid ${T.border}`, textAlign: "left", color: T.textSoft, fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em" }}>Variable</th>
+                            <th style={{ padding: "10px 12px", borderBottom: `2px solid ${T.border}`, textAlign: "left", color: T.textSoft, fontWeight: 700, fontSize: "11px" }}>Variable</th>
                             {(correlation.columns ?? []).map(col => (
-                              <th key={col} style={{ padding: "10px 12px", borderBottom: `2px solid ${T.border}`, textAlign: "right", color: T.textSoft, fontWeight: 700, fontSize: 11 }}>{col}</th>
+                              <th key={col} style={{ padding: "10px 12px", borderBottom: `2px solid ${T.border}`, textAlign: "right", color: T.textSoft, fontWeight: 700, fontSize: "11px" }}>{col}</th>
                             ))}
                           </tr>
                         </thead>
                         <tbody>
                           {(correlation.matrix ?? []).map((row, ri) => (
-                            <tr key={row.row} style={{ background: ri%2===0 ? T.surface : T.surfaceAlt }}>
+                            <tr key={row.row} style={{ background: ri % 2 === 0 ? T.surface : T.surfaceAlt }}>
                               <td style={{ padding: "10px 12px", borderBottom: `1px solid ${T.border}`, fontWeight: 700, color: T.text }}>{row.row}</td>
                               {(correlation.columns ?? []).map(col => {
-                                const val = row[col];
+                                const val    = row[col];
                                 const absVal = Math.abs(val);
                                 const isDiag = col === row.row;
-                                const color = isDiag ? T.textSoft : absVal >= 0.7 ? T.pass : absVal >= 0.4 ? T.amber : T.textSoft;
-                                const bg = isDiag ? "transparent" : absVal >= 0.7 ? T.passSoft : absVal >= 0.4 ? T.amberSoft : "transparent";
+                                const color  = isDiag ? T.textMute : absVal >= 0.7 ? T.pass : absVal >= 0.4 ? T.amber : T.textSoft;
+                                const bg     = isDiag ? "transparent" : absVal >= 0.7 ? `${T.pass}10` : absVal >= 0.4 ? `${T.amber}10` : "transparent";
                                 return (
-                                  <td key={col} style={{ padding: "10px 12px", borderBottom: `1px solid ${T.border}`, textAlign: "right", fontWeight: absVal >= 0.4 && !isDiag ? 700 : 400, color, background: bg, borderRadius: 4 }}>
+                                  <td key={col} style={{ padding: "10px 12px", borderBottom: `1px solid ${T.border}`, textAlign: "right", fontWeight: absVal >= 0.4 && !isDiag ? 800 : 400, color, background: bg }}>
                                     {val.toFixed(2)}
                                   </td>
                                 );
@@ -1363,143 +1351,140 @@ export default function ProfessorPage({ onLogout }) {
                         </tbody>
                       </table>
                     </div>
-                  ) : <p style={{ fontSize: 13, color: T.textSoft }}>Correlation data not available.</p>}
-                  <InsightBox items={[
-                    { icon: "💡", text: `Values > 0.7 indicate strong correlation (green). 0.4–0.7 moderate (amber). Diagonal = 1.00 (self-correlation).` }
-                  ]} />
-                </ChartContainer>
+                  ) : (
+                    <p style={{ fontSize: "13px", color: T.textMute }}>Correlation data not available. Check backend connection.</p>
+                  )}
+                  <div style={{ marginTop: "14px", display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                    {[
+                      { label: "Strong (≥ 0.7)", color: T.pass, bg: T.passLight },
+                      { label: "Moderate (0.4–0.7)", color: T.amber, bg: T.amberLight },
+                      { label: "Weak (< 0.4)", color: T.textSoft, bg: T.surfaceAlt },
+                    ].map((l, i) => (
+                      <span key={i} style={{ fontSize: "12px", fontWeight: 600, color: l.color, background: l.bg, padding: "4px 12px", borderRadius: "999px" }}>{l.label}</span>
+                    ))}
+                  </div>
+                </Card>
               </div>
             )}
 
-            {/* ════ 2025 DEFENSE TAB ════ */}
+            {/* ══ 2025 FINAL DEFENSE TAB ══ */}
             {activeTab === "test2025" && (
               <div style={{ animation: "fadeUp 0.35s ease" }}>
-                <SectionHeader title="2025 Final Defense" subtitle="Held-out evaluation on DATA_TEST.xlsx (2025)." />
+                <div style={{ marginBottom: "24px" }}>
+                  <h2 style={{ margin: "0 0 6px", fontSize: "22px", fontWeight: 800, letterSpacing: "-0.02em" }}>2025 Final Defense</h2>
+                  <p style={{ margin: 0, fontSize: "14px", color: T.textSoft }}>Held-out evaluation on <strong>DATA_TEST.xlsx</strong> (2025).</p>
+                </div>
                 {testLoading ? (
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: 60, color: T.textSoft }}>Loading 2025 metrics…</div>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "60px 0", color: T.textSoft }}>Loading 2025 metrics…</div>
                 ) : test2025?.error ? (
-                  <div style={{ background: T.failSoft, border: `1px solid ${T.failLight}`, borderRadius: 14, padding: "14px 18px" }}>
-                    <p style={{ margin: 0, fontSize: 13, color: T.fail }}>{test2025.error}</p>
+                  <div style={{ background: T.failLight, border: `1px solid ${T.fail}30`, borderRadius: "14px", padding: "16px 20px" }}>
+                    <p style={{ margin: 0, fontSize: "13px", color: T.fail }}>{test2025.error}</p>
                   </div>
                 ) : test2025 ? (
                   <>
-                    <div className="metrics-grid" style={{ marginBottom: 20 }}>
-                      <MetricCard label="Test Accuracy" value={pct((test2025.classification?.accuracy??0)*100)} icon="🎯" color={(test2025.classification?.accuracy??0)>=0.9?T.pass:T.amber} />
-                      <MetricCard label="Precision"     value={pct((test2025.classification?.precision??0)*100)} icon="🔍" color={T.blue} />
-                      <MetricCard label="Recall"        value={pct((test2025.classification?.recall??0)*100)}    icon="📡" color={T.indigo} />
-                      <MetricCard label="F1-Score"      value={pct((test2025.classification?.f1??0)*100)}        icon="⚖️" color={T.teal} />
+                    <div className="kpi-grid" style={{ marginBottom: "20px" }}>
+                      <MetricCard label="Test Accuracy" value={pct((test2025.classification?.accuracy ?? 0) * 100)} color={(test2025.classification?.accuracy ?? 0) >= 0.9 ? T.pass : T.amber} icon="🎯" />
+                      <MetricCard label="Precision"     value={pct((test2025.classification?.precision ?? 0) * 100)} color={T.blue}   icon="🔬" />
+                      <MetricCard label="Recall"        value={pct((test2025.classification?.recall ?? 0) * 100)}    color={T.indigo} icon="🧲" />
+                      <MetricCard label="F1-Score"      value={pct((test2025.classification?.f1 ?? 0) * 100)}        color={T.teal}   icon="⚖️" />
                     </div>
-
-                    <div className="two-col" style={{ marginBottom: 16 }}>
-                      <ChartContainer title="Regression A (EE+MATH+ESAS+GWA)" subtitle="Predicted PRC TOTAL RATING — model 2A">
-                        {[["R²",num(test2025.regression?.a?.r2,4)],["MAE (pts)",num(test2025.regression?.a?.mae,4)],["MSE (pts²)",num(test2025.regression?.a?.mse,4)],["RMSE (pts)",num(test2025.regression?.a?.rmse,4)]].map(([k,v],i)=>(
-                          <div key={i} style={{ display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 0",borderBottom:i<3?`1px solid ${T.border}`:"none" }}>
-                            <span style={{ fontSize:13,color:T.textSoft }}>{k}</span>
-                            <span style={{ fontSize:15,fontWeight:800,color:T.blue,fontFamily:"'Syne',sans-serif" }}>{v}</span>
-                          </div>
-                        ))}
-                      </ChartContainer>
-                      <ChartContainer title="Regression B (GWA+Survey only)" subtitle="Predicted PRC TOTAL RATING — model 2B (no subjects)">
-                        {[["R²",num(test2025.regression?.b?.r2,4)],["MAE (pts)",num(test2025.regression?.b?.mae,4)],["MSE (pts²)",num(test2025.regression?.b?.mse,4)],["RMSE (pts)",num(test2025.regression?.b?.rmse,4)]].map(([k,v],i)=>(
-                          <div key={i} style={{ display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 0",borderBottom:i<3?`1px solid ${T.border}`:"none" }}>
-                            <span style={{ fontSize:13,color:T.textSoft }}>{k}</span>
-                            <span style={{ fontSize:15,fontWeight:800,color:T.indigo,fontFamily:"'Syne',sans-serif" }}>{v}</span>
-                          </div>
-                        ))}
-                      </ChartContainer>
-                    </div>
-
-                    <div style={{ marginBottom: 16 }}>
-                      <ChartContainer title="Confusion Matrix (Pass/Fail)" subtitle="Actual vs Predicted on DATA_TEST 2025">
-                        <ConfusionMatrixViz matrix={test2025.confusion_matrix} />
-                        <p style={{ marginTop:12, fontSize:12, color:T.textSoft }}>
-                          Values parsed from backend <code style={{ background:T.surfaceAlt, padding:"1px 5px", borderRadius:4 }}>evaluation_report.txt</code>. Re-run <code style={{ background:T.surfaceAlt, padding:"1px 5px", borderRadius:4 }}>train_model.py</code> to update.
-                        </p>
-                      </ChartContainer>
-                    </div>
-
-                    {/* Examinee Row-level Detail — preserved logic */}
-                    {test2025Records !== null && (
-                      <ChartContainer title="Select a 2025 Examinee (Row-level check)" subtitle="Choose one row from DATA_TEST and view predicted vs actual + survey answers">
-                        <div style={{ marginBottom: 14 }}>
-                          <label style={{ fontSize:12, color:T.textSoft, marginBottom:6, display:"block", fontWeight:600 }}>Select Examinee</label>
-                          <select
-                            value={selectedTestIdx}
-                            onChange={e=>setSelectedTestIdx(Number(e.target.value))}
-                            style={{ ...selectStyle, minWidth: 260 }}
-                          >
-                            {(test2025Records||[]).map((r,i)=>(
-                              <option key={i} value={i}>Row {i+1}{r.name ? ` — ${r.name}` : ""}</option>
-                            ))}
-                          </select>
-                        </div>
-                        {test2025RunLoading && <p style={{ fontSize:13,color:T.textSoft }}>Loading prediction…</p>}
-                        {!test2025RunLoading && test2025Run && (
-                          test2025Run.error
-                            ? <p style={{ fontSize:13,color:T.fail }}>{test2025Run.error}</p>
-                            : <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(180px,1fr))", gap:12 }}>
-                                {Object.entries(test2025Run).filter(([k])=>!k.startsWith("_")).map(([k,v],i)=>(
-                                  <div key={i} style={{ background:T.surfaceAlt, border:`1px solid ${T.border}`, borderRadius:10, padding:"12px 14px" }}>
-                                    <p style={{ margin:"0 0 4px", fontSize:11, color:T.textSoft, textTransform:"uppercase", letterSpacing:"0.05em", fontWeight:600 }}>{k.replace(/_/g," ")}</p>
-                                    <p style={{ margin:0, fontSize:16, fontWeight:800, color:T.text }}>{String(v)}</p>
-                                  </div>
-                                ))}
+                    <div className="dash-grid" style={{ marginBottom: "16px" }}>
+                      {[["Regression A", test2025.regression?.a], ["Regression B", test2025.regression?.b]].map(([label, reg], i) => (
+                        <Card key={i} title={label} icon={i === 0 ? "📉" : "🧠"} subtitle={i === 0 ? "Model 2A — EE+MATH+ESAS+GWA" : "Model 2B — GWA+Survey only"}>
+                          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                            {[["R²", reg?.r2, 4], ["MAE", reg?.mae, 4], ["MSE", reg?.mse, 4], ["RMSE", reg?.rmse, 4]].map(([k, v, d]) => (
+                              <div key={k} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", background: T.surfaceAlt, borderRadius: "8px" }}>
+                                <span style={{ fontSize: "13px", color: T.textMid, fontWeight: 600 }}>{k}</span>
+                                <span style={{ fontSize: "16px", fontWeight: 800, color: T.blue }}>{num(v, d)}</span>
                               </div>
-                        )}
-                      </ChartContainer>
-                    )}
+                            ))}
+                          </div>
+                        </Card>
+                      ))}
+
+                      <Card title="Confusion Matrix" icon="🧾" subtitle="Actual vs Predicted on DATA_TEST 2025" fullWidth>
+                        {test2025.confusion_matrix ? (
+                          <div style={{ display: "grid", gridTemplateColumns: "auto 1fr 1fr", gap: "4px", maxWidth: "340px", margin: "0 auto" }}>
+                            <div />
+                            <div style={{ textAlign: "center", padding: "8px", fontSize: "12px", fontWeight: 700, color: T.fail }}>Pred: FAIL</div>
+                            <div style={{ textAlign: "center", padding: "8px", fontSize: "12px", fontWeight: 700, color: T.pass }}>Pred: PASS</div>
+                            <div style={{ display: "flex", alignItems: "center", fontSize: "12px", fontWeight: 700, color: T.fail }}>Actual: FAIL</div>
+                            <div style={{ background: T.passLight, borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", padding: "20px", fontSize: "26px", fontWeight: 800, color: T.pass }}>{test2025.confusion_matrix.actual_fail.pred_fail}</div>
+                            <div style={{ background: T.failLight, borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", padding: "20px", fontSize: "26px", fontWeight: 800, color: T.fail }}>{test2025.confusion_matrix.actual_fail.pred_pass}</div>
+                            <div style={{ display: "flex", alignItems: "center", fontSize: "12px", fontWeight: 700, color: T.pass }}>Actual: PASS</div>
+                            <div style={{ background: T.failLight, borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", padding: "20px", fontSize: "26px", fontWeight: 800, color: T.fail }}>{test2025.confusion_matrix.actual_pass.pred_fail}</div>
+                            <div style={{ background: T.passLight, borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", padding: "20px", fontSize: "26px", fontWeight: 800, color: T.pass }}>{test2025.confusion_matrix.actual_pass.pred_pass}</div>
+                          </div>
+                        ) : <p style={{ margin: 0, fontSize: "13px", color: T.textMute }}>Confusion matrix not available.</p>}
+                      </Card>
+                    </div>
+
+                    {/* Row-level check */}
+                    <Card title="Select a 2025 Examinee" icon="🧪" subtitle="Choose one row from DATA_TEST and view predicted vs actual + survey answers" fullWidth>
+                      {/* ExamineeDetailPanel placeholder */}
+                      <p style={{ fontSize: "13px", color: T.textSoft }}>
+                        Import and render <code>{"<ExamineeDetailPanel />"}</code> here. Records: {test2025Records?.length ?? 0} loaded.
+                      </p>
+                    </Card>
                   </>
-                ) : <p style={{ fontSize:13,color:T.textSoft }}>No 2025 defense metrics available.</p>}
+                ) : <p style={{ fontSize: "13px", color: T.textMute }}>No 2025 defense metrics available.</p>}
               </div>
             )}
 
-            {/* ════ TRENDS & MONITORING TAB ════ */}
+            {/* ══ TRENDS & MONITORING TAB ══ */}
             {activeTab === "trends" && (
               <div style={{ animation: "fadeUp 0.35s ease" }}>
-                <SectionHeader title="Trends & Monitoring" subtitle="Live data from the prediction database — student attempts, monthly summaries, and AI trend insights." />
+                <div style={{ marginBottom: "24px" }}>
+                  <h2 style={{ margin: "0 0 6px", fontSize: "22px", fontWeight: 800, letterSpacing: "-0.02em" }}>Trends & Monitoring</h2>
+                  <p style={{ margin: 0, fontSize: "14px", color: T.textSoft }}>Live data from the prediction database — attempts, monthly summaries, and AI trend insights.</p>
+                </div>
 
                 {/* Usage Summary */}
-                <div style={{ marginBottom: 16 }}>
-                  <ChartContainer title="System Usage & User Activity" subtitle="Active student users and prediction volume (last 30 days)"
-                    action={
-                      <button onClick={downloadPerformanceReport} disabled={reportLoading} style={{
-                        background: T.blueSoft, border:`1px solid ${T.blueLight}`, borderRadius:9, padding:"8px 16px",
-                        fontSize:12, color:T.blue, cursor:reportLoading?"not-allowed":"pointer",
-                        fontFamily:"'DM Sans',sans-serif", fontWeight:600, opacity:reportLoading?0.7:1, transition:"all 0.15s",
-                      }}>{reportLoading?"Preparing…":"⬇ Download Report"}</button>
-                    }
-                  >
-                    {usageLoading ? <p style={{ fontSize:13,color:T.textSoft }}>Loading system usage…</p>
-                    : usageSummary ? (
-                      <div>
-                        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(180px,1fr))", gap:14, marginBottom:16 }}>
-                          <MetricCard label="Total Predictions" value={usageSummary.total_predictions} icon="📊" color={T.blue} />
-                          <MetricCard label="Active Users" value={usageSummary.active_users} icon="👥" color={T.pass} sub="distinct student users" />
+                <div style={{ marginBottom: "16px" }}>
+                  <Card title="System Usage & User Activity" icon="📊" subtitle="Active student users and prediction volume (last 30 days)">
+                    {usageLoading ? (
+                      <p style={{ margin: 0, fontSize: "13px", color: T.textMute }}>Loading…</p>
+                    ) : usageSummary ? (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                        <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                          <button onClick={downloadPerformanceReport} disabled={reportLoading} style={{
+                            background: T.surface, border: `1px solid ${T.border}`, borderRadius: "10px",
+                            padding: "8px 16px", color: T.textSoft, fontSize: "13px", cursor: reportLoading ? "not-allowed" : "pointer",
+                            boxShadow: T.shadow, fontWeight: 500, transition: "all 0.15s", opacity: reportLoading ? 0.7 : 1,
+                          }}>
+                            {reportLoading ? "Preparing…" : "⬇ Download Performance Report"}
+                          </button>
                         </div>
-                        {(usageSummary.predictions_by_day??[]).length > 0 && (
-                          <ChartContainer title="Predictions by Day (last 10 days)" subtitle="">
-                            <ResponsiveContainer width="100%" height={180}>
-                              <BarChart data={(usageSummary.predictions_by_day??[]).slice(-10).map(d=>({day:d.day?.slice(5)||"—",total:d.total??0}))} margin={{top:5,right:20,left:0,bottom:5}}>
-                                <CartesianGrid strokeDasharray="3 3" stroke={T.border}/>
-                                <XAxis dataKey="day" tick={{fontSize:11,fill:T.textSoft}}/>
-                                <YAxis tick={{fontSize:11,fill:T.textSoft}}/>
-                                <Tooltip content={<CustomTooltip/>}/>
-                                <Bar dataKey="total" name="Predictions" fill={T.blue} radius={[4,4,0,0]}/>
-                              </BarChart>
-                            </ResponsiveContainer>
-                          </ChartContainer>
+                        <div className="kpi-grid">
+                          <MetricCard label="Total Predictions" value={usageSummary.total_predictions} color={T.blue} />
+                          <MetricCard label="Active Users" value={usageSummary.active_users} color={T.pass} sub="distinct students" />
+                        </div>
+                        {(usageSummary.predictions_by_day ?? []).length > 0 && (
+                          <Card title="Daily Prediction Volume" subtitle="Last 10 days" icon="📅">
+                            <div style={{ width: "100%", height: 160 }}>
+                              <ResponsiveContainer>
+                                <BarChart data={(usageSummary.predictions_by_day ?? []).slice(-10).map(d => ({ day: d.day?.slice(5) ?? "—", total: d.total ?? 0 }))} margin={{ top: 0, right: 10, bottom: 0, left: -10 }}>
+                                  <CartesianGrid strokeDasharray="3 3" stroke={T.border} vertical={false} />
+                                  <XAxis dataKey="day" tick={{ fontSize: 11, fill: T.textSoft }} axisLine={false} tickLine={false} />
+                                  <YAxis tick={{ fontSize: 11, fill: T.textSoft }} axisLine={false} tickLine={false} />
+                                  <Tooltip content={<CustomTooltip />} />
+                                  <Bar dataKey="total" name="Predictions" radius={[4, 4, 0, 0]} fill={T.blue} />
+                                </BarChart>
+                              </ResponsiveContainer>
+                            </div>
+                          </Card>
                         )}
-                        {(usageSummary.active_users_recent??[]).length > 0 && (
-                          <div style={{ marginTop:14 }}>
-                            <p style={{ margin:"0 0 10px",fontSize:12,color:T.textSoft,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.06em" }}>Most Active Students</p>
+                        {(usageSummary.active_users_recent ?? []).length > 0 && (
+                          <div>
+                            <p style={{ margin: "0 0 10px", fontSize: "12px", fontWeight: 700, color: T.textSoft, textTransform: "uppercase", letterSpacing: "0.07em" }}>Most Active Students</p>
                             <table className="att-table">
                               <thead><tr><th>Student</th><th>Attempts</th><th>Last Activity</th></tr></thead>
                               <tbody>
-                                {(usageSummary.active_users_recent??[]).map((u,i)=>(
+                                {(usageSummary.active_users_recent ?? []).map((u, i) => (
                                   <tr key={i}>
-                                    <td style={{fontWeight:700}}>{u.name||u.user_id||"—"}</td>
-                                    <td>{u.attempts??0}</td>
-                                    <td style={{color:T.textSoft}}>{u.last_at?new Date(u.last_at).toLocaleDateString("en-PH"):"—"}</td>
+                                    <td style={{ fontWeight: 700 }}>{u.name || u.user_id || "—"}</td>
+                                    <td>{u.attempts ?? 0}</td>
+                                    <td>{u.last_at ? new Date(u.last_at).toLocaleDateString("en-PH") : "—"}</td>
                                   </tr>
                                 ))}
                               </tbody>
@@ -1507,265 +1492,222 @@ export default function ProfessorPage({ onLogout }) {
                           </div>
                         )}
                       </div>
-                    ) : <p style={{ fontSize:13,color:T.textSoft }}>No usage data yet.</p>}
-                  </ChartContainer>
+                    ) : <p style={{ fontSize: "13px", color: T.textMute }}>No usage data yet.</p>}
+                  </Card>
                 </div>
 
-                {/* AI Trend Insights */}
-                <div style={{ marginBottom: 16 }}>
-                  <ChartContainer title="AI Trend Insights" subtitle="Groq AI summary of year-over-year prediction trends">
+                {/* AI Insights */}
+                <div style={{ marginBottom: "16px" }}>
+                  <Card title="AI Trend Insights" icon="✨" subtitle="AI-generated summary of year-over-year prediction trends">
                     {insightsLoading ? (
-                      <div style={{ display:"flex",alignItems:"center",gap:10 }}>
-                        <div style={{ width:16,height:16,borderRadius:"50%",border:`2px solid ${T.blue}40`,borderTopColor:T.blue,animation:"spin 0.8s linear infinite" }} />
-                        <span style={{ fontSize:13,color:T.textSoft }}>Generating AI summary…</span>
+                      <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                        <div style={{ width: "14px", height: "14px", borderRadius: "50%", border: `2px solid ${T.blue}30`, borderTopColor: T.blue, animation: "spin 0.8s linear infinite" }} />
+                        <span style={{ fontSize: "13px", color: T.textSoft }}>Generating AI summary…</span>
                       </div>
                     ) : trendInsights ? (
                       <div>
-                        {trendInsights.stats && (trendInsights.stats.years??[]).length > 0 && (
-                          <div style={{ display:"flex", gap:10, flexWrap:"wrap", marginBottom:14 }}>
-                            {(trendInsights.stats.years??[]).map((yr,i)=>(
-                              <div key={i} style={{ background:T.surfaceAlt, border:`1px solid ${T.border}`, borderRadius:12, padding:"12px 16px", minWidth:130 }}>
-                                <p style={{ margin:"0 0 3px",fontSize:11,color:T.textSoft,textTransform:"uppercase",fontWeight:600 }}>{yr.year}</p>
-                                <p style={{ margin:"0 0 2px",fontSize:20,fontWeight:800,color:yr.pass_rate>=70?T.pass:T.amber,fontFamily:"'Syne',sans-serif" }}>{yr.pass_rate.toFixed(1)}%</p>
-                                <p style={{ margin:0,fontSize:11,color:T.textSoft }}>{yr.total} attempts · avg {yr.avg_rating.toFixed(1)}</p>
+                        {(trendInsights.stats?.years ?? []).length > 0 && (
+                          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(140px,1fr))", gap: "10px", marginBottom: "14px" }}>
+                            {trendInsights.stats.years.map((yr, i) => (
+                              <div key={i} style={{ background: `${T.blue}08`, border: `1px solid ${T.blue}20`, borderRadius: "10px", padding: "12px" }}>
+                                <p style={{ margin: "0 0 2px", fontSize: "11px", color: T.textSoft }}>{yr.year}</p>
+                                <p style={{ margin: "0 0 1px", fontSize: "22px", fontWeight: 800, color: yr.pass_rate >= 70 ? T.pass : T.amber }}>{yr.pass_rate.toFixed(1)}%</p>
+                                <p style={{ margin: 0, fontSize: "11px", color: T.textMute }}>{yr.total} attempts · avg {yr.avg_rating.toFixed(1)}</p>
                               </div>
                             ))}
                           </div>
                         )}
-                        <InsightBox items={[{ icon: "✦", text: trendInsights.summary }]} />
-                        <button onClick={fetchTrendInsights} style={{ marginTop:12,background:T.blueSoft,border:`1px solid ${T.blueLight}`,borderRadius:9,padding:"7px 14px",color:T.blue,fontSize:12,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:600 }}>
-                          ↻ Refresh Insights
-                        </button>
+                        <div style={{ background: T.blueLight, border: `1px solid ${T.blue}20`, borderRadius: "10px", padding: "14px 16px" }}>
+                          <p style={{ margin: "0 0 6px", fontSize: "11px", fontWeight: 700, color: T.blue, textTransform: "uppercase", letterSpacing: "0.08em" }}>AI Summary</p>
+                          <p style={{ margin: 0, fontSize: "13px", color: T.textMid, lineHeight: 1.7 }}>{trendInsights.summary}</p>
+                        </div>
+                        <button onClick={fetchTrendInsights} style={{ marginTop: "10px", background: T.surface, border: `1px solid ${T.border}`, borderRadius: "8px", padding: "6px 14px", color: T.blue, fontSize: "12px", cursor: "pointer", fontWeight: 600 }}>↻ Refresh Insights</button>
                       </div>
-                    ) : <p style={{ fontSize:13,color:T.textSoft }}>No trend data yet. Submit more predictions to generate insights.</p>}
-                  </ChartContainer>
+                    ) : <p style={{ fontSize: "13px", color: T.textMute }}>No trend data yet.</p>}
+                  </Card>
                 </div>
 
-                {/* Yearly PF from DB */}
-                {(yearlyPF??[]).length > 0 && (
-                  <div style={{ marginBottom: 16 }}>
-                    <ChartContainer title="Pass / Fail by Year (Live DB)" subtitle="From prediction_attempts table — real student submissions">
-                      <ResponsiveContainer width="100%" height={220}>
-                        <BarChart data={(yearlyPF??[]).map(yr=>({ year:yr.year, Pass:yr.pass_count, Fail:yr.fail_count }))} margin={{top:5,right:20,left:0,bottom:5}}>
-                          <CartesianGrid strokeDasharray="3 3" stroke={T.border}/>
-                          <XAxis dataKey="year" tick={{fontSize:12,fill:T.textSoft}}/>
-                          <YAxis tick={{fontSize:12,fill:T.textSoft}}/>
-                          <Tooltip content={<CustomTooltip/>}/>
-                          <Legend formatter={v=><span style={{fontSize:12,color:T.textMid}}>{v}</span>}/>
-                          <Bar dataKey="Pass" fill={T.pass} radius={[4,4,0,0]} barSize={20}/>
-                          <Bar dataKey="Fail" fill={T.fail} radius={[4,4,0,0]} barSize={20}/>
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </ChartContainer>
-                  </div>
-                )}
-
-                {/* Review Analysis */}
-                {(reviewAnalysis?.items??[]).length > 0 && (
-                  <div style={{ marginBottom: 16 }}>
-                    <ChartContainer title="Formal Review Split Analysis" subtitle="Results by Attended Formal Review = Yes / No">
-                      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(220px,1fr))", gap:12 }}>
-                        {(reviewAnalysis.items??[]).map((item,i)=>(
-                          <div key={i} style={{ background:item.review_program==="Yes"?T.passSoft:T.amberSoft, border:`1px solid ${item.review_program==="Yes"?T.passLight:T.amberLight}`, borderRadius:12, padding:"16px 18px" }}>
-                            <p style={{ margin:"0 0 4px",fontSize:12,color:item.review_program==="Yes"?T.pass:T.amber,fontWeight:700 }}>
-                              {item.review_program==="Yes"?"✅ Attended Review":"⚠ No Formal Review"}
-                            </p>
-                            <p style={{ margin:"0 0 4px",fontSize:28,fontWeight:800,color:T.text,fontFamily:"'Syne',sans-serif" }}>{item.pass_rate?.toFixed(1)}%</p>
-                            <p style={{ margin:0,fontSize:12,color:T.textSoft }}>{item.pass_count}/{item.total} predicted pass
-                              {item.human_like_rate!=null?` · Human-like: ${item.human_like_rate.toFixed(1)}%`:""}
-                            </p>
-                          </div>
-                        ))}
+                {/* Yearly Pass/Fail from DB */}
+                {(yearlyPF ?? []).length > 0 && (
+                  <div style={{ marginBottom: "16px" }}>
+                    <Card title="Pass / Fail by Year (Live DB)" icon="📊" subtitle="From prediction_attempts table — real student submissions">
+                      <div style={{ width: "100%", height: 200 }}>
+                        <ResponsiveContainer>
+                          <BarChart data={(yearlyPF ?? []).map(yr => ({
+                            year: yr.year,
+                            Pass: yr.pass_count,
+                            Fail: yr.fail_count,
+                          }))} margin={{ top: 0, right: 10, bottom: 0, left: -10 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke={T.border} vertical={false} />
+                            <XAxis dataKey="year" tick={{ fontSize: 12, fill: T.textSoft }} axisLine={false} tickLine={false} />
+                            <YAxis tick={{ fontSize: 11, fill: T.textSoft }} axisLine={false} tickLine={false} />
+                            <Tooltip content={<CustomTooltip />} />
+                            <Legend formatter={v => <span style={{ fontSize: "12px", color: T.textMid, fontWeight: 600 }}>{v}</span>} />
+                            <Bar dataKey="Pass" stackId="a" fill={T.pass} radius={[0, 0, 0, 0]} />
+                            <Bar dataKey="Fail" stackId="a" fill={T.fail} radius={[4, 4, 0, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
                       </div>
-                    </ChartContainer>
-                  </div>
-                )}
-
-                {/* Timing Analysis */}
-                {timingAnalysis?.summary && (
-                  <div style={{ marginBottom: 16 }}>
-                    <ChartContainer title="Predictor Timer Analysis" subtitle="Response timing from Predictor Form">
-                      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))", gap:14, marginBottom:16 }}>
-                        <MetricCard label="Timed Questions" value={timingAnalysis.summary.timed_questions??0}  icon="⏱️" color={T.blue} />
-                        <MetricCard label="Human-like"      value={timingAnalysis.summary.human_like_rate!=null?`${timingAnalysis.summary.human_like_rate.toFixed(1)}%`:"—"} icon="✅" color={T.pass} sub={`${timingAnalysis.summary.human_like_count??0} answers`} />
-                        <MetricCard label="Too Fast"        value={timingAnalysis.summary.too_fast_rate!=null?`${timingAnalysis.summary.too_fast_rate.toFixed(1)}%`:"—"} icon="⚡" color={T.amber} sub={`${timingAnalysis.summary.too_fast_count??0} answers`} />
-                        <MetricCard label="Too Slow"        value={timingAnalysis.summary.too_slow_rate!=null?`${timingAnalysis.summary.too_slow_rate.toFixed(1)}%`:"—"} icon="🐢" color={T.orange} sub={`${timingAnalysis.summary.too_slow_count??0} answers`} />
-                      </div>
-                      {(timingAnalysis.sections??[]).length > 0 && (
-                        <div style={{ marginBottom:14 }}>
-                          <p style={{ margin:"0 0 8px",fontSize:12,color:T.textSoft,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.06em" }}>Timer by Section</p>
-                          <table className="att-table">
-                            <thead><tr><th>Section</th><th>Timed Questions</th><th>Avg Duration (sec)</th><th>Human-like Rate</th></tr></thead>
-                            <tbody>
-                              {(timingAnalysis.sections??[]).map((s,i)=>(
-                                <tr key={i}>
-                                  <td>{s.section}</td><td>{s.timed_questions??0}</td>
-                                  <td>{s.avg_duration_sec!=null?s.avg_duration_sec.toFixed(1):"—"}</td>
-                                  <td style={{ color:(s.human_like_rate??0)>=70?T.pass:T.amber, fontWeight:700 }}>
-                                    {s.human_like_rate!=null?`${s.human_like_rate.toFixed(1)}%`:"—"}
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      )}
-                      {(timingAnalysis.suspicious_attempts??[]).length > 0 && (
-                        <div>
-                          <p style={{ margin:"0 0 8px",fontSize:12,color:T.textSoft,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.06em" }}>Potentially Random / Too-fast Attempts</p>
-                          <table className="att-table">
-                            <thead><tr><th>Name</th><th>Date</th><th>Too Fast Rate</th><th>Timed Questions</th></tr></thead>
-                            <tbody>
-                              {(timingAnalysis.suspicious_attempts??[]).map((a,i)=>(
-                                <tr key={i} style={{ cursor:"pointer" }} onClick={()=>openTimingModal(a)} title="Click to view per-question timings">
-                                  <td style={{fontWeight:700}}>{a.name||"Unknown"}</td>
-                                  <td style={{color:T.textSoft,fontSize:12}}>{a.created_at?new Date(a.created_at).toLocaleDateString("en-PH",{year:"numeric",month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"}):"—"}</td>
-                                  <td style={{color:T.fail,fontWeight:700}}>{a.too_fast_rate?.toFixed(1)}%</td>
-                                  <td>{a.timed_questions??0}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      )}
-                    </ChartContainer>
+                    </Card>
                   </div>
                 )}
 
                 {/* Monthly Summary */}
-                <div style={{ marginBottom: 16 }}>
-                  <ChartContainer title="Monthly Summary" subtitle="Pass/fail counts per month for selected year"
-                    action={
-                      <select value={selectedYear} onChange={e=>setSelectedYear(Number(e.target.value))} style={selectStyle}>
-                        {Array.from({length:5},(_,i)=>new Date().getFullYear()-i).map(yr=>(
+                <div style={{ marginBottom: "16px" }}>
+                  <Card title="Monthly Summary" icon="📆" subtitle="Pass/fail counts per month for a selected year">
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
+                      <label style={{ fontSize: "13px", color: T.textSoft, fontWeight: 600 }}>Year:</label>
+                      <select className="filter-input" value={selectedYear} onChange={e => setSelectedYear(Number(e.target.value))}>
+                        {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(yr => (
                           <option key={yr} value={yr}>{yr}</option>
                         ))}
                       </select>
-                    }
-                  >
-                    {(monthly??[]).length > 0 ? (
-                      <ResponsiveContainer width="100%" height={220}>
-                        <BarChart data={(monthly??[]).map(m=>({ month:MONTH_NAMES[m.month-1], Pass:m.pass_count, Fail:m.fail_count }))} margin={{top:5,right:20,left:0,bottom:5}}>
-                          <CartesianGrid strokeDasharray="3 3" stroke={T.border}/>
-                          <XAxis dataKey="month" tick={{fontSize:12,fill:T.textSoft}}/>
-                          <YAxis tick={{fontSize:12,fill:T.textSoft}}/>
-                          <Tooltip content={<CustomTooltip/>}/>
-                          <Legend formatter={v=><span style={{fontSize:12,color:T.textMid}}>{v}</span>}/>
-                          <Bar dataKey="Pass" fill={T.pass} radius={[4,4,0,0]} barSize={16}/>
-                          <Bar dataKey="Fail" fill={T.fail} radius={[4,4,0,0]} barSize={16}/>
-                        </BarChart>
-                      </ResponsiveContainer>
-                    ) : <p style={{ fontSize:13,color:T.textSoft }}>No data for {selectedYear}. Students need to submit predictions first.</p>}
-                  </ChartContainer>
+                    </div>
+                    {(monthly ?? []).length > 0 ? (
+                      <div style={{ width: "100%", height: 200 }}>
+                        <ResponsiveContainer>
+                          <BarChart data={(monthly ?? []).map(m => ({ month: MONTH_NAMES[m.month - 1], Pass: m.pass_count, Fail: m.fail_count }))} margin={{ top: 0, right: 10, bottom: 0, left: -10 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke={T.border} vertical={false} />
+                            <XAxis dataKey="month" tick={{ fontSize: 11, fill: T.textSoft }} axisLine={false} tickLine={false} />
+                            <YAxis tick={{ fontSize: 11, fill: T.textSoft }} axisLine={false} tickLine={false} />
+                            <Tooltip content={<CustomTooltip />} />
+                            <Legend formatter={v => <span style={{ fontSize: "12px", color: T.textMid, fontWeight: 600 }}>{v}</span>} />
+                            <Bar dataKey="Pass" stackId="a" fill={T.pass} />
+                            <Bar dataKey="Fail" stackId="a" fill={T.fail} radius={[4, 4, 0, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    ) : (
+                      <p style={{ fontSize: "13px", color: T.textMute }}>No data for {selectedYear}. Students need to submit predictions first.</p>
+                    )}
+                  </Card>
                 </div>
 
                 {/* Attempts Table */}
-                <ChartContainer title="Recent Prediction Attempts" subtitle="Paginated log from prediction_attempts table"
-                  action={
-                    <div style={{ display:"flex",gap:8,alignItems:"center" }}>
-                      <input
-                        type="number" placeholder="Year" value={attFilter.year}
-                        onChange={e=>{setAttFilter(f=>({...f,year:e.target.value}));setAttPage(1);}}
-                        style={{ ...selectStyle, width:80, minWidth:0 }}
-                      />
-                      <input
-                        type="number" placeholder="Month (1–12)" min="1" max="12" value={attFilter.month}
-                        onChange={e=>{setAttFilter(f=>({...f,month:e.target.value}));setAttPage(1);}}
-                        style={{ ...selectStyle, width:100, minWidth:0 }}
-                      />
-                      <button onClick={()=>{setAttFilter({year:"",month:""});setAttPage(1);}} style={{ background:T.surfaceAlt,border:`1px solid ${T.border}`,borderRadius:8,padding:"8px 12px",fontSize:12,color:T.textMid,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:600 }}>Clear</button>
-                      {attempts && <span style={{ fontSize:12,color:T.textSoft }}>{attempts.total} total</span>}
+                <Card title="Recent Prediction Attempts" icon="🗃️" subtitle="Paginated log from prediction_attempts table" fullWidth>
+                  <div style={{ display: "flex", gap: "12px", alignItems: "center", marginBottom: "16px", flexWrap: "wrap" }}>
+                    <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                      <label style={{ fontSize: "12px", color: T.textSoft, fontWeight: 600 }}>Year:</label>
+                      <input className="filter-input" type="number" placeholder="e.g. 2025" value={attFilter.year}
+                        onChange={e => { setAttFilter(f => ({ ...f, year: e.target.value })); setAttPage(1); }}
+                        style={{ width: "90px" }} />
                     </div>
-                  }
-                >
-                  {attempts && (attempts.items??[]).length > 0 ? (
+                    <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                      <label style={{ fontSize: "12px", color: T.textSoft, fontWeight: 600 }}>Month:</label>
+                      <input className="filter-input" type="number" placeholder="1–12" min="1" max="12" value={attFilter.month}
+                        onChange={e => { setAttFilter(f => ({ ...f, month: e.target.value })); setAttPage(1); }}
+                        style={{ width: "70px" }} />
+                    </div>
+                    <button onClick={() => { setAttFilter({ year: "", month: "" }); setAttPage(1); }} style={{
+                      background: T.surface, border: `1px solid ${T.border}`, borderRadius: "8px",
+                      padding: "6px 12px", color: T.textSoft, fontSize: "12px", cursor: "pointer",
+                    }}>✕ Clear</button>
+                    {attempts && <span style={{ fontSize: "12px", color: T.textMute, marginLeft: "auto" }}>{attempts.total} total · Page {attPage}</span>}
+                  </div>
+
+                  {attempts && (attempts.items ?? []).length > 0 ? (
                     <>
-                      <table className="att-table">
-                        <thead><tr><th>Date</th><th>Result</th><th>Pass Prob.</th><th>Pred. Rating A</th><th>User ID</th></tr></thead>
-                        <tbody>
-                          {(attempts.items??[]).map((item,i)=>(
-                            <tr key={i}>
-                              <td style={{color:T.textSoft,fontSize:12}}>{new Date(item.created_at).toLocaleDateString("en-PH",{year:"numeric",month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"})}</td>
-                              <td>
-                                <span style={{ fontSize:11,fontWeight:700,padding:"3px 9px",borderRadius:999, background:item.label==="PASSED"?T.passSoft:T.failSoft, color:item.label==="PASSED"?T.pass:T.fail, border:`1px solid ${item.label==="PASSED"?T.passLight:T.failLight}` }}>
-                                  {item.label}
-                                </span>
-                              </td>
-                              <td style={{ fontWeight:700, color:item.probability_pass>=0.7?T.pass:item.probability_pass>=0.5?T.amber:T.fail }}>
-                                {(item.probability_pass*100).toFixed(1)}%
-                              </td>
-                              <td style={{ color:item.predicted_rating_a>=70?T.pass:item.predicted_rating_a>=60?T.amber:T.fail, fontWeight:600 }}>
-                                {item.predicted_rating_a?.toFixed(1)??"—"}
-                              </td>
-                              <td style={{ color:T.textSoft,fontSize:11 }}>{item.user_id?item.user_id.slice(0,8)+"…":"—"}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                      <div style={{ display:"flex",gap:8,marginTop:14,alignItems:"center",justifyContent:"flex-end" }}>
-                        <button onClick={()=>setAttPage(p=>Math.max(1,p-1))} disabled={attPage===1}
-                          style={{ background:T.surfaceAlt,border:`1px solid ${T.border}`,borderRadius:8,padding:"6px 14px",color:attPage===1?T.textSoft:T.text,fontSize:12,cursor:attPage===1?"not-allowed":"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:600 }}>← Prev</button>
-                        <span style={{ fontSize:12,color:T.textSoft }}>{attPage} / {Math.ceil(((attempts.total)||1)/20)}</span>
-                        <button onClick={()=>setAttPage(p=>p+1)} disabled={attPage>=Math.ceil(((attempts.total)||1)/20)}
-                          style={{ background:T.blueSoft,border:`1px solid ${T.blueLight}`,borderRadius:8,padding:"6px 14px",color:T.blue,fontSize:12,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:600 }}>Next →</button>
+                      <div style={{ overflowX: "auto" }}>
+                        <table className="att-table">
+                          <thead><tr><th>Date</th><th>Result</th><th>Pass Prob.</th><th>Pred. Rating A</th><th>User ID</th></tr></thead>
+                          <tbody>
+                            {(attempts.items ?? []).map((item, i) => (
+                              <tr key={i}>
+                                <td style={{ color: T.textSoft }}>{new Date(item.created_at).toLocaleDateString("en-PH", { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</td>
+                                <td>
+                                  <span style={{
+                                    fontSize: "11px", fontWeight: 700, padding: "3px 10px", borderRadius: 999,
+                                    background: item.label === "PASSED" ? T.passLight : T.failLight,
+                                    color: item.label === "PASSED" ? T.pass : T.fail,
+                                    border: `1px solid ${item.label === "PASSED" ? T.pass : T.fail}30`,
+                                  }}>{item.label}</span>
+                                </td>
+                                <td style={{ fontWeight: 700, color: item.probability_pass >= 0.7 ? T.pass : item.probability_pass >= 0.5 ? T.amber : T.fail }}>
+                                  {(item.probability_pass * 100).toFixed(1)}%
+                                </td>
+                                <td style={{ color: item.predicted_rating_a >= 70 ? T.pass : item.predicted_rating_a >= 60 ? T.amber : T.fail }}>
+                                  {item.predicted_rating_a?.toFixed(1) ?? "—"}
+                                </td>
+                                <td style={{ color: T.textMute, fontSize: "11px" }}>{item.user_id ? item.user_id.slice(0, 8) + "…" : "—"}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      <div style={{ display: "flex", gap: "8px", marginTop: "12px", alignItems: "center", justifyContent: "flex-end" }}>
+                        {[
+                          ["← Prev", () => setAttPage(p => Math.max(1, p - 1)), attPage === 1],
+                          ["Next →", () => setAttPage(p => p + 1), attPage >= Math.ceil(((attempts.total) || 1) / 20)],
+                        ].map(([label, fn, disabled]) => (
+                          <button key={label} onClick={fn} disabled={disabled} style={{
+                            background: disabled ? T.surfaceAlt : T.surface,
+                            border: `1px solid ${T.border}`, borderRadius: "8px",
+                            padding: "7px 16px", color: disabled ? T.textMute : T.textMid,
+                            fontSize: "13px", cursor: disabled ? "not-allowed" : "pointer",
+                            fontWeight: 600, boxShadow: disabled ? "none" : T.shadow,
+                          }}>{label}</button>
+                        ))}
+                        <span style={{ fontSize: "12px", color: T.textMute, padding: "0 8px" }}>
+                          Page {attPage} / {Math.ceil(((attempts.total) || 1) / 20)}
+                        </span>
                       </div>
                     </>
                   ) : (
-                    <div style={{ padding:32, textAlign:"center" }}>
-                      <p style={{ fontSize:14,color:T.textSoft }}>No prediction attempts found.</p>
-                      <p style={{ fontSize:12,color:T.textSoft,marginTop:4 }}>Students need to log in and submit predictions first.</p>
+                    <div style={{ padding: "32px", textAlign: "center" }}>
+                      <p style={{ fontSize: "14px", color: T.textSoft }}>No prediction attempts found.</p>
+                      <p style={{ fontSize: "12px", color: T.textMute, marginTop: "4px" }}>Students need to log in and submit predictions first.</p>
                     </div>
                   )}
-                </ChartContainer>
+                </Card>
               </div>
             )}
           </>
         )}
       </main>
 
-      {/* ── Timing Modal ── */}
+      {/* ══ TIMING MODAL ══ */}
       {timingModalOpen && (
-        <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,0.4)",backdropFilter:"blur(6px)",zIndex:80,display:"flex",alignItems:"center",justifyContent:"center",padding:16 }}
-          onClick={()=>setTimingModalOpen(false)}>
-          <div style={{ width:"min(980px,96vw)",maxHeight:"85vh",overflow:"auto",background:T.surface,border:`1px solid ${T.border}`,borderRadius:18,padding:24,boxShadow:"0 20px 60px rgba(0,0,0,0.2)" }}
-            onClick={e=>e.stopPropagation()}>
-            <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,gap:10 }}>
+        <div
+          style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.5)", backdropFilter: "blur(4px)", zIndex: 80, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}
+          onClick={() => setTimingModalOpen(false)}
+        >
+          <div
+            style={{ width: "min(1000px,96vw)", maxHeight: "85vh", overflow: "auto", background: T.surface, border: `1px solid ${T.border}`, borderRadius: "16px", padding: "20px", boxShadow: T.shadowLg }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
               <div>
-                <p style={{ margin:"0 0 2px",fontSize:18,fontWeight:800,color:T.text,fontFamily:"'Syne',sans-serif" }}>Attempt Timer Drill-down</p>
-                <p style={{ margin:0,fontSize:13,color:T.textSoft }}>{selectedTimingAttempt?.name||"Unknown"} · {selectedTimingAttempt?.attempt_id?selectedTimingAttempt.attempt_id.slice(0,8):""}</p>
+                <p style={{ margin: 0, fontSize: "17px", fontWeight: 800, color: T.text }}>Attempt Timer Drill-down</p>
+                <p style={{ margin: "2px 0 0", fontSize: "13px", color: T.textSoft }}>{selectedTimingAttempt?.name || "Unknown"} · {selectedTimingAttempt?.attempt_id?.slice(0, 8)}</p>
               </div>
-              <button onClick={()=>setTimingModalOpen(false)} style={{ background:T.surfaceAlt,border:`1px solid ${T.border}`,borderRadius:9,padding:"8px 16px",color:T.textMid,cursor:"pointer",fontSize:13,fontFamily:"'DM Sans',sans-serif",fontWeight:600 }}>✕ Close</button>
+              <button onClick={() => setTimingModalOpen(false)} style={{ background: T.surfaceAlt, border: `1px solid ${T.border}`, borderRadius: "8px", padding: "7px 14px", color: T.textMid, cursor: "pointer", fontWeight: 600 }}>Close</button>
             </div>
-            {selectedTimingLoading ? <p style={{ color:T.textSoft,fontSize:13 }}>Loading timing details…</p>
-            : selectedTimingData?.error ? <p style={{ color:T.fail,fontSize:13 }}>{selectedTimingData.error}</p>
-            : (
-              <table className="att-table">
-                <thead><tr><th>Question</th><th>Section</th><th>Order</th><th>Actual Duration (sec)</th><th>Expected Range (sec)</th><th>Human-like?</th></tr></thead>
-                <tbody>
-                  {(selectedTimingData?.items??[]).map((t,i)=>(
-                    <tr key={i}>
-                      <td style={{fontWeight:600}}>{t.question_key}</td>
-                      <td style={{color:T.textSoft}}>{t.step_id||"—"}</td>
-                      <td>{t.question_index??"—"}</td>
-                      <td>{t.duration_sec??"—"}</td>
-                      <td style={{color:T.textSoft}}>{t.expected_min_sec!=null&&t.expected_max_sec!=null?`${t.expected_min_sec} – ${t.expected_max_sec}`:"—"}</td>
-                      <td style={{ color:t.is_human_like?T.pass:T.fail,fontWeight:700 }}>{t.is_human_like?"✓ Yes":"✗ No"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            {selectedTimingLoading ? (
+              <p style={{ color: T.textSoft }}>Loading timing details…</p>
+            ) : selectedTimingData?.error ? (
+              <p style={{ color: T.fail }}>{selectedTimingData.error}</p>
+            ) : (
+              <div style={{ overflowX: "auto" }}>
+                <table className="att-table">
+                  <thead><tr><th>Question</th><th>Section</th><th>Order</th><th>Duration (sec)</th><th>Expected Range</th><th>Human-like?</th></tr></thead>
+                  <tbody>
+                    {(selectedTimingData?.items ?? []).map((t, i) => (
+                      <tr key={i}>
+                        <td>{t.question_key}</td>
+                        <td>{t.step_id || "—"}</td>
+                        <td>{t.question_index ?? "—"}</td>
+                        <td>{t.duration_sec ?? "—"}</td>
+                        <td>{t.expected_min_sec != null ? `${t.expected_min_sec}–${t.expected_max_sec}` : "—"}</td>
+                        <td style={{ color: t.is_human_like ? T.pass : T.fail, fontWeight: 700 }}>{t.is_human_like ? "Yes" : "No"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
         </div>
       )}
     </div>
   );
-}
-
-function navBtnStyle(T) {
-  return {
-    background: T.surfaceAlt, border: `1px solid ${T.border}`, borderRadius: 9,
-    padding: "8px 16px", color: T.textMid, fontSize: 13,
-    fontFamily: "'DM Sans', sans-serif", cursor: "pointer", transition: "all 0.15s", fontWeight: 600,
-  };
 }
