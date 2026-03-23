@@ -7,346 +7,23 @@ import {
   Legend, ResponsiveContainer, ReferenceLine, RadarChart,
   Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis
 } from "recharts";
-
-// ── colour palette (preserved from original) ─────────────────────────────────
-const c = {
-  pass:   "#34d399",
-  fail:   "#f87171",
-  blue:   "#38bdf8",
-  indigo: "#818cf8",
-  amber:  "#fbbf24",
-  orange: "#fb923c",
-  pink:   "#f472b6",
-  teal:   "#2dd4bf",
-  bg:     "#060b14",
-  surface:"rgba(255,255,255,0.025)",
-  border: "rgba(255,255,255,0.07)",
-};
-
-const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-const CHART_COLORS = [c.blue, c.indigo, c.teal, c.amber, c.pink, c.orange, c.pass, c.fail];
-
-function pct(v) { return typeof v === "number" ? `${v.toFixed(1)}%` : "—"; }
-function num(v, d = 2) { return typeof v === "number" ? v.toFixed(d) : "—"; }
-
-// ── Custom Recharts Tooltip ───────────────────────────────────────────────────
-const CustomTooltip = ({ active, payload, label, formatter }) => {
-  if (!active || !payload?.length) return null;
-  return (
-    <div style={{
-      background: "#0f1a2e", border: "1px solid rgba(56,189,248,0.2)",
-      borderRadius: 10, padding: "10px 14px", fontSize: 12,
-      fontFamily: "'DM Sans',sans-serif", color: "#f1f5f9",
-      boxShadow: "0 4px 24px rgba(0,0,0,0.5)"
-    }}>
-      {label && <p style={{ margin: "0 0 6px", color: "#94a3b8", fontWeight: 700 }}>{label}</p>}
-      {payload.map((entry, i) => (
-        <p key={i} style={{ margin: "2px 0", color: entry.color || "#f1f5f9" }}>
-          <span style={{ color: "#94a3b8" }}>{entry.name}: </span>
-          <strong>{formatter ? formatter(entry.value) : entry.value}</strong>
-        </p>
-      ))}
-    </div>
-  );
-};
-
-// ── MetricCard ────────────────────────────────────────────────────────────────
-function MetricCard({ label, value, sub, color = c.blue, icon, trend }) {
-  const up = trend > 0, zero = trend === 0;
-  return (
-    <div style={{
-      background: `linear-gradient(135deg, ${color}0d 0%, ${color}06 100%)`,
-      border: `1px solid ${color}22`,
-      borderRadius: 16, padding: "18px 20px",
-      position: "relative", overflow: "hidden",
-    }}>
-      <div style={{
-        position: "absolute", top: -8, right: -8, width: 64, height: 64,
-        borderRadius: "50%", background: `${color}08`,
-        display: "flex", alignItems: "center", justifyContent: "center",
-        fontSize: 22
-      }}>{icon}</div>
-      <p style={{ margin: "0 0 4px", fontSize: 11, color: "#475569", textTransform: "uppercase", letterSpacing: "0.09em", fontFamily: "'DM Sans',sans-serif" }}>{label}</p>
-      <p style={{ margin: "0 0 3px", fontSize: 28, fontWeight: 800, color, fontFamily: "'Syne',sans-serif", lineHeight: 1 }}>{value}</p>
-      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-        {sub && <p style={{ margin: 0, fontSize: 11, color: "#475569" }}>{sub}</p>}
-        {trend !== undefined && !zero && (
-          <span style={{
-            fontSize: 10, fontWeight: 700, padding: "1px 6px", borderRadius: 999,
-            background: `${up ? c.pass : c.fail}18`,
-            color: up ? c.pass : c.fail, border: `1px solid ${up ? c.pass : c.fail}30`
-          }}>
-            {up ? `▲ +${trend}` : `▼ ${trend}`}
-          </span>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ── ChartContainer ────────────────────────────────────────────────────────────
-function ChartContainer({ title, icon, subtitle, children, fullWidth = false, accent = c.blue, action }) {
-  return (
-    <div style={{
-      background: "rgba(255,255,255,0.022)",
-      border: "1px solid rgba(255,255,255,0.07)",
-      borderRadius: 18, padding: "22px 24px",
-      gridColumn: fullWidth ? "1 / -1" : undefined,
-    }}>
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: subtitle ? 4 : 18 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-          <div style={{
-            width: 34, height: 34, borderRadius: 10,
-            background: `${accent}18`, border: `1px solid ${accent}30`,
-            display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0
-          }}>{icon}</div>
-          <div>
-            <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: "#f1f5f9", fontFamily: "'Syne',sans-serif" }}>{title}</p>
-            {subtitle && <p style={{ margin: "2px 0 0", fontSize: 11, color: "#475569" }}>{subtitle}</p>}
-          </div>
-        </div>
-        {action}
-      </div>
-      {subtitle && <div style={{ height: 12 }} />}
-      {children}
-    </div>
-  );
-}
-
-// ── FilterPanel ───────────────────────────────────────────────────────────────
-function FilterPanel({ filters, onChange, availableYears = [] }) {
-  const inputStyle = {
-    background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)",
-    borderRadius: 10, padding: "8px 12px", color: "#f1f5f9", fontSize: 12,
-    fontFamily: "'DM Sans',sans-serif", outline: "none", cursor: "pointer",
-    transition: "border-color 0.2s",
-  };
-  const labelStyle = { fontSize: 11, color: "#64748b", fontFamily: "'DM Sans',sans-serif", display: "block", marginBottom: 5 };
-  return (
-    <div style={{
-      background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.07)",
-      borderRadius: 16, padding: "18px 20px", marginBottom: 20,
-      display: "flex", flexWrap: "wrap", gap: 16, alignItems: "flex-end",
-    }}>
-      <div>
-        <label style={labelStyle}>📅 Year</label>
-        <select style={inputStyle} value={filters.year || ""} onChange={e => onChange({ ...filters, year: e.target.value })}>
-          <option value="">All Years</option>
-          {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
-        </select>
-      </div>
-      <div>
-        <label style={labelStyle}>🗓 Month</label>
-        <select style={inputStyle} value={filters.month || ""} onChange={e => onChange({ ...filters, month: e.target.value })}>
-          <option value="">All Months</option>
-          {MONTH_NAMES.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
-        </select>
-      </div>
-      <div>
-        <label style={labelStyle}>📖 Attended Formal Review?</label>
-        <div style={{ display: "flex", gap: 6 }}>
-          {["All", "Yes", "No"].map(v => (
-            <button key={v} onClick={() => onChange({ ...filters, review: v === "All" ? "" : v })} style={{
-              ...inputStyle,
-              background: (filters.review === v || (!filters.review && v === "All"))
-                ? `${c.blue}25` : "rgba(255,255,255,0.04)",
-              borderColor: (filters.review === v || (!filters.review && v === "All"))
-                ? c.blue : "rgba(255,255,255,0.1)",
-              color: (filters.review === v || (!filters.review && v === "All")) ? c.blue : "#94a3b8",
-              padding: "8px 14px", fontWeight: 600,
-            }}>{v}</button>
-          ))}
-        </div>
-      </div>
-      <div>
-        <label style={labelStyle}>📘 Subject Filter</label>
-        <div style={{ display: "flex", gap: 6 }}>
-          {["All", "Math", "EE", "ESAS", "GWA"].map(v => (
-            <button key={v} onClick={() => onChange({ ...filters, subject: v === "All" ? "" : v })} style={{
-              ...inputStyle,
-              background: (filters.subject === v || (!filters.subject && v === "All"))
-                ? `${c.indigo}25` : "rgba(255,255,255,0.04)",
-              borderColor: (filters.subject === v || (!filters.subject && v === "All"))
-                ? c.indigo : "rgba(255,255,255,0.1)",
-              color: (filters.subject === v || (!filters.subject && v === "All")) ? c.indigo : "#94a3b8",
-              padding: "8px 14px", fontWeight: 600,
-            }}>{v}</button>
-          ))}
-        </div>
-      </div>
-      <button onClick={() => onChange({ year: "", month: "", review: "", subject: "" })} style={{
-        ...inputStyle, padding: "8px 16px", color: "#64748b", marginTop: "auto"
-      }}>↺ Reset</button>
-    </div>
-  );
-}
-
-// ── InsightBox ────────────────────────────────────────────────────────────────
-function InsightBox({ insights = [] }) {
-  if (!insights.length) return null;
-  const icons = ["📈", "📉", "⚠️", "✅", "🔍", "💡", "🎯", "📊"];
-  return (
-    <div style={{
-      background: "rgba(56,189,248,0.04)", border: "1px solid rgba(56,189,248,0.15)",
-      borderRadius: 16, padding: "18px 20px", marginBottom: 20,
-    }}>
-      <p style={{ margin: "0 0 14px", fontSize: 13, fontWeight: 700, color: c.blue, fontFamily: "'Syne',sans-serif" }}>
-        ✨ AI-Generated Insights
-      </p>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))", gap: 10 }}>
-        {insights.map((insight, i) => (
-          <div key={i} style={{
-            background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)",
-            borderRadius: 12, padding: "12px 14px", display: "flex", gap: 10, alignItems: "flex-start",
-          }}>
-            <span style={{ fontSize: 16, flexShrink: 0 }}>{icons[i % icons.length]}</span>
-            <p style={{ margin: 0, fontSize: 12, color: "#cbd5e1", lineHeight: 1.6 }}>{insight}</p>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-
-// ── buildMockData — kept identical to original for fallback ──────────────────
-function buildMockData() {
-  return {
-    overview: {
-      total_students: 87, total_passers: 61, total_failers: 26,
-      overall_pass_rate: 70.1, avg_gwa_passers: 1.82, avg_gwa_failers: 2.41,
-      avg_rating_passers: 78.4, avg_rating_failers: 63.1, passing_score: 70,
-    },
-    pass_rate_by_year: [
-      { label: "2021", pass_rate: 62.5, total: 24 },
-      { label: "2022", pass_rate: 68.0, total: 25 },
-      { label: "2023", pass_rate: 71.4, total: 28 },
-      { label: "2024", pass_rate: 80.0, total: 10 },
-    ],
-    pass_rate_by_strand: [
-      { label: "STEM", pass_rate: 78.3, total: 46 },
-      { label: "GAS", pass_rate: 55.6, total: 18 },
-      { label: "TVL", pass_rate: 50.0, total: 8 },
-      { label: "HUMSS", pass_rate: 60.0, total: 10 },
-      { label: "ABM", pass_rate: 40.0, total: 5 },
-    ],
-    pass_rate_by_review: [
-      { label: "Attended Review", pass_rate: 79.5, total: 44 },
-      { label: "No Formal Review", pass_rate: 58.1, total: 43 },
-    ],
-    pass_rate_by_duration: [
-      { label: "No Review", pass_rate: 58.1, total: 43 },
-      { label: "~3 Months", pass_rate: 72.2, total: 18 },
-      { label: "~6 Months", pass_rate: 84.6, total: 26 },
-    ],
-    gwa_comparison: { passers: 1.82, failers: 2.41 },
-    feature_importance: [
-      { label: "EE Score", value: 0.142 },
-      { label: "MATH Score", value: 0.131 },
-      { label: "ESAS Score", value: 0.118 },
-      { label: "GWA", value: 0.094 },
-      { label: "PS11 – Confident: Board Exam Problems", value: 0.041 },
-      { label: "KN8 – Subjects Covered Board Topics", value: 0.038 },
-      { label: "MT4 – Follows Study Schedule", value: 0.034 },
-      { label: "KN1 – Strong Math Foundation", value: 0.031 },
-      { label: "PS5 – Solves Within Time Limit", value: 0.028 },
-      { label: "Review Duration", value: 0.026 },
-    ],
-    section_scores: [
-      { label: "Knowledge", pass: 72.4, fail: 54.1 },
-      { label: "Prob. Solving", pass: 70.8, fail: 51.3 },
-      { label: "Motivation", pass: 80.2, fail: 66.9 },
-      { label: "Mental Health", pass: 74.5, fail: 63.2 },
-      { label: "Support", pass: 76.1, fail: 68.4 },
-      { label: "Curriculum", pass: 69.3, fail: 60.8 },
-      { label: "Faculty", pass: 73.7, fail: 64.5 },
-      { label: "Dept Review", pass: 65.4, fail: 55.2 },
-      { label: "Facilities", pass: 62.8, fail: 57.1 },
-      { label: "Inst. Culture", pass: 68.9, fail: 60.3 },
-    ],
-    weakest_questions: [
-      { key: "FA2", label: "Labs equipped for practical learning", avg: 2.71, section: "Facilities" },
-      { key: "DR3", label: "Mock exams reflected actual board difficulty", avg: 2.68, section: "Dept Review" },
-      { key: "FA1", label: "Library had adequate review resources", avg: 2.64, section: "Facilities" },
-      { key: "KN8", label: "Subjects covered board exam topics", avg: 2.62, section: "Knowledge" },
-      { key: "DR1", label: "Dept conducted review programs", avg: 2.58, section: "Dept Review" },
-      { key: "CU3", label: "Syllabi aligned with board exam", avg: 2.55, section: "Curriculum" },
-      { key: "FA4", label: "Study areas accessible for reviewers", avg: 2.54, section: "Facilities" },
-      { key: "DR5", label: "Review conducted at right time before exam", avg: 2.51, section: "Dept Review" },
-      { key: "CU1", label: "Curriculum aligned with EE licensure exam", avg: 2.49, section: "Curriculum" },
-      { key: "IC4", label: "Institution provides career guidance", avg: 2.47, section: "Institution" },
-    ],
-    subject_trends_by_year: [
-      { year: 2021, EE_avg: 62.1, MATH_avg: 70.3, ESAS_avg: 65.4 },
-      { year: 2022, EE_avg: 65.8, MATH_avg: 72.1, ESAS_avg: 67.2, EE_delta: 3.7, MATH_delta: 1.8, ESAS_delta: 1.8 },
-      { year: 2023, EE_avg: 68.4, MATH_avg: 74.9, ESAS_avg: 70.1, EE_delta: 2.6, MATH_delta: 2.8, ESAS_delta: 2.9 },
-      { year: 2024, EE_avg: 72.0, MATH_avg: 78.5, ESAS_avg: 73.8, EE_delta: 3.6, MATH_delta: 3.6, ESAS_delta: 3.7 },
-    ],
-  };
-}
-
-// ── generate local insights from data ────────────────────────────────────────
-function generateInsights(data, filters) {
-  const insights = [];
-  if (!data) return insights;
-
-  const ov = data.overview ?? {};
-  const passByYear = data.pass_rate_by_year ?? [];
-  const passByReview = data.pass_rate_by_review ?? [];
-  const subjectTrends = data.subject_trends_by_year ?? [];
-  const featureImp = data.feature_importance ?? [];
-
-  // Pass rate trend
-  if (passByYear.length >= 2) {
-    const first = passByYear[0];
-    const last = passByYear[passByYear.length - 1];
-    const delta = (last.pass_rate - first.pass_rate).toFixed(1);
-    insights.push(`Pass rate ${delta > 0 ? "increased" : "decreased"} by ${Math.abs(delta)}% from ${first.label} to ${last.label} (${first.pass_rate.toFixed(1)}% → ${last.pass_rate.toFixed(1)}%).`);
-  }
-
-  // Review impact
-  if (passByReview.length >= 2) {
-    const attended = passByReview.find(x => x.label?.toLowerCase().includes("attended"));
-    const notAttended = passByReview.find(x => x.label?.toLowerCase().includes("no formal"));
-    if (attended && notAttended) {
-      const diff = (attended.pass_rate - notAttended.pass_rate).toFixed(1);
-      insights.push(`Students who attended formal review outperformed those who did not by ${diff}% (${attended.pass_rate.toFixed(1)}% vs ${notAttended.pass_rate.toFixed(1)}%).`);
-    }
-  }
-
-  // Subject trend
-  if (subjectTrends.length >= 2) {
-    const first = subjectTrends[0];
-    const last = subjectTrends[subjectTrends.length - 1];
-    const subjects = [
-      { id: "EE", delta: last.EE_avg - first.EE_avg },
-      { id: "MATH", delta: last.MATH_avg - first.MATH_avg },
-      { id: "ESAS", delta: last.ESAS_avg - first.ESAS_avg },
-    ];
-    const weakest = subjects.reduce((a, b) => (last[`${a.id}_avg`] < last[`${b.id}_avg`] ? a : b));
-    insights.push(`Subject ${weakest.id} has the lowest latest-cohort average (${last[`${weakest.id}_avg`]}). ${weakest.delta >= 0 ? "It is improving." : "It shows a declining trend."}`);
-  }
-
-  // GWA gap
-  if (ov.avg_gwa_passers && ov.avg_gwa_failers) {
-    insights.push(`GWA gap between passers (${num(ov.avg_gwa_passers)}) and failers (${num(ov.avg_gwa_failers)}) is ${num(ov.avg_gwa_failers - ov.avg_gwa_passers)} points — a strong predictive signal.`);
-  }
-
-  // Top feature
-  if (featureImp.length) {
-    insights.push(`Top predictor for board exam success: "${featureImp[0]?.label}" (importance = ${featureImp[0]?.value?.toFixed(4)}), followed by "${featureImp[1]?.label}".`);
-  }
-
-  // Review filter insight
-  if (filters?.review) {
-    const reviewed = data.pass_rate_by_review?.find(x =>
-      filters.review === "Yes" ? x.label?.toLowerCase().includes("attended") : x.label?.toLowerCase().includes("no formal")
-    );
-    if (reviewed) insights.push(`Filtered view: Students who ${filters.review === "Yes" ? "attended" : "did not attend"} formal review — pass rate: ${pct(reviewed.pass_rate)} (n=${reviewed.total}).`);
-  }
-
-  return insights.slice(0, 6);
-}
+import ProfessorTabsNav from "./professor/ProfessorTabsNav";
+import ProfessorTimingModal from "./professor/ProfessorTimingModal";
+import ModelOverviewDashboard from "./professor/ModelOverviewDashboard";
+import {
+  c,
+  MONTH_NAMES,
+  CHART_COLORS,
+  pct,
+  num,
+  CustomTooltip,
+  MetricCard,
+  ChartContainer,
+  FilterPanel,
+  InsightBox,
+  buildMockData,
+  generateInsights,
+} from "./professor/ProfessorShared";
 
 // ── Main ProfessorPage ────────────────────────────────────────────────────────
 export default function ProfessorPage({ onLogout }) {
@@ -628,6 +305,7 @@ export default function ProfessorPage({ onLogout }) {
   ], [reviewYesTotal, reviewNoTotal]);
 
   const TABS = [
+    { id: "model_overview",         label: "Model Overview",        icon: "🧭" },
     { id: "overview",               label: "Overview",              icon: "📊" },
     { id: "performance",            label: "Performance",           icon: "📈" },
     { id: "features",               label: "Feature Importance",    icon: "🤖" },
@@ -667,73 +345,13 @@ export default function ProfessorPage({ onLogout }) {
         .recharts-text { fill: #64748b !important; font-family: 'DM Sans',sans-serif !important; font-size: 11px !important; }
       `}</style>
 
-      {/* ══ STICKY TOP NAV ══ */}
-      <nav style={{
-        position: "sticky", top: 0, zIndex: 50,
-        background: "rgba(6,11,20,0.96)", backdropFilter: "blur(20px)",
-        borderBottom: "1px solid rgba(255,255,255,0.06)",
-        padding: "0 28px", display: "flex", alignItems: "center",
-        justifyContent: "space-between", height: 72,
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            {["/slsulogo.png", "/slsulogo1.png", "/slsulogo2.png"].map((src, idx) => (
-              <img key={src} src={src} alt={`Logo ${idx + 1}`}
-                style={{ width: 32, height: 32, objectFit: "contain", opacity: 0.95 }} />
-            ))}
-          </div>
-          <div style={{ borderLeft: "1px solid rgba(255,255,255,0.08)", paddingLeft: 14 }}>
-            <p style={{ margin: 0, fontSize: 16, fontWeight: 800, color: "#f1f5f9", letterSpacing: "0.01em", fontFamily: "'Syne',sans-serif" }}>Insights Dashboard</p>
-            <p style={{ margin: 0, fontSize: 10, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.08em" }}>Faculty Portal · SLSU IIEE</p>
-          </div>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <button onClick={fetchAnalytics} style={{
-            background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.09)",
-            borderRadius: 10, padding: "8px 16px", color: "#64748b", fontSize: 12,
-            cursor: "pointer", transition: "all 0.2s", fontFamily: "'DM Sans',sans-serif",
-          }} onMouseEnter={e => e.currentTarget.style.color = c.blue} onMouseLeave={e => e.currentTarget.style.color = "#64748b"}>
-            ↻ Refresh
-          </button>
-          <div style={{
-            display: "flex", alignItems: "center", gap: 7,
-            background: "rgba(139,92,246,0.1)", border: "1px solid rgba(139,92,246,0.22)",
-            borderRadius: 999, padding: "7px 14px",
-          }}>
-            <span style={{ fontSize: 13 }}>🔬</span>
-            <span style={{ fontSize: 12, fontWeight: 700, color: "#a78bfa" }}>Faculty</span>
-          </div>
-          <button onClick={onLogout} style={{
-            background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.09)",
-            borderRadius: 10, padding: "8px 18px", color: "#64748b", fontSize: 12,
-            cursor: "pointer", transition: "all 0.2s", fontFamily: "'DM Sans',sans-serif",
-          }}
-            onMouseEnter={e => { e.currentTarget.style.color = c.fail; e.currentTarget.style.borderColor = "rgba(248,113,113,0.3)"; }}
-            onMouseLeave={e => { e.currentTarget.style.color = "#64748b"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.09)"; }}>
-            Sign Out
-          </button>
-        </div>
-      </nav>
-
-      {/* ══ TAB BAR ══ */}
-      <div style={{
-        background: "rgba(6,11,20,0.85)", backdropFilter: "blur(10px)",
-        borderBottom: "1px solid rgba(255,255,255,0.05)",
-        padding: "0 20px", display: "flex", gap: 2, overflowX: "auto",
-        scrollbarWidth: "none",
-      }}>
-        {TABS.map(tab => (
-          <button key={tab.id} className="tab-btn" onClick={() => setActiveTab(tab.id)} style={{
-            padding: "15px 18px", fontSize: 12,
-            fontWeight: activeTab === tab.id ? 700 : 400,
-            color: activeTab === tab.id ? c.blue : "#475569",
-            borderBottom: `2px solid ${activeTab === tab.id ? c.blue : "transparent"}`,
-            whiteSpace: "nowrap", letterSpacing: "0.01em",
-          }}>
-            <span style={{ marginRight: 5 }}>{tab.icon}</span>{tab.label}
-          </button>
-        ))}
-      </div>
+      <ProfessorTabsNav
+        activeTab={activeTab}
+        tabs={TABS}
+        onTabChange={setActiveTab}
+        onRefresh={fetchAnalytics}
+        onLogout={onLogout}
+      />
 
       {/* ══ MAIN CONTENT ══ */}
       <main style={{ maxWidth: 1280, margin: "0 auto", padding: "28px 20px 80px" }}>
@@ -749,6 +367,28 @@ export default function ProfessorPage({ onLogout }) {
 
         {!loading && data && (
           <>
+            {activeTab === "model_overview" && (
+              <ModelOverviewDashboard
+                dashFilters={dashFilters}
+                setDashFilters={setDashFilters}
+                availableYears={availableYears}
+                localInsights={localInsights}
+                ov={ov}
+                passByYear={passByYear}
+                passByStrand={passByStrand}
+                passByReview={passByReview}
+                passByDur={passByDur}
+                sectionScores={sectionScores}
+                weakestQ={weakestQ}
+                subjectTrends={subjectTrends}
+                filteredSubjectTrends={filteredSubjectTrends}
+                correlation={correlation}
+                scatterData={scatterData}
+                pieData={pieData}
+                reviewPieData={reviewPieData}
+              />
+            )}
+
             {/* ══════════════════════════════════════════════════════════════
                 OVERVIEW TAB
             ══════════════════════════════════════════════════════════════ */}
@@ -1973,51 +1613,13 @@ export default function ProfessorPage({ onLogout }) {
         )}
       </main>
 
-      {/* ══ TIMING MODAL (unchanged logic, improved style) ══ */}
-      {timingModalOpen && (
-        <div
-          style={{ position: "fixed", inset: 0, background: "rgba(2,6,23,0.8)", backdropFilter: "blur(6px)", zIndex: 80, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
-          onClick={() => setTimingModalOpen(false)}
-        >
-          <div
-            style={{ width: "min(980px, 96vw)", maxHeight: "85vh", overflow: "auto", background: "#0b1220", border: "1px solid rgba(148,163,184,0.2)", borderRadius: 16, padding: 20 }}
-            onClick={e => e.stopPropagation()}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14, gap: 10 }}>
-              <div>
-                <p style={{ margin: 0, fontSize: 17, fontWeight: 800, color: "#f8fafc", fontFamily: "'Syne',sans-serif" }}>Attempt Timer Drill-down</p>
-                <p style={{ margin: "2px 0 0", fontSize: 12, color: "#94a3b8" }}>
-                  {selectedTimingAttempt?.name || "Unknown"} · {selectedTimingAttempt?.attempt_id ? selectedTimingAttempt.attempt_id.slice(0, 8) : ""}
-                </p>
-              </div>
-              <button onClick={() => setTimingModalOpen(false)} style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 8, padding: "7px 12px", color: "#cbd5e1", cursor: "pointer", fontSize: 13 }}>✕ Close</button>
-            </div>
-            {selectedTimingLoading ? (
-              <p style={{ color: "#94a3b8" }}>Loading timing details…</p>
-            ) : selectedTimingData?.error ? (
-              <p style={{ color: "#fca5a5" }}>{selectedTimingData.error}</p>
-            ) : (
-              <div style={{ overflowX: "auto" }}>
-                <table className="att-table">
-                  <thead><tr><th>Question</th><th>Section</th><th>Order</th><th>Actual Duration (sec)</th><th>Expected Range (sec)</th><th>Human-like?</th></tr></thead>
-                  <tbody>
-                    {(selectedTimingData?.items ?? []).map((t, i) => (
-                      <tr key={i}>
-                        <td>{t.question_key}</td>
-                        <td>{t.step_id || "—"}</td>
-                        <td>{t.question_index ?? "—"}</td>
-                        <td>{t.duration_sec ?? "—"}</td>
-                        <td>{t.expected_min_sec != null && t.expected_max_sec != null ? `${t.expected_min_sec} - ${t.expected_max_sec}` : "—"}</td>
-                        <td style={{ color: t.is_human_like ? c.pass : c.fail, fontWeight: 700 }}>{t.is_human_like ? "Yes" : "No"}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      <ProfessorTimingModal
+        attempt={selectedTimingAttempt}
+        open={timingModalOpen}
+        loading={selectedTimingLoading}
+        data={selectedTimingData}
+        onClose={() => setTimingModalOpen(false)}
+      />
     </div>
   );
 }
