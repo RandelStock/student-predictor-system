@@ -529,20 +529,6 @@ const styles = `
   }
 `;
 
-/* ─── Helpers ─────────────────────────────────────────────────────────────── */
-function normalizeSheetUrl(url) {
-  if (!url) return null;
-  const idMatch = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
-  if (!idMatch) return null;
-  const gidMatch = url.match(/[?&]gid=([0-9]+)/);
-  return `https://docs.google.com/spreadsheets/d/${idMatch[1]}/gviz/tq?tqx=out:csv&gid=${gidMatch?.[1] ?? "0"}`;
-}
-
-function parseCsvPreview(csvText, limit = 6) {
-  return csvText.split(/\r?\n/).filter(Boolean).slice(0, limit)
-    .map((line) => line.split(",").map((v) => v.replace(/^"|"$/g, "").trim()));
-}
-
 /* ─── Sub-components ──────────────────────────────────────────────────────── */
 function IIEETooltip({ active, payload, label, formatter }) {
   if (!active || !payload?.length) return null;
@@ -715,18 +701,14 @@ export default function ModelOverviewDashboard({
   modelInfo,
   // From ModelOverviewDashboard props
   passByStrand,
-  passByReview,
   sectionScores,
   weakestQ,
   subjectTrends,
-  filteredSubjectTrends: propFilteredSubjectTrends,
   correlation,
   scatterData,
 }) {
-  const [sheetUrl, setSheetUrl]         = useState("");
-  const [sheetLoading, setSheetLoading] = useState(false);
-  const [sheetError, setSheetError]     = useState("");
-  const [sheetPreview, setSheetPreview] = useState([]);
+  // Removed sheet preview UI (Section 3 removed), this state is not used in dashboard view
+  // so we keep the dashboard lean and avoid no-unused-vars lint warnings.
 
   /* ── Pie Chart Hover State ── */
   const [activeDistributionIndex, setActiveDistributionIndex] = useState(null);
@@ -803,15 +785,6 @@ export default function ModelOverviewDashboard({
     return propFilteredReview;
   }, [selectedYear, propFilteredReview]);
 
-  // Filter subject trends for the selected year
-  const filteredSubjectTrends = useMemo(() => {
-    if (!selectedYear) return propFilteredSubjectTrends?.length ? propFilteredSubjectTrends : subjectTrends;
-    if (subjectTrends?.some((s) => s.year === selectedYear)) {
-      return subjectTrends.filter((s) => s.year === selectedYear);
-    }
-    return propFilteredSubjectTrends?.length ? propFilteredSubjectTrends : subjectTrends;
-  }, [selectedYear, propFilteredSubjectTrends, subjectTrends]);
-
   // Model regression chart data for Academic signal display
   const regressionChartData = useMemo(() => {
     if (!modelInfo) return [];
@@ -878,19 +851,6 @@ export default function ModelOverviewDashboard({
 
   const barColor = (rate) =>
     rate >= 70 ? IIEE.passGreen : rate >= 55 ? IIEE.amber : IIEE.failRed;
-
-  const handlePreviewSheet = async () => {
-    const csvUrl = normalizeSheetUrl(sheetUrl);
-    if (!csvUrl) { setSheetError("Invalid Google Sheets URL."); setSheetPreview([]); return; }
-    setSheetLoading(true); setSheetError("");
-    try {
-      const res = await fetch(csvUrl);
-      if (!res.ok) throw new Error();
-      setSheetPreview(parseCsvPreview(await res.text()));
-    } catch {
-      setSheetError("Could not load read-only sheet preview."); setSheetPreview([]);
-    } finally { setSheetLoading(false); }
-  };
 
   return (
     <div className="iiee-combined fade-in">
