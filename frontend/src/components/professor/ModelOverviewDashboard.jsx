@@ -647,7 +647,6 @@ function ProgressBar({ value, color }) {
 
 function CorrelationBlock({ title, explanation, points = [], color = IIEE.blue, xLabel = "X", yLabel = "Y" }) {
   const [activeScatterIndex, setActiveScatterIndex] = useState(null);
-  const brightColor = color === IIEE.blue ? "#60a5fa" : color === IIEE.teal ? "#2dd4bf" : color === IIEE.indigo ? "#a78bfa" : color;
   return (
     <div className="comb-corr-block">
       <div>
