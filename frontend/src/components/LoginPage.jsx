@@ -25,10 +25,12 @@ const T = {
 };
 
 export default function LoginPage({ role, onSuccess, onBack }) {
+  const FACULTY_CODE_ENV = import.meta.env.VITE_FACULTY_CODE || "";
+  const [inviteCode, setInviteCode] = useState(FACULTY_CODE_ENV);
+
   const [name, setName]             = useState("");
   const [email, setEmail]           = useState("");
   const [password, setPassword]     = useState("");
-  const [inviteCode, setInviteCode] = useState("");
   const [error, setError]           = useState("");
   const [loading, setLoading]       = useState(false);
   const [showPass, setShowPass]     = useState(false);
