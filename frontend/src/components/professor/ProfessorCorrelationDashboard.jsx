@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { c, ChartContainer, FilterPanel } from "./ProfessorShared";
 
 /* ─── IIEE Design Tokens ──────────────────────────────────────────────────── */
@@ -41,8 +40,6 @@ const styles = `
 `;
 
 export default function ProfessorCorrelationDashboard({ correlation }) {
-  const [hoveredCell, setHoveredCell] = useState(null);
-
   return (
     <div className="correlation-dashboard fade-in">
       <style>{styles}</style>

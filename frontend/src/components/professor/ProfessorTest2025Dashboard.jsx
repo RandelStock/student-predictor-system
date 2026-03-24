@@ -1,4 +1,3 @@
-import { useState } from "react";
 import ExamineeDetailPanel from "../ExamineeDetailPanel";
 import {
   ScatterChart,
