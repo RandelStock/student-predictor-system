@@ -1,85 +1,103 @@
 =================================================================
   REE PREDICTOR - MODEL EVALUATION REPORT
 =================================================================
-  Training : DATA_MODEL (53 rows) + DATA_SYSTEM (250 rows, reg-A)
-  Testing  : DATA_TEST (21 rows, 2025 - completely held out)
-  Train PASS:30 | FAIL:23
+  Training : DATA_MODEL (60 rows, 2022-2025 with survey)
+           + DATA_SYSTEM 2022-2024 (250 rows, no survey) for Reg-A
+  Testing  : DATA_TEST (21 rows, 2025 Apr+Aug — completely held out)
+
+  Train PASS:35 | FAIL:25
   Test  PASS:5  | FAIL:16
 
+  NOTE: DATA_UPCOMING (333 rows, 2022-2025) is NOT used here.
+        It is the single source of truth for dashboard analytics
+        (all 333 examiners). main.py loads it via /dashboard.
+
 -----------------------------------------------------------------
-  MODEL 1: CLASSIFICATION (tested on 2025 DATA_TEST)
+  MODEL 1: CLASSIFICATION (tested on 2025 DATA_TEST, 21 rows)
 -----------------------------------------------------------------
+  Train rows        : 60 (DATA_MODEL, all years, survey+scores)
   Features used     : 88
-  Accuracy          : 0.9524 (95.24%)
-  Precision         : 0.8333
+  Accuracy          : 0.9048 (90.48%)
+  Precision         : 0.7143
   Recall            : 1.0000
-  F1-Score          : 0.9091
-  5-Fold CV Accuracy: 0.9636 +/- 0.0727
-  5-Fold CV F1      : 0.9714 +/- 0.0571
+  F1-Score          : 0.8333
+  5-Fold CV Accuracy: 0.9500 +/- 0.0408
+  5-Fold CV F1      : 0.9579 +/- 0.0345
 
   Confusion Matrix:
                Predicted FAIL  Predicted PASS
-  Actual FAIL         15               1
+  Actual FAIL         14               2
   Actual PASS          0               5
 
   Classification Report:
               precision    recall  f1-score   support
 
-        FAIL       1.00      0.94      0.97        16
-        PASS       0.83      1.00      0.91         5
+        FAIL       1.00      0.88      0.93        16
+        PASS       0.71      1.00      0.83         5
 
-    accuracy                           0.95        21
-   macro avg       0.92      0.97      0.94        21
-weighted avg       0.96      0.95      0.95        21
+    accuracy                           0.90        21
+   macro avg       0.86      0.94      0.88        21
+weighted avg       0.93      0.90      0.91        21
 
 -----------------------------------------------------------------
   MODEL 2A: REGRESSION (EE+MATH+ESAS+GWA, 310 train rows)
 -----------------------------------------------------------------
+  Train rows        : 310 (DATA_MODEL 60 + DATA_SYSTEM 2022-2024 250)
   Features          : 4
-  MAE               : 1.4262 pts
-  RMSE              : 1.7482 pts
-  R2                : 0.9783
-  5-Fold CV R2      : 0.9852 +/- 0.0032
-  5-Fold CV MAE     : 0.8056 +/- 0.1175
+  MAE               : 1.1722 pts
+  RMSE              : 1.4837 pts
+  R2                : 0.9844
+  5-Fold CV R2      : 0.9847 +/- 0.0016
+  5-Fold CV MAE     : 0.8327 +/- 0.0593
 
 -----------------------------------------------------------------
   MODEL 2B: REGRESSION (GWA+Survey only, 60 train rows)
 -----------------------------------------------------------------
+  Train rows        : 60 (DATA_MODEL only)
   Features          : 85
-  MAE               : 9.2991 pts
-  RMSE              : 10.8448 pts
-  R2                : 0.1663
-  5-Fold CV R2      : 0.5121 +/- 0.1687
-  5-Fold CV MAE     : 6.2690 +/- 1.0850
+  MAE               : 9.1994 pts
+  RMSE              : 11.8115 pts
+  R2                : 0.0111
+  5-Fold CV R2      : 0.6002 +/- 0.1062
+  5-Fold CV MAE     : 5.6967 +/- 1.2927
 
   NOTE: Model 2B excludes subject scores to avoid data leakage.
+        Useful for early-stage prediction before subject scores are known.
 
 -----------------------------------------------------------------
   TOP 5 KEY FACTORS
 -----------------------------------------------------------------
-  [CLF]   0.1675  ESAS
-  [CLF]   0.1281  EE
-  [CLF]   0.1137  MATH
-  [CLF]   0.1114  GWA
-  [CLF]   0.0460  I attended a formal board review program.
+  [CLF]   0.1676  ESAS
+  [CLF]   0.1260  MATH
+  [CLF]   0.1105  GWA
+  [CLF]   0.1045  EE
+  [CLF]   0.0453  I utilized various learning resources (review handouts, text
 
-  [REG-A] 0.8309  ESAS
-  [REG-A] 0.0996  MATH
-  [REG-A] 0.0663  EE
-  [REG-A] 0.0032  GWA
+  [REG-A] 0.8338  ESAS
+  [REG-A] 0.0867  MATH
+  [REG-A] 0.0762  EE
+  [REG-A] 0.0033  GWA
 
-  [REG-B] 0.4876  GWA
-  [REG-B] 0.2249  I attended a formal board review program.
-  [REG-B] 0.0359  2.  Instructors effectively explained complex Electrical Eng
-  [REG-B] 0.0331  I utilized various learning resources (review handouts, text
-  [REG-B] 0.0200  4.  Instructors encouraged critical thinking and analytical 
+  [REG-B] 0.5002  GWA
+  [REG-B] 0.1620  I attended a formal board review program.
+  [REG-B] 0.0605  I utilized various learning resources (review handouts, text
+  [REG-B] 0.0268  2.  Instructors effectively explained complex Electrical Eng
+  [REG-B] 0.0251  4.  Instructors encouraged critical thinking and analytical 
 
 -----------------------------------------------------------------
   COMPARISON SUMMARY
 -----------------------------------------------------------------
-  Model                                    MAE     RMSE       R2
-  -----------------------------------------------------------
-  Reg A (EE+MATH+ESAS+GWA, 310 rows)    1.4262   1.7482   0.9783
-  Reg B (GWA+survey, 60 rows)           9.2991  10.8448   0.1663
+  Model                                         MAE     RMSE       R2
+  ----------------------------------------------------------------
+  Reg A (EE+MATH+ESAS+GWA, 310 rows)         1.1722   1.4837   0.9844
+  Reg B (GWA+survey, 60 rows)                9.1994  11.8115   0.0111
 
-  Model A outperforms B - subject scores dominate prediction.
+  Model A outperforms B — subject scores dominate prediction.
+
+-----------------------------------------------------------------
+  DASHBOARD DATA SOURCE CLARIFICATION
+-----------------------------------------------------------------
+  Institutional dashboard (main.py) MUST use DATA_UPCOMING (333 rows)
+  for all 2022-2025 analytics. This is the complete, deduplicated
+  dataset covering every examiner. Do NOT combine DATA_SYSTEM + DATA_TEST
+  as that introduces duplicate 2025 rows and gives incorrect totals.
