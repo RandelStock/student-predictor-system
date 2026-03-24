@@ -1,3 +1,4 @@
+import { useState } from "react";
 import ExamineeDetailPanel from "../ExamineeDetailPanel";
 import {
   ScatterChart,
@@ -16,8 +17,45 @@ import {
   num,
   MetricCard,
   ChartContainer,
-  DashboardGuide,
+  FilterPanel,
 } from "./ProfessorShared";
+
+const IIEE_COLORS = {
+  primary: '#1e3a8a',
+  secondary: '#fbbf24',
+  accent: '#06b6d4',
+  background: '#0f172a',
+  surface: '#1e293b',
+  text: '#f8fafc',
+  muted: '#64748b',
+};
+
+const styles = `
+  .test2025-dashboard {
+    background: ${IIEE_COLORS.background};
+    min-height: 100vh;
+    color: ${IIEE_COLORS.text};
+    font-family: 'DM Sans', sans-serif;
+  }
+  .sticky-filter {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: rgba(15, 26, 42, 0.95);
+    border: 1px solid rgba(251, 191, 36, 0.18);
+    border-radius: 14px;
+    padding: 14px 18px;
+    margin-bottom: 24px;
+    backdrop-filter: blur(16px);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+  .chart-description {
+    margin-top: 10px;
+    font-size: 12px;
+    color: ${IIEE_COLORS.muted};
+    line-height: 1.5;
+  }
+`;
 
 export default function ProfessorTest2025Dashboard({
   testLoading,
@@ -29,8 +67,17 @@ export default function ProfessorTest2025Dashboard({
   test2025Run,
   test2025RunLoading,
 }) {
+
   return (
-    <div className="fade-in">
+    <div className="test2025-dashboard fade-in">
+      <style>{styles}</style>
+      <div style={{ marginBottom: 22 }}>
+        <h2 style={{ margin: "0 0 4px", fontSize: 22, fontWeight: 800, fontFamily: "'Syne',sans-serif", color: IIEE_COLORS.secondary }}>2025 Test Data Evaluation</h2>
+        <p style={{ margin: 0, fontSize: 13, color: IIEE_COLORS.muted }}>Held-out evaluation on <strong>DATA_TEST.xlsx</strong> (2025 only).</p>
+      </div>
+      <div className="sticky-filter">
+        <FilterPanel />
+      </div>
       <div style={{ marginBottom: 22 }}>
         <h2 style={{ margin: "0 0 4px", fontSize: 22, fontWeight: 800, fontFamily: "'Syne',sans-serif" }}>2025 Final Defense</h2>
         <p style={{ margin: 0, fontSize: 13, color: "#64748b" }}>Held-out evaluation on <strong>DATA_TEST.xlsx</strong> (2025).</p>
@@ -52,29 +99,31 @@ export default function ProfessorTest2025Dashboard({
       ) : test2025 ? (
         <>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(175px,1fr))", gap: 12, marginBottom: 20 }}>
-            <MetricCard label="Test Accuracy" value={pct((test2025.classification?.accuracy ?? 0) * 100)} color={(test2025.classification?.accuracy ?? 0) >= 0.9 ? c.pass : c.amber} icon="🎯" />
-            <MetricCard label="Precision" value={pct((test2025.classification?.precision ?? 0) * 100)} color={c.blue} icon="🔬" />
-            <MetricCard label="Recall" value={pct((test2025.classification?.recall ?? 0) * 100)} color={c.indigo} icon="📡" />
-            <MetricCard label="F1-Score" value={pct((test2025.classification?.f1 ?? 0) * 100)} color={c.teal} icon="⚖️" />
+            <MetricCard label="Test Accuracy" value={pct((test2025.classification?.accuracy ?? 0) * 100)} color={(test2025.classification?.accuracy ?? 0) >= 0.9 ? c.pass : c.amber} icon="🎯" hint="Overall correct pass/fail predictions on held-out 2025 test set." />
+            <MetricCard label="Precision" value={pct((test2025.classification?.precision ?? 0) * 100)} color={c.blue} icon="🔬" hint="Low false positives: correct pass predictions out of all pass predictions." />
+            <MetricCard label="Recall" value={pct((test2025.classification?.recall ?? 0) * 100)} color={c.indigo} icon="📡" hint="Low false negatives: true passes captured by the model." />
+            <MetricCard label="F1-Score" value={pct((test2025.classification?.f1 ?? 0) * 100)} color={c.teal} icon="⚖️" hint="Balance of precision and recall for 2025 classification performance." />
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
-            <ChartContainer title="Regression A (EE+MATH+ESAS+GWA)" icon="📉" subtitle="Predicted PRC TOTAL RATING — model 2A" accent={c.blue}>
+            <ChartContainer title="Regression A (EE+MATH+ESAS+GWA)" icon="📉" subtitle="Predicted PRC TOTAL RATING — model A" accent={IIEE_COLORS.accent}>
               {[["R²", "r2", 4], ["MAE", "mae", 4], ["MSE", "mse", 4], ["RMSE", "rmse", 4]].map(([label, key, d]) => (
                 <div key={key} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-                  <span style={{ fontSize: 13, color: "#94a3b8" }}>{label}</span>
-                  <span style={{ fontSize: 15, fontWeight: 800, color: c.blue, fontFamily: "'Syne',sans-serif" }}>{num(test2025.regression?.a?.[key], d)}</span>
+                  <span style={{ fontSize: 13, color: IIEE_COLORS.muted }}>{label}</span>
+                  <span style={{ fontSize: 15, fontWeight: 800, color: IIEE_COLORS.accent, fontFamily: "'Syne',sans-serif" }}>{num(test2025.regression?.a?.[key], d)}</span>
                 </div>
               ))}
+              <div className="chart-description">This section shows model A performance on 2025 test data only. Lower MAE/RMSE and higher R² indicate stronger prediction quality for final rating data.</div>
             </ChartContainer>
 
-            <ChartContainer title="Regression B (GWA + Survey only)" icon="🧠" subtitle="Predicted PRC TOTAL RATING — model 2B (no subjects)" accent={c.indigo}>
+            <ChartContainer title="Regression B (GWA + Survey only)" icon="🧠" subtitle="Predicted PRC TOTAL RATING — model B (no subjects)" accent={IIEE_COLORS.primary}>
               {[["R²", "r2", 4], ["MAE", "mae", 4], ["MSE", "mse", 4], ["RMSE", "rmse", 4]].map(([label, key, d]) => (
                 <div key={key} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-                  <span style={{ fontSize: 13, color: "#94a3b8" }}>{label}</span>
+                  <span style={{ fontSize: 13, color: IIEE_COLORS.muted }}>{label}</span>
                   <span style={{ fontSize: 15, fontWeight: 800, color: c.indigo, fontFamily: "'Syne',sans-serif" }}>{num(test2025.regression?.b?.[key], d)}</span>
                 </div>
               ))}
+              <div className="chart-description">This section shows model B performance on 2025 test data only. It is built without subject scores to validate survey-only predictive capacity.</div>
             </ChartContainer>
           </div>
 

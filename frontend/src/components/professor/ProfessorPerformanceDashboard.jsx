@@ -1,3 +1,4 @@
+
 import {
   LineChart,
   Line,
@@ -23,16 +24,9 @@ import {
   num,
   CustomTooltip,
   ChartContainer,
-  DashboardGuide,
-  FilterPanel,
-  InsightBox,
 } from "./ProfessorShared";
 
 export default function ProfessorPerformanceDashboard({
-  dashFilters,
-  setDashFilters,
-  availableYears,
-  localInsights,
   passByStrand,
   sectionScores,
   subjectTrends,
@@ -45,19 +39,19 @@ export default function ProfessorPerformanceDashboard({
         <h2 style={{ margin: "0 0 4px", fontSize: 22, fontWeight: 800, fontFamily: "'Syne',sans-serif" }}>Performance Breakdown</h2>
         <p style={{ margin: 0, fontSize: 13, color: "#64748b" }}>Pass rates by SHS strand, survey section scores, and subject score trends by year.</p>
       </div>
-      <DashboardGuide
-        items={[
-          { label: "Strand performance", text: "Compares pass rates by SHS track so weak/strong cohorts are visible." },
-          { label: "Section and subject trends", text: "Radar/bar/line charts show where passers and failers differ and how subjects move by year." },
-          { label: "Interpretation", text: "Watch trend direction, threshold crossings, and widest gaps to prioritize interventions." },
-        ]}
-      />
 
-      <FilterPanel filters={dashFilters} onChange={setDashFilters} availableYears={availableYears} />
-      <InsightBox insights={localInsights} />
-
-      <div className="dash-grid">
-        <ChartContainer title="Pass Rate by SHS Strand" icon="🎓" subtitle="Senior High School track performance comparison" accent={c.teal}>
+      <div style={{
+        position: "sticky",
+        top: 86,
+        zIndex: 30,
+        background: "rgba(7, 16, 43, 0.95)",
+        padding: "10px 14px",
+        borderRadius: 14,
+        border: "1px solid rgba(255,255,255,0.12)",
+        boxShadow: "0 12px 30px rgba(0,0,0,0.26)",
+        backdropFilter: "blur(12px)",
+        marginBottom: 12,
+      }}>
           <ResponsiveContainer width="100%" height={240}>
             <BarChart data={passByStrand} layout="vertical" margin={{ top: 4, right: 30, left: 0, bottom: 4 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
@@ -72,12 +66,15 @@ export default function ProfessorPerformanceDashboard({
               </Bar>
             </BarChart>
           </ResponsiveContainer>
+          <p style={{ marginTop: 10, fontSize: 12, color: "#94a3b8" }}>
+            This chart compares SHS strands on pass rate, showing areas below the 70% threshold (reference line) for targeted improvement.
+          </p>
           {passByStrand.length > 0 && (
             <div style={{ marginTop: 10, background: "rgba(255,255,255,0.025)", borderRadius: 10, padding: "10px 12px", fontSize: 12, color: "#64748b", lineHeight: 1.6 }}>
               💡 STEM graduates lead with <strong style={{ color: "#f1f5f9" }}>{pct(passByStrand[0]?.pass_rate)}</strong>, aligned with its math-heavy curriculum.
             </div>
           )}
-        </ChartContainer>
+        
 
         <ChartContainer title="Survey Section Scores — Radar" icon="🕸️" subtitle="Passers vs Failers across all survey dimensions" accent={c.indigo}>
           <ResponsiveContainer width="100%" height={260}>
@@ -91,6 +88,9 @@ export default function ProfessorPerformanceDashboard({
               <Tooltip content={<CustomTooltip formatter={(v) => `${v}%`} />} />
             </RadarChart>
           </ResponsiveContainer>
+          <p style={{ marginTop: 8, fontSize: 12, color: "#94a3b8" }}>
+            Radar view reveals relative strengths and weaknesses across survey sections for passers versus failers.
+          </p>
         </ChartContainer>
 
         <ChartContainer title="Survey Section Scores — Comparison" icon="📊" subtitle="Average section score split by exam outcome" fullWidth accent={c.blue}>
@@ -105,6 +105,9 @@ export default function ProfessorPerformanceDashboard({
               <Bar dataKey="Failers" fill={c.fail} radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
+          <p style={{ marginTop: 8, fontSize: 12, color: "#94a3b8" }}>
+            Compare average survey section scores for passers and failers to identify major non-academic gaps.
+          </p>
         </ChartContainer>
 
         {subjectTrends.length > 0 && (
@@ -122,7 +125,9 @@ export default function ProfessorPerformanceDashboard({
                 <Line type="monotone" dataKey="ESAS_avg" name="ESAS" stroke={c.teal} strokeWidth={2.5} dot={{ fill: c.teal, r: 4 }} activeDot={{ r: 6 }} />
               </LineChart>
             </ResponsiveContainer>
-
+            <p style={{ marginTop: 8, fontSize: 12, color: "#94a3b8" }}>
+              Year-over-year subject trends show curriculum performance momentum and identify which domains are consistently below the passing line.
+            </p>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginTop: 14 }}>
               {["EE", "MATH", "ESAS"].map((subj, i) => {
                 const last = subjectTrends[subjectTrends.length - 1];

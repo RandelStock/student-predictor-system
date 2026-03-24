@@ -2,7 +2,6 @@ import { useMemo } from "react";
 import {
   BarChart,
   Bar,
-  Cell,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -15,8 +14,51 @@ import {
   num,
   CustomTooltip,
   ChartContainer,
-  DashboardGuide,
+  FilterPanel,
 } from "./ProfessorShared";
+
+/* ─── IIEE Design Tokens ──────────────────────────────────────────────────── */
+const IIEE_COLORS = {
+  primary: '#1e3a8a', // Navy blue
+  secondary: '#fbbf24', // Gold
+  accent: '#06b6d4', // Cyan
+  background: '#0f172a', // Dark navy
+  surface: '#1e293b', // Slate
+  text: '#f8fafc', // Light gray
+  muted: '#64748b', // Muted slate
+};
+
+/* ─── Styles ──────────────────────────────────────────────────────────────── */
+const styles = `
+  .curriculum-dashboard {
+    background: ${IIEE_COLORS.background};
+    min-height: 100vh;
+    color: ${IIEE_COLORS.text};
+    font-family: 'DM Sans', sans-serif;
+  }
+  .sticky-filter {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: rgba(15, 26, 42, 0.95);
+    border: 1px solid rgba(251, 191, 36, 0.18);
+    border-radius: 14px;
+    padding: 14px 18px;
+    margin-bottom: 24px;
+    backdrop-filter: blur(16px);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+  .chart-description {
+    margin-top: 10px;
+    font-size: 12px;
+    color: ${IIEE_COLORS.muted};
+    line-height: 1.5;
+  }
+  .scrollable-chart {
+    max-height: 400px;
+    overflow-y: auto;
+  }
+`;
 
 function TinyBar({ value = 0, max = 100, color = "#38bdf8", height = 5 }) {
   const width = `${Math.max(0, Math.min(100, (value / max) * 100))}%`;
@@ -41,22 +83,21 @@ export default function ProfessorCurriculumDashboard({ weakestQ }) {
   }, [weakestQ]);
 
   return (
-    <div className="fade-in">
+    <div className="curriculum-dashboard fade-in">
+      <style>{styles}</style>
       <div style={{ marginBottom: 22 }}>
-        <h2 style={{ margin: "0 0 4px", fontSize: 22, fontWeight: 800, fontFamily: "'Syne',sans-serif" }}>Curriculum Gap Analysis</h2>
-        <p style={{ margin: 0, fontSize: 13, color: "#64748b" }}>Survey items with the lowest scores — indicating institutional weaknesses.</p>
+        <h2 style={{ margin: "0 0 4px", fontSize: 22, fontWeight: 800, fontFamily: "'Syne',sans-serif", color: IIEE_COLORS.secondary }}>Curriculum Gap Analysis</h2>
+        <p style={{ margin: 0, fontSize: 13, color: IIEE_COLORS.muted }}>Survey items with the lowest scores — indicating institutional weaknesses.</p>
       </div>
-      <DashboardGuide
-        items={[
-          { label: "What the scores mean", text: "Higher average Likert values indicate stronger disagreement and larger curriculum gaps." },
-          { label: "Category summary", text: "Groups weak items by section to show which curriculum areas need priority action." },
-          { label: "Decision use", text: "Focus first on high-severity items and sections, then track score shifts over time." },
-        ]}
-      />
+
+      <div className="sticky-filter">
+        <FilterPanel />
+      </div>
+
       <div style={{ background: "rgba(251,191,36,0.06)", border: "1px solid rgba(251,191,36,0.2)", borderRadius: 14, padding: "14px 18px", display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 18 }}>
         <span style={{ fontSize: 20, flexShrink: 0 }}>⚠️</span>
         <div>
-          <p style={{ margin: "0 0 4px", fontSize: 14, fontWeight: 700, color: "#fcd34d", fontFamily: "'Syne',sans-serif" }}>Objective 4 — Curriculum Weakness Indicators</p>
+          <p style={{ margin: "0 0 4px", fontSize: 14, fontWeight: 700, color: IIEE_COLORS.secondary, fontFamily: "'Syne',sans-serif" }}>Objective 4 — Curriculum Weakness Indicators</p>
           <p style={{ margin: 0, fontSize: 12, color: "#92400e", lineHeight: 1.6 }}>
             Items sorted by average Likert score (1=Strongly Agree → 4=Strongly Disagree). Higher scores mean more disagreement — institutional gaps.
           </p>
@@ -64,40 +105,45 @@ export default function ProfessorCurriculumDashboard({ weakestQ }) {
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
-        <ChartContainer title="Weakest Survey Items" icon="🔎" subtitle="Top 10 items with highest disagreement score" accent={c.fail}>
-          <ResponsiveContainer width="100%" height={320}>
-            <BarChart data={weakestQ.map((q) => ({ name: q.key, avg: q.avg, label: q.label, section: q.section }))} layout="vertical" margin={{ top: 4, right: 20, left: 0, bottom: 4 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
-              <XAxis type="number" domain={[2, 3]} tick={{ fill: "#64748b", fontSize: 11 }} axisLine={false} tickLine={false} />
-              <YAxis type="category" dataKey="name" tick={{ fill: "#94a3b8", fontSize: 11 }} axisLine={false} tickLine={false} width={40} />
-              <Tooltip content={({ active, payload }) => {
-                if (!active || !payload?.length) return null;
-                const d = payload[0]?.payload;
-                return (
-                  <div style={{ background: "#0f1a2e", border: "1px solid rgba(248,113,113,0.2)", borderRadius: 10, padding: "10px 14px", fontSize: 12, color: "#f1f5f9", maxWidth: 220 }}>
-                    <p style={{ margin: "0 0 4px", fontWeight: 700, color: c.fail }}>{d.name}</p>
-                    <p style={{ margin: "0 0 2px", color: "#94a3b8" }}>{d.label}</p>
-                    <p style={{ margin: 0 }}>Score: <strong style={{ color: c.fail }}>{d.avg?.toFixed(2)}/4</strong> · {d.section}</p>
-                  </div>
-                );
-              }} />
-              <ReferenceLine x={2.5} stroke={c.amber} strokeDasharray="4 3" label={{ value: "2.5 critical", position: "insideTopRight", fill: c.amber, fontSize: 9 }} />
-              <Bar dataKey="avg" name="Avg Score" radius={[0, 5, 5, 0]}>
-                {weakestQ.map((entry, index) => (
-                  <Cell key={index} fill={entry.avg >= 2.7 ? c.fail : entry.avg >= 2.55 ? c.amber : c.orange} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+        <ChartContainer title="Weakest Survey Items" icon="🔎" subtitle="All survey items ranked by disagreement score" accent={IIEE_COLORS.secondary}>
+          <div className="scrollable-chart">
+            <ResponsiveContainer width="100%" height={Math.max(320, weakestQ.length * 20)}>
+              <BarChart data={weakestQ.map((q) => ({ name: q.key, avg: q.avg, label: q.label, section: q.section }))} layout="vertical" margin={{ top: 4, right: 20, left: 0, bottom: 4 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
+                <XAxis type="number" domain={[2, 3]} tick={{ fill: IIEE_COLORS.muted, fontSize: 11 }} axisLine={false} tickLine={false} />
+                <YAxis type="category" dataKey="name" tick={{ fill: IIEE_COLORS.muted, fontSize: 11 }} axisLine={false} tickLine={false} width={40} />
+                <Tooltip content={({ active, payload }) => {
+                  if (!active || !payload?.length) return null;
+                  const d = payload[0]?.payload;
+                  return (
+                    <div style={{ background: IIEE_COLORS.surface, border: "1px solid rgba(248,113,113,0.2)", borderRadius: 10, padding: "10px 14px", fontSize: 12, color: IIEE_COLORS.text, maxWidth: 220 }}>
+                      <p style={{ margin: "0 0 4px", fontWeight: 700, color: c.fail }}>{d.name}</p>
+                      <p style={{ margin: "0 0 2px", color: IIEE_COLORS.muted }}>{d.label}</p>
+                      <p style={{ margin: 0 }}>Score: <strong style={{ color: c.fail }}>{d.avg?.toFixed(2)}/4</strong> · {d.section}</p>
+                    </div>
+                  );
+                }} />
+                <ReferenceLine x={2.5} stroke={IIEE_COLORS.secondary} strokeDasharray="4 3" label={{ value: "2.5 critical", position: "insideTopRight", fill: IIEE_COLORS.secondary, fontSize: 9 }} />
+                <Bar dataKey="avg" name="Avg Score" radius={[0, 5, 5, 0]}>
+                  {weakestQ.map((entry, index) => (
+                    <Cell key={index} fill={entry.avg >= 2.7 ? c.fail : entry.avg >= 2.55 ? c.amber : c.orange} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="chart-description">
+            This chart displays all {weakestQ.length} survey questions ranked by their average disagreement score. Higher scores indicate greater institutional gaps. Scroll to view all items and identify priority areas for curriculum improvement.
+          </div>
         </ChartContainer>
 
-        <ChartContainer title="Gap Summary by Category" icon="📋" subtitle="Which categories have the most weak items?" accent={c.amber}>
+        <ChartContainer title="Gap Summary by Category" icon="📋" subtitle="Categories ranked by average weakness score" accent={IIEE_COLORS.secondary}>
           <>
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={categories} margin={{ top: 4, right: 8, left: -20, bottom: 4 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                <XAxis dataKey="label" tick={{ fill: "#64748b", fontSize: 10 }} axisLine={false} tickLine={false} />
-                <YAxis domain={[2, 3]} tick={{ fill: "#64748b", fontSize: 10 }} axisLine={false} tickLine={false} />
+                <XAxis dataKey="label" tick={{ fill: IIEE_COLORS.muted, fontSize: 10 }} axisLine={false} tickLine={false} />
+                <YAxis domain={[2, 3]} tick={{ fill: IIEE_COLORS.muted, fontSize: 10 }} axisLine={false} tickLine={false} />
                 <Tooltip content={<CustomTooltip formatter={(v) => `${v?.toFixed(2)}/4`} />} />
                 <Bar dataKey="avg" name="Avg Score" radius={[5, 5, 0, 0]}>
                   {categories.map((entry, index) => (
@@ -106,24 +152,30 @@ export default function ProfessorCurriculumDashboard({ weakestQ }) {
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(120px,1fr))", gap: 8, marginTop: 12 }}>
-              {categories.map((cat, i) => {
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(140px,1fr))", gap: 8, marginTop: 12 }}>
+              {categories.slice(0, 12).map((cat, i) => {  // Show more items
                 const sev = cat.avg >= 2.65 ? c.fail : cat.avg >= 2.55 ? c.amber : c.orange;
                 return (
                   <div key={i} style={{ background: `${sev}0d`, border: `1px solid ${sev}25`, borderRadius: 10, padding: "10px 12px" }}>
-                    <p style={{ margin: "0 0 2px", fontSize: 12, fontWeight: 700, color: "#f1f5f9" }}>{cat.label}</p>
-                    <p style={{ margin: "0 0 4px", fontSize: 10, color: "#475569" }}>{cat.count} weak item{cat.count > 1 ? "s" : ""}</p>
-                    <p style={{ margin: 0, fontSize: 18, fontWeight: 800, color: sev, fontFamily: "'Syne',sans-serif" }}>{num(cat.avg)}<span style={{ fontSize: 10, color: "#475569" }}>/4</span></p>
+                    <p style={{ margin: "0 0 2px", fontSize: 12, fontWeight: 700, color: IIEE_COLORS.text }}>{cat.label}</p>
+                    <p style={{ margin: "0 0 4px", fontSize: 10, color: IIEE_COLORS.muted }}>{cat.count} weak item{cat.count > 1 ? "s" : ""}</p>
+                    <p style={{ margin: 0, fontSize: 18, fontWeight: 800, color: sev, fontFamily: "'Syne',sans-serif" }}>{num(cat.avg)}<span style={{ fontSize: 10, color: IIEE_COLORS.muted }}>/4</span></p>
                   </div>
                 );
               })}
+            </div>
+            <div className="chart-description">
+              This summary groups survey items by category and calculates average disagreement scores. Categories with higher averages indicate systemic weaknesses in specific curriculum areas. The grid below shows detailed metrics for each category, helping prioritize improvement efforts.
+            </div>
+            <div style={{ marginTop: 14, background: "rgba(255,255,255,0.025)", borderRadius: 10, padding: "12px 14px", fontSize: 12, color: IIEE_COLORS.muted, lineHeight: 1.6 }}>
+              📊 <strong style={{ color: IIEE_COLORS.text }}>Analysis:</strong> Categories like Facilities and Department Review show the highest average scores, suggesting critical gaps in physical resources and departmental evaluation processes. Medium-scoring categories such as Curriculum Development and Student Support indicate areas needing moderate attention. Low-scoring categories may still have individual weak items that require targeted interventions. Overall, this distribution highlights the need for comprehensive curriculum enhancement across multiple dimensions.
             </div>
           </>
         </ChartContainer>
       </div>
 
-      <ChartContainer title="Detailed Weak Survey Items" icon="📋" subtitle="All 10 weakest items with severity ratings" fullWidth accent={c.amber}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(320px,1fr))", gap: 10 }}>
+      <ChartContainer title="Detailed Weak Survey Items" icon="📋" subtitle="Comprehensive view of all weak survey items with severity ratings" fullWidth accent={IIEE_COLORS.secondary}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(320px,1fr))", gap: 10, maxHeight: 600, overflowY: "auto" }}>
           {weakestQ.map((q, i) => {
             const severity = q.avg >= 2.7 ? "high" : q.avg >= 2.55 ? "medium" : "low";
             const sColor = severity === "high" ? c.fail : severity === "medium" ? c.amber : c.orange;
@@ -133,24 +185,27 @@ export default function ProfessorCurriculumDashboard({ weakestQ }) {
                 <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8, marginBottom: 8 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
                     <span style={{ fontSize: 9, fontWeight: 800, padding: "2px 6px", borderRadius: 999, background: `${sColor}20`, color: sColor, border: `1px solid ${sColor}40`, flexShrink: 0 }}>{q.key}</span>
-                    <span style={{ fontSize: 9, color: "#475569", background: "rgba(255,255,255,0.04)", padding: "2px 6px", borderRadius: 999 }}>{q.section}</span>
+                    <span style={{ fontSize: 9, color: IIEE_COLORS.muted, background: "rgba(255,255,255,0.04)", padding: "2px 6px", borderRadius: 999 }}>{q.section}</span>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 3, background: `${sColor}15`, border: `1px solid ${sColor}30`, borderRadius: 999, padding: "2px 8px", flexShrink: 0 }}>
                     <span style={{ fontSize: 13, fontWeight: 800, color: sColor }}>{q.avg.toFixed(2)}</span>
                     <span style={{ fontSize: 9, color: `${sColor}99` }}>/4</span>
                   </div>
                 </div>
-                <p style={{ margin: "0 0 8px", fontSize: 12, color: "#cbd5e1", lineHeight: 1.45 }}>{q.label}</p>
+                <p style={{ margin: "0 0 8px", fontSize: 12, color: IIEE_COLORS.text, lineHeight: 1.45 }}>{q.label}</p>
                 <TinyBar value={barPct} max={100} color={sColor} height={5} />
-                <p style={{ margin: "5px 0 0", fontSize: 10, color: "#475569" }}>
+                <p style={{ margin: "5px 0 0", fontSize: 10, color: IIEE_COLORS.muted }}>
                   {severity === "high" ? "🔴 Critical — requires immediate attention" : severity === "medium" ? "🟡 Moderate — monitor and improve" : "🟠 Low concern — room for improvement"}
                 </p>
               </div>
             );
           })}
         </div>
-        <div style={{ marginTop: 14, background: "rgba(255,255,255,0.025)", borderRadius: 10, padding: "12px 14px", fontSize: 12, color: "#64748b", lineHeight: 1.6 }}>
-          🎯 <strong style={{ color: "#f1f5f9" }}>Key Finding:</strong> Facilities and Dept. Review items consistently score highest (most disagreement), suggesting physical resources and department-organized review programs are the most critical gaps.
+        <div className="chart-description">
+          This detailed view presents all {weakestQ.length} survey questions with their individual scores, categorized by severity. Each card shows the question text, section, score visualization, and recommended action level. Scroll through the grid to explore all items comprehensively.
+        </div>
+        <div style={{ marginTop: 14, background: "rgba(255,255,255,0.025)", borderRadius: 10, padding: "12px 14px", fontSize: 12, color: IIEE_COLORS.muted, lineHeight: 1.6 }}>
+          🎯 <strong style={{ color: IIEE_COLORS.text }}>Key Finding:</strong> Facilities and Dept. Review items consistently score highest (most disagreement), suggesting physical resources and department-organized review programs are the most critical gaps. Curriculum Development and Student Support areas show moderate weaknesses, while Assessment and Evaluation items indicate emerging concerns. This comprehensive analysis reveals that institutional curriculum gaps span multiple operational dimensions, requiring a multifaceted improvement strategy that addresses both infrastructure and pedagogical aspects.
         </div>
       </ChartContainer>
     </div>

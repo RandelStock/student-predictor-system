@@ -15,7 +15,45 @@ import {
   MetricCard,
   ChartContainer,
   DashboardGuide,
+  FilterPanel,
 } from "./ProfessorShared";
+
+const IIEE_COLORS = {
+  primary: '#1e3a8a',
+  secondary: '#fbbf24',
+  accent: '#06b6d4',
+  background: '#0f172a',
+  surface: '#1e293b',
+  text: '#f8fafc',
+  muted: '#64748b',
+};
+
+const styles = `
+  .trends-dashboard {
+    background: ${IIEE_COLORS.background};
+    min-height: 100vh;
+    color: ${IIEE_COLORS.text};
+    font-family: 'DM Sans', sans-serif;
+  }
+  .sticky-filter {
+    position: sticky;
+    top: 0;
+    z-index: 25;
+    background: rgba(15, 26, 42, 0.95);
+    border: 1px solid rgba(251, 191, 36, 0.2);
+    border-radius: 14px;
+    padding: 14px 18px;
+    margin-bottom: 18px;
+    backdrop-filter: blur(16px);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+  }
+  .chart-description {
+    margin-top: 10px;
+    font-size: 12px;
+    color: ${IIEE_COLORS.muted};
+    line-height: 1.5;
+  }
+`;
 
 export default function ProfessorTrendsDashboard({
   usageLoading,
@@ -39,10 +77,14 @@ export default function ProfessorTrendsDashboard({
   attPage,
 }) {
   return (
-    <div className="fade-in">
+    <div className="trends-dashboard fade-in">
+      <style>{styles}</style>
       <div style={{ marginBottom: 22 }}>
-        <h2 style={{ margin: "0 0 4px", fontSize: 22, fontWeight: 800, fontFamily: "'Syne',sans-serif" }}>Trends & Monitoring</h2>
-        <p style={{ margin: 0, fontSize: 13, color: "#64748b" }}>Live data from the prediction database — student attempts, monthly summaries, and AI trend insights.</p>
+        <h2 style={{ margin: "0 0 4px", fontSize: 22, fontWeight: 800, fontFamily: "'Syne',sans-serif", color: IIEE_COLORS.secondary }}>Trends & Monitoring</h2>
+        <p style={{ margin: 0, fontSize: 13, color: IIEE_COLORS.muted }}>Live data from the prediction database — student attempts, monthly summaries, and AI trend insights.</p>
+      </div>
+      <div className="sticky-filter">
+        <FilterPanel />
       </div>
       <DashboardGuide
         items={[
@@ -113,6 +155,7 @@ export default function ProfessorTrendsDashboard({
                 </table>
               </div>
             )}
+            <div className="chart-description">Daily predictions and active users show system load trends; peak activity correlates with deadline and review cycles.</div>
           </div>
         ) : (
           <p style={{ margin: 0, fontSize: 12, color: "#64748b" }}>No usage data yet.</p>
@@ -150,6 +193,7 @@ export default function ProfessorTrendsDashboard({
           ) : (
             <p style={{ fontSize: 12, color: "#64748b" }}>No trend data yet. Submit more predictions to generate insights.</p>
           )}
+          <div className="chart-description">AI Trend Insights blends historical patterns and current metrics for guided action; refresh to stay updated with latest data behavior.</div>
         </ChartContainer>
       </div>
 
@@ -173,6 +217,7 @@ export default function ProfessorTrendsDashboard({
                 <Bar dataKey="Failers" stackId="a" fill={c.fail} radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
+            <div className="chart-description">Use the stacked pass/fail bars as an early warning for cohort performance shifts and compare reliability across years.</div>
           </ChartContainer>
         </div>
       )}
@@ -192,6 +237,7 @@ export default function ProfessorTrendsDashboard({
                 </div>
               ))}
             </div>
+            <div className="chart-description">Compare pass rate with/without formal review to assess the coaching program ROI and focus interventions.</div>
           </ChartContainer>
         </div>
       )}
@@ -241,6 +287,7 @@ export default function ProfessorTrendsDashboard({
                 </table>
               </div>
             )}
+          <div className="chart-description">Timing analysis highlights potential integrity risks (too-fast behavior) and helps guide adaptive exam pacing decisions.</div>
           </ChartContainer>
         </div>
       )}
@@ -276,6 +323,7 @@ export default function ProfessorTrendsDashboard({
           ) : (
             <p style={{ fontSize: 12, color: "#475569" }}>No data for {selectedYear}. Students need to submit predictions first.</p>
           )}
+          <div className="chart-description">Monthly pass/fail bars show seasonality and allow quick comparison of the passage rate with respect to high/low months.</div>
         </ChartContainer>
       </div>
 
@@ -297,7 +345,7 @@ export default function ProfessorTrendsDashboard({
             <>
               <div style={{ overflowX: "auto" }}>
                 <table className="att-table">
-                  <thead><tr><th>Date</th><th>Result</th><th>Pass Prob.</th><th>Pred. Rating A</th><th>User ID</th></tr></thead>
+                  <thead><tr><th>Date</th><th>Result</th><th>Pass Prob.</th><th>Pred. Rating A</th><th>Student</th><th>Email</th></tr></thead>
                   <tbody>
                     {(attempts.items ?? []).map((item, i) => (
                       <tr key={i}>
@@ -307,7 +355,8 @@ export default function ProfessorTrendsDashboard({
                         </td>
                         <td style={{ fontWeight: 700, color: item.probability_pass >= 0.7 ? c.pass : item.probability_pass >= 0.5 ? c.amber : c.fail }}>{(item.probability_pass * 100).toFixed(1)}%</td>
                         <td style={{ color: item.predicted_rating_a >= 70 ? c.pass : item.predicted_rating_a >= 60 ? c.amber : c.fail }}>{item.predicted_rating_a?.toFixed(1) ?? "—"}</td>
-                        <td style={{ color: "#475569", fontSize: 11 }}>{item.user_id ? `${item.user_id.slice(0, 8)}…` : "—"}</td>
+                        <td style={{ fontWeight: 700, color: "#e2e8f0" }}>{item.full_name || item.name || "—"}</td>
+                        <td style={{ color: "#94a3b8", fontSize: 12 }}>{item.email || "—"}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -324,8 +373,7 @@ export default function ProfessorTrendsDashboard({
               <p style={{ fontSize: 14, color: "#475569" }}>No prediction attempts found.</p>
               <p style={{ fontSize: 12, color: "#334155", marginTop: 4 }}>Students need to log in and submit predictions first.</p>
             </div>
-          )}
-        </ChartContainer>
+          )}          <div className="chart-description">Recent attempts table reveals user behavior and probability accuracy, with name/email for identification instead of raw IDs.</div>        </ChartContainer>
       </div>
     </div>
   );

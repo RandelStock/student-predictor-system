@@ -60,12 +60,12 @@ export default function ProfessorOverviewDashboard({
       <InsightBox insights={localInsights} />
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(175px,1fr))", gap: 12, marginBottom: 20 }}>
-        <MetricCard label="Total Students" value={ov.total_students} color={c.blue} icon="👥" />
-        <MetricCard label="Total Passers" value={ov.total_passers} color={c.pass} icon="✅" />
-        <MetricCard label="Total Failers" value={ov.total_failers} color={c.fail} icon="❌" />
-        <MetricCard label="Overall Pass Rate" value={pct(ov.overall_pass_rate)} color={ov.overall_pass_rate >= 70 ? c.pass : c.amber} icon="📊" />
-        <MetricCard label="Avg GWA (Passers)" value={num(ov.avg_gwa_passers)} color={c.pass} icon="🎓" sub="1.0=Highest" />
-        <MetricCard label="Avg GWA (Failers)" value={num(ov.avg_gwa_failers)} color={c.fail} icon="📉" sub="1.0=Highest" />
+        <MetricCard label="Total Students" value={ov.total_students} color={c.blue} icon="👥" hint="Total examinees included in the dataset after filters." />
+        <MetricCard label="Total Passers" value={ov.total_passers} color={c.pass} icon="✅" hint="Number of examinees who passed on first attempt." />
+        <MetricCard label="Total Failers" value={ov.total_failers} color={c.fail} icon="❌" hint="Number of examinees who failed on first attempt." />
+        <MetricCard label="Overall Pass Rate" value={pct(ov.overall_pass_rate)} color={ov.overall_pass_rate >= 70 ? c.pass : c.amber} icon="📊" hint="Percentage passed out of total students; target = 70%." />
+        <MetricCard label="Avg GWA (Passers)" value={num(ov.avg_gwa_passers)} color={c.pass} icon="🎓" sub="1.0=Highest" hint="Lower is better for average GWA among passers (1.0 best)." />
+        <MetricCard label="Avg GWA (Failers)" value={num(ov.avg_gwa_failers)} color={c.fail} icon="📉" sub="1.0=Highest" hint="Lower is better for average GWA among failers (1.0 best)." />
       </div>
 
       <div className="dash-grid">

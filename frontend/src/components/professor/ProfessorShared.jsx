@@ -85,11 +85,12 @@ export function CustomTooltip({ active, payload, label, formatter }) {
 }
 
 // ── MetricCard ────────────────────────────────────────────────────────────────
-export function MetricCard({ label, value, sub, color = c.blue, icon, trend }) {
+export function MetricCard({ label, value, sub, color = c.blue, icon, trend, hint }) {
   const up = trend > 0;
   const zero = trend === 0;
   return (
     <div
+      title={hint}
       style={{
         background: `linear-gradient(135deg, ${color}0d 0%, ${color}06 100%)`,
         border: `1px solid ${color}22`,
@@ -97,6 +98,7 @@ export function MetricCard({ label, value, sub, color = c.blue, icon, trend }) {
         padding: "18px 20px",
         position: "relative",
         overflow: "hidden",
+        cursor: hint ? "help" : "default",
       }}
     >
       <div

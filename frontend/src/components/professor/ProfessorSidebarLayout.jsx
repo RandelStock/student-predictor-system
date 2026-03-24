@@ -56,8 +56,7 @@ const NAV_GROUPS = [
   {
     label: "Analytics",
     items: [
-      { id: "model_overview",         icon: "🧭", label: "Model Overview"       },
-      { id: "overview",               icon: "📊", label: "Overview"             },
+      { id: "model_overview",         icon: "🧭", label: "Overview"       },
       { id: "performance",            icon: "📈", label: "Performance"          },
     ],
   },
@@ -348,13 +347,9 @@ function Topbar({ activeTab, mobileOpen, setMobileOpen }) {
 // ─── Main exported wrapper ────────────────────────────────────────────────────
 export default function ProfessorSidebarLayout({
   activeTab,
-  tabs,
   onTabChange,
   onRefresh,
   onLogout,
-  dashFilters,
-  setDashFilters,
-  availableYears = [],
   children,
 }) {
   const [collapsed, setCollapsed] = useState(false);
