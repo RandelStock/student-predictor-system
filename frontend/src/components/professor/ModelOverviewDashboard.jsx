@@ -29,12 +29,7 @@ const IIEE = {
   orange:     "#FB923C",
 };
 
-/* ─── Survey section labels (10 sections from DATA_MODEL) ──────── */
-const SURVEY_SECTIONS = [
-  "Knowledge", "Problem-Solving", "Motivation",
-  "Emotional", "Support", "Curriculum",
-  "Faculty", "Dept Review", "Facilities", "Dept Culture",
-];
+
 
 /* ─── Styles ──────────────────────────────────────────────────── */
 const styles = `
@@ -409,7 +404,6 @@ export default function ModelOverviewDashboard({
 }) {
   const [mode, setMode] = useState("institutional");
   const [activePie, setActivePie] = useState(null);
-  const [activeRev, setActiveRev] = useState(null);
 
   const selectedYear = dashFilters?.year || "";
 
@@ -419,7 +413,10 @@ export default function ModelOverviewDashboard({
     return (passByYear ?? []).filter((d) => String(d.label) === String(selectedYear));
   }, [selectedYear, passByYear]);
 
-  const displayRows = yearRows.length ? yearRows : (passByYear ?? []);
+  const displayRows = useMemo(
+    () => (yearRows.length ? yearRows : (passByYear ?? [])),
+    [yearRows, passByYear]
+  );
 
   /* ── KPIs: recalc from year slice or show all-time ── */
   const kpi = useMemo(() => {
