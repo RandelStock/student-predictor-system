@@ -1,6 +1,17 @@
+/**
+ * ProfessorPage.jsx  —  UPDATED (sidebar HUD integration)
+ *
+ * Changelog vs original:
+ *   - Removed <ProfessorTabsNav> import and usage
+ *   - Removed top-nav <style> block (moved to ProfessorSidebarLayout)
+ *   - Removed TAB_DESCRIPTIONS (now lives in ProfessorSidebarLayout)
+ *   - Wrapped <main> children with <ProfessorSidebarLayout>
+ *   - ALL state, fetch logic, data transforms → untouched
+ */
+
 import { useState, useEffect, useCallback, useMemo } from "react";
 import API_BASE_URL from "../apiBase";
-import ProfessorTabsNav from "./professor/ProfessorTabsNav";
+import ProfessorSidebarLayout from "./professor/ProfessorSidebarLayout";   // ← NEW
 import ProfessorTimingModal from "./professor/ProfessorTimingModal";
 import ModelOverviewDashboard from "./professor/ModelOverviewDashboard";
 import ProfessorOverviewDashboard from "./professor/ProfessorOverviewDashboard";
@@ -20,7 +31,8 @@ import {
 
 // ── Main ProfessorPage ────────────────────────────────────────────────────────
 export default function ProfessorPage({ onLogout }) {
-  // ── ALL ORIGINAL STATE ────────────────────────────────────────────────────
+
+  // ── ALL ORIGINAL STATE (unchanged) ───────────────────────────────────────
   const [data, setData]               = useState(null);
   const [loading, setLoading]         = useState(true);
   const [activeTab, setActiveTab]     = useState("overview");
@@ -52,7 +64,6 @@ export default function ProfessorPage({ onLogout }) {
   const [test2025Run, setTest2025Run] = useState(null);
   const [test2025RunLoading, setTest2025RunLoading] = useState(false);
 
-  // ── NEW: enhanced dashboard filters ──────────────────────────────────────
   const [dashFilters, setDashFilters] = useState({ year: "", month: "", review: "", subject: "" });
 
   // ── ALL ORIGINAL FETCH LOGIC (unchanged) ─────────────────────────────────
@@ -163,6 +174,7 @@ export default function ProfessorPage({ onLogout }) {
     } finally { setReportLoading(false); }
   }, [selectedYear]);
 
+  // ── Effects (unchanged) ───────────────────────────────────────────────────
   useEffect(() => { fetchAnalytics(); }, [fetchAnalytics]);
 
   useEffect(() => {
@@ -222,7 +234,7 @@ export default function ProfessorPage({ onLogout }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [attPage, attFilter, selectedYear, activeTab]);
 
-  // ── safe data accessors ───────────────────────────────────────────────────
+  // ── Safe data accessors (unchanged) ──────────────────────────────────────
   const ov           = useMemo(() => data?.overview ?? {},                   [data]);
   const passByYear   = useMemo(() => data?.pass_rate_by_year     ?? [],      [data]);
   const passByStrand = useMemo(() => data?.pass_rate_by_strand   ?? [],      [data]);
@@ -288,6 +300,7 @@ export default function ProfessorPage({ onLogout }) {
     { name: "No Review", value: reviewNoTotal, color: c.amber },
   ], [reviewYesTotal, reviewNoTotal]);
 
+  // ── Tab list (for sidebar to consume) ────────────────────────────────────
   const TABS = [
     { id: "model_overview",         label: "Model Overview",        icon: "🧭" },
     { id: "overview",               label: "Overview",              icon: "📊" },
@@ -301,200 +314,145 @@ export default function ProfessorPage({ onLogout }) {
     { id: "trends",                 label: "Trends & Monitoring",   icon: "📅" },
   ];
 
-  const TAB_DESCRIPTIONS = {
-    model_overview: "Comprehensive model analysis: data patterns, reliability, correlations, and curriculum-linked insights.",
-    overview: "Institution-level snapshot of outcomes, pass/fail distribution, review participation, and key KPI trends.",
-    performance: "Detailed performance breakdown by strand, survey sections, and subject-score movement over time.",
-    features: "Top model predictors ranked by importance to show which factors most influence pass/fail outcomes.",
-    curriculum: "Curriculum gap view of weakest survey indicators to help prioritize intervention areas.",
-    classification_metrics: "Classification quality metrics (accuracy, precision, recall, F1, and CV results) for pass/fail prediction.",
-    regression_metrics: "Regression evaluation for score prediction models, including MAE, RMSE, and R² comparisons.",
-    correlation: "Correlation matrix of major variables to reveal strength and direction of academic relationships.",
-    test2025: "Held-out 2025 defense evaluation: generalization metrics, confusion matrix, and row-level checks.",
-    trends: "Live operational monitoring for usage, yearly/monthly outcomes, timing behavior, and recent attempts.",
+  // ── Loading spinner (same as original) ───────────────────────────────────
+  const loadingSpinner = (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "100px 0", gap: 16 }}>
+      <svg style={{ animation: "spin 0.8s linear infinite", width: 36, height: 36, color: "#F5C518" }} viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2.5" opacity=".15"/>
+        <path d="M4 12a8 8 0 018-8" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
+      </svg>
+      <p style={{ fontSize: 14, color: "#475569", fontFamily: "'DM Sans',sans-serif" }}>Loading analytics…</p>
+    </div>
+  );
+
+  // ── Shared props bundle ───────────────────────────────────────────────────
+  const sharedProps = {
+    dashFilters, setDashFilters,
+    availableYears, localInsights,
   };
 
+  // ─────────────────────────────────────────────────────────────────────────
   return (
-    <div style={{ minHeight: "100vh", background: c.bg, fontFamily: "'DM Sans',system-ui,sans-serif", color: "#f8fafc" }}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap');
-        @keyframes fadeUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
-        @keyframes spin   { to{transform:rotate(360deg)} }
-        @keyframes pulse  { 0%,100%{opacity:1} 50%{opacity:0.5} }
-        .dash-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:14px; }
-        .tab-btn   { background:transparent; border:none; cursor:pointer; font-family:'DM Sans',sans-serif; transition:all 0.2s; }
-        ::-webkit-scrollbar{width:5px;height:5px}
-        ::-webkit-scrollbar-track{background:rgba(255,255,255,0.02)}
-        ::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.12);border-radius:99px}
-        ::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,0.2)}
-        @media(max-width:640px){ .dash-grid{grid-template-columns:1fr !important} }
-        .att-table { width:100%; border-collapse:collapse; font-size:12px; font-family:'DM Sans',sans-serif; }
-        .att-table th { padding:10px 12px; border-bottom:1px solid rgba(148,163,184,0.15); text-align:left; color:#64748b; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; font-size:10px; }
-        .att-table td { padding:10px 12px; border-bottom:1px solid rgba(30,41,59,0.5); color:#cbd5e1; }
-        .att-table tr:hover td { background:rgba(255,255,255,0.025); }
-        .filter-input { background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:7px 11px; color:#f1f5f9; font-size:12px; font-family:'DM Sans',sans-serif; outline:none; transition:border-color 0.2s; }
-        .filter-input:focus { border-color:rgba(56,189,248,0.5); }
-        .prof-ui p { color:#dbeafe; font-size:14px; line-height:1.6; }
-        .prof-ui td,.prof-ui th { color:#dbeafe; font-size:13px; }
-        .prof-ui label { color:#cbd5e1; font-size:13px; }
-        .fade-in { animation: fadeUp 0.4s ease; }
-        .recharts-cartesian-grid line { stroke: rgba(255,255,255,0.06) !important; }
-        .recharts-text { fill: #64748b !important; font-family: 'DM Sans',sans-serif !important; font-size: 11px !important; }
-      `}</style>
+    <ProfessorSidebarLayout
+      activeTab={activeTab}
+      tabs={TABS}
+      onTabChange={setActiveTab}
+      onRefresh={fetchAnalytics}
+      onLogout={onLogout}
+      dashFilters={dashFilters}
+      setDashFilters={setDashFilters}
+      availableYears={availableYears}
+    >
+      {/* Loading state */}
+      {loading && loadingSpinner}
 
-      <ProfessorTabsNav
-        activeTab={activeTab}
-        tabs={TABS}
-        onTabChange={setActiveTab}
-        onRefresh={fetchAnalytics}
-        onLogout={onLogout}
-      />
+      {/* Dashboard content */}
+      {!loading && data && (
+        <div className="fade-in">
+          {activeTab === "model_overview" && (
+            <ModelOverviewDashboard
+              {...sharedProps}
+              ov={ov}
+              passByYear={passByYear}
+              passByStrand={passByStrand}
+              passByReview={passByReview}
+              passByDur={passByDur}
+              sectionScores={sectionScores}
+              weakestQ={weakestQ}
+              subjectTrends={subjectTrends}
+              filteredSubjectTrends={filteredSubjectTrends}
+              correlation={correlation}
+              scatterData={scatterData}
+              pieData={pieData}
+              reviewPieData={reviewPieData}
+            />
+          )}
 
-      {/* ══ MAIN CONTENT ══ */}
-      <main style={{ maxWidth: 1280, margin: "0 auto", padding: "28px 20px 80px" }}>
-        {loading && (
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "100px 0", gap: 16 }}>
-            <svg style={{ animation: "spin 0.8s linear infinite", width: 36, height: 36, color: c.blue }} viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2.5" opacity=".15"/>
-              <path d="M4 12a8 8 0 018-8" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
-            </svg>
-            <p style={{ fontSize: 14, color: "#475569", fontFamily: "'DM Sans',sans-serif" }}>Loading analytics…</p>
-          </div>
-        )}
+          {activeTab === "overview" && (
+            <ProfessorOverviewDashboard
+              {...sharedProps}
+              ov={ov}
+              pieData={pieData}
+              reviewPieData={reviewPieData}
+              filteredYears={filteredYears}
+              passByYear={passByYear}
+              filteredReview={filteredReview}
+              passByDur={passByDur}
+              modelInfo={modelInfo}
+            />
+          )}
 
-        {!loading && data && (
-          <>
-            <div
-              className="fade-in"
-              style={{
-                marginBottom: 14,
-                padding: "10px 14px",
-                borderRadius: 12,
-                background: "rgba(56,189,248,0.07)",
-                border: "1px solid rgba(56,189,248,0.22)",
-              }}
-            >
-              <p style={{ margin: "0 0 2px", fontSize: 11, color: c.blue, textTransform: "uppercase", letterSpacing: "0.07em", fontWeight: 700 }}>
-                {TABS.find((t) => t.id === activeTab)?.label || "Dashboard"}
-              </p>
-              <p style={{ margin: 0, fontSize: 12, color: "#cbd5e1", lineHeight: 1.55 }}>
-                {TAB_DESCRIPTIONS[activeTab] || "Dashboard description is not available."}
-              </p>
-            </div>
+          {activeTab === "performance" && (
+            <ProfessorPerformanceDashboard
+              {...sharedProps}
+              passByStrand={passByStrand}
+              sectionScores={sectionScores}
+              subjectTrends={subjectTrends}
+              filteredSubjectTrends={filteredSubjectTrends}
+              weakestSubject={weakestSubject}
+            />
+          )}
 
-            {activeTab === "model_overview" && (
-              <ModelOverviewDashboard
-                dashFilters={dashFilters}
-                setDashFilters={setDashFilters}
-                availableYears={availableYears}
-                localInsights={localInsights}
-                ov={ov}
-                passByYear={passByYear}
-                passByStrand={passByStrand}
-                passByReview={passByReview}
-                passByDur={passByDur}
-                sectionScores={sectionScores}
-                weakestQ={weakestQ}
-                subjectTrends={subjectTrends}
-                filteredSubjectTrends={filteredSubjectTrends}
-                correlation={correlation}
-                scatterData={scatterData}
-                pieData={pieData}
-                reviewPieData={reviewPieData}
-              />
-            )}
+          {activeTab === "features" && (
+            <ProfessorFeaturesDashboard featureImp={featureImp} />
+          )}
 
-            {activeTab === "overview" && (
-              <ProfessorOverviewDashboard
-                dashFilters={dashFilters}
-                setDashFilters={setDashFilters}
-                availableYears={availableYears}
-                localInsights={localInsights}
-                ov={ov}
-                pieData={pieData}
-                reviewPieData={reviewPieData}
-                filteredYears={filteredYears}
-                passByYear={passByYear}
-                filteredReview={filteredReview}
-                passByDur={passByDur}
-                modelInfo={modelInfo}
-              />
-            )}
+          {activeTab === "curriculum" && (
+            <ProfessorCurriculumDashboard weakestQ={weakestQ} />
+          )}
 
-            {activeTab === "performance" && (
-              <ProfessorPerformanceDashboard
-                dashFilters={dashFilters}
-                setDashFilters={setDashFilters}
-                availableYears={availableYears}
-                localInsights={localInsights}
-                passByStrand={passByStrand}
-                sectionScores={sectionScores}
-                subjectTrends={subjectTrends}
-                filteredSubjectTrends={filteredSubjectTrends}
-                weakestSubject={weakestSubject}
-              />
-            )}
+          {activeTab === "classification_metrics" && (
+            <ProfessorClassificationMetricsDashboard modelInfo={modelInfo} />
+          )}
 
-            {activeTab === "features" && (
-              <ProfessorFeaturesDashboard featureImp={featureImp} />
-            )}
+          {activeTab === "regression_metrics" && (
+            <ProfessorRegressionMetricsDashboard modelInfo={modelInfo} />
+          )}
 
-            {activeTab === "curriculum" && (
-              <ProfessorCurriculumDashboard weakestQ={weakestQ} />
-            )}
+          {activeTab === "correlation" && (
+            <ProfessorCorrelationDashboard correlation={correlation} />
+          )}
 
-            {activeTab === "classification_metrics" && (
-              <ProfessorClassificationMetricsDashboard modelInfo={modelInfo} />
-            )}
+          {activeTab === "test2025" && (
+            <ProfessorTest2025Dashboard
+              testLoading={testLoading}
+              test2025={test2025}
+              scatterData={scatterData}
+              test2025Records={test2025Records}
+              selectedTestIdx={selectedTestIdx}
+              setSelectedTestIdx={setSelectedTestIdx}
+              test2025Run={test2025Run}
+              test2025RunLoading={test2025RunLoading}
+            />
+          )}
 
-            {activeTab === "regression_metrics" && (
-              <ProfessorRegressionMetricsDashboard modelInfo={modelInfo} />
-            )}
+          {activeTab === "trends" && (
+            <ProfessorTrendsDashboard
+              usageLoading={usageLoading}
+              usageSummary={usageSummary}
+              downloadPerformanceReport={downloadPerformanceReport}
+              reportLoading={reportLoading}
+              insightsLoading={insightsLoading}
+              trendInsights={trendInsights}
+              fetchTrendInsights={fetchTrendInsights}
+              yearlyPF={yearlyPF}
+              reviewAnalysis={reviewAnalysis}
+              timingAnalysis={timingAnalysis}
+              openTimingModal={openTimingModal}
+              selectedYear={selectedYear}
+              setSelectedYear={setSelectedYear}
+              monthly={monthly}
+              attFilter={attFilter}
+              setAttFilter={setAttFilter}
+              setAttPage={setAttPage}
+              attempts={attempts}
+              attPage={attPage}
+            />
+          )}
+        </div>
+      )}
 
-            {activeTab === "correlation" && (
-              <ProfessorCorrelationDashboard correlation={correlation} />
-            )}
-
-            {activeTab === "test2025" && (
-              <ProfessorTest2025Dashboard
-                testLoading={testLoading}
-                test2025={test2025}
-                scatterData={scatterData}
-                test2025Records={test2025Records}
-                selectedTestIdx={selectedTestIdx}
-                setSelectedTestIdx={setSelectedTestIdx}
-                test2025Run={test2025Run}
-                test2025RunLoading={test2025RunLoading}
-              />
-            )}
-
-            {activeTab === "trends" && (
-              <ProfessorTrendsDashboard
-                usageLoading={usageLoading}
-                usageSummary={usageSummary}
-                downloadPerformanceReport={downloadPerformanceReport}
-                reportLoading={reportLoading}
-                insightsLoading={insightsLoading}
-                trendInsights={trendInsights}
-                fetchTrendInsights={fetchTrendInsights}
-                yearlyPF={yearlyPF}
-                reviewAnalysis={reviewAnalysis}
-                timingAnalysis={timingAnalysis}
-                openTimingModal={openTimingModal}
-                selectedYear={selectedYear}
-                setSelectedYear={setSelectedYear}
-                monthly={monthly}
-                attFilter={attFilter}
-                setAttFilter={setAttFilter}
-                setAttPage={setAttPage}
-                attempts={attempts}
-                attPage={attPage}
-              />
-            )}
-          </>
-        )}
-      </main>
-
+      {/* Timing modal stays at root level */}
       <ProfessorTimingModal
         attempt={selectedTimingAttempt}
         open={timingModalOpen}
@@ -502,6 +460,6 @@ export default function ProfessorPage({ onLogout }) {
         data={selectedTimingData}
         onClose={() => setTimingModalOpen(false)}
       />
-    </div>
+    </ProfessorSidebarLayout>
   );
 }
