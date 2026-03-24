@@ -2,43 +2,43 @@
   REE PREDICTOR - MODEL EVALUATION REPORT
 =================================================================
   Training : DATA_MODEL (53 rows) + DATA_SYSTEM (250 rows, reg-A)
-  Testing  : DATA_TEST (83 rows, 2025 - completely held out)
+  Testing  : DATA_TEST (21 rows, 2025 - completely held out)
   Train PASS:30 | FAIL:23
-  Test  PASS:38  | FAIL:45
+  Test  PASS:5  | FAIL:16
 
 -----------------------------------------------------------------
   MODEL 1: CLASSIFICATION (tested on 2025 DATA_TEST)
 -----------------------------------------------------------------
   Features used     : 88
-  Accuracy          : 0.9639 (96.39%)
-  Precision         : 1.0000
-  Recall            : 0.9211
-  F1-Score          : 0.9589
+  Accuracy          : 0.9524 (95.24%)
+  Precision         : 0.8333
+  Recall            : 1.0000
+  F1-Score          : 0.9091
   5-Fold CV Accuracy: 0.9636 +/- 0.0727
   5-Fold CV F1      : 0.9714 +/- 0.0571
 
   Confusion Matrix:
                Predicted FAIL  Predicted PASS
-  Actual FAIL         45               0
-  Actual PASS          3              35
+  Actual FAIL         15               1
+  Actual PASS          0               5
 
   Classification Report:
               precision    recall  f1-score   support
 
-        FAIL       0.94      1.00      0.97        45
-        PASS       1.00      0.92      0.96        38
+        FAIL       1.00      0.94      0.97        16
+        PASS       0.83      1.00      0.91         5
 
-    accuracy                           0.96        83
-   macro avg       0.97      0.96      0.96        83
-weighted avg       0.97      0.96      0.96        83
+    accuracy                           0.95        21
+   macro avg       0.92      0.97      0.94        21
+weighted avg       0.96      0.95      0.95        21
 
 -----------------------------------------------------------------
   MODEL 2A: REGRESSION (EE+MATH+ESAS+GWA, 310 train rows)
 -----------------------------------------------------------------
   Features          : 4
-  MAE               : 1.2366 pts
-  RMSE              : 1.6377 pts
-  R2                : 0.9829
+  MAE               : 1.4262 pts
+  RMSE              : 1.7482 pts
+  R2                : 0.9783
   5-Fold CV R2      : 0.9852 +/- 0.0032
   5-Fold CV MAE     : 0.8056 +/- 0.1175
 
@@ -46,9 +46,9 @@ weighted avg       0.97      0.96      0.96        83
   MODEL 2B: REGRESSION (GWA+Survey only, 60 train rows)
 -----------------------------------------------------------------
   Features          : 85
-  MAE               : 5.5201 pts
-  RMSE              : 7.3319 pts
-  R2                : 0.6581
+  MAE               : 9.2991 pts
+  RMSE              : 10.8448 pts
+  R2                : 0.1663
   5-Fold CV R2      : 0.5121 +/- 0.1687
   5-Fold CV MAE     : 6.2690 +/- 1.0850
 
@@ -79,7 +79,7 @@ weighted avg       0.97      0.96      0.96        83
 -----------------------------------------------------------------
   Model                                    MAE     RMSE       R2
   -----------------------------------------------------------
-  Reg A (EE+MATH+ESAS+GWA, 310 rows)    1.2366   1.6377   0.9829
-  Reg B (GWA+survey, 60 rows)           5.5201   7.3319   0.6581
+  Reg A (EE+MATH+ESAS+GWA, 310 rows)    1.4262   1.7482   0.9783
+  Reg B (GWA+survey, 60 rows)           9.2991  10.8448   0.1663
 
-  Model B has acceptable R2 - survey + GWA have real predictive power.
+  Model A outperforms B - subject scores dominate prediction.
