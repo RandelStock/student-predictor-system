@@ -268,11 +268,8 @@ function Sidebar({ activeTab, onTabChange, onRefresh, onLogout, collapsed, setCo
           </div>
           {!isCollapsed && (
             <div style={{ overflow: "hidden" }}>
-              <p style={{ margin: 0, fontSize: 13, fontWeight: 800, color: T.white, fontFamily: "'Syne',sans-serif", whiteSpace: "nowrap", letterSpacing: "0.01em" }}>
-                Insights HUD
-              </p>
               <p style={{ margin: 0, fontSize: 9, color: T.dimText, textTransform: "uppercase", letterSpacing: "0.1em" }}>
-                SLSU IIEE · Faculty
+                SLSU IIEE 
               </p>
             </div>
           )}
