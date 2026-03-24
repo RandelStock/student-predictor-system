@@ -1,0 +1,1140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>REE Licensure Prediction System — Comprehensive Guide</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500&family=Literata:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0c0d10;
+    --surface: #13151a;
+    --surface2: #1b1e27;
+    --border: rgba(255,255,255,0.07);
+    --accent: #00e5a0;
+    --accent2: #4f7fff;
+    --accent3: #ff6b35;
+    --text: #e8eaf0;
+    --muted: #7a7f8e;
+    --code-bg: #0a0b0e;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Literata', Georgia, serif;
+    font-size: 16px;
+    line-height: 1.75;
+    min-height: 100vh;
+  }
+
+  /* ── NOISE OVERLAY ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none; z-index: 0; opacity: 0.4;
+  }
+
+  /* ── SIDEBAR NAV ── */
+  .sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0;
+    width: 260px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 32px 0 32px;
+    z-index: 100;
+    display: flex; flex-direction: column;
+  }
+
+  .sidebar-logo {
+    padding: 0 24px 28px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+
+  .sidebar-logo .tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: var(--accent);
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 6px;
+  }
+
+  .sidebar-logo h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--text);
+    line-height: 1.3;
+  }
+
+  .sidebar nav { flex: 1; padding: 0 12px; }
+
+  .nav-section-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 16px 12px 6px;
+    display: block;
+  }
+
+  .nav-link {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 12px;
+    border-radius: 6px;
+    font-family: 'Syne', sans-serif;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--muted);
+    text-decoration: none;
+    transition: all 0.2s;
+    line-height: 1.3;
+  }
+
+  .nav-link:hover { color: var(--text); background: var(--surface2); }
+  .nav-link.active { color: var(--accent); background: rgba(0,229,160,0.08); }
+
+  .nav-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--border);
+    min-width: 18px;
+  }
+
+  /* ── MAIN CONTENT ── */
+  .main {
+    margin-left: 260px;
+    min-height: 100vh;
+    position: relative; z-index: 1;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    padding: 80px 72px 64px;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero::after {
+    content: 'REE';
+    position: absolute; right: -20px; bottom: -40px;
+    font-family: 'Syne', sans-serif;
+    font-size: 200px; font-weight: 800;
+    color: rgba(255,255,255,0.02);
+    line-height: 1; pointer-events: none;
+    letter-spacing: -8px;
+  }
+
+  .hero-eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    color: var(--accent);
+    text-transform: uppercase;
+    display: inline-flex; align-items: center; gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  .hero-eyebrow::before {
+    content: '';
+    display: block; width: 24px; height: 1px;
+    background: var(--accent);
+  }
+
+  .hero h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(32px, 4vw, 52px);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -1px;
+    margin-bottom: 20px;
+    max-width: 700px;
+  }
+
+  .hero h1 span { color: var(--accent); }
+
+  .hero p {
+    font-size: 17px;
+    color: var(--muted);
+    max-width: 560px;
+    font-style: italic;
+  }
+
+  .hero-pills {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    margin-top: 32px;
+  }
+
+  .pill {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    padding: 4px 12px;
+    border-radius: 99px;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    background: var(--surface);
+  }
+
+  .pill.green { border-color: rgba(0,229,160,0.3); color: var(--accent); background: rgba(0,229,160,0.07); }
+  .pill.blue { border-color: rgba(79,127,255,0.3); color: var(--accent2); background: rgba(79,127,255,0.07); }
+  .pill.orange { border-color: rgba(255,107,53,0.3); color: var(--accent3); background: rgba(255,107,53,0.07); }
+
+  /* ── CONTENT AREA ── */
+  .content { padding: 0 72px 100px; }
+
+  /* ── SECTION ── */
+  .section {
+    padding: 60px 0 0;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 60px;
+    opacity: 0; transform: translateY(16px);
+    animation: fadeUp 0.5s ease forwards;
+  }
+
+  @keyframes fadeUp {
+    to { opacity: 1; transform: none; }
+  }
+
+  .section:nth-child(1) { animation-delay: 0.05s; }
+  .section:nth-child(2) { animation-delay: 0.1s; }
+  .section:nth-child(3) { animation-delay: 0.15s; }
+  .section:nth-child(4) { animation-delay: 0.2s; }
+  .section:nth-child(5) { animation-delay: 0.25s; }
+  .section:nth-child(n+6) { animation-delay: 0.3s; }
+
+  .section-header {
+    display: flex; align-items: baseline; gap: 16px;
+    margin-bottom: 32px;
+  }
+
+  .section-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 0.1em;
+    min-width: 28px;
+  }
+
+  .section h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    line-height: 1.2;
+  }
+
+  .section h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin: 32px 0 12px;
+  }
+
+  .section p {
+    color: var(--text);
+    margin-bottom: 12px;
+    max-width: 700px;
+  }
+
+  /* ── CARDS ── */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+    margin-top: 8px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 22px;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+
+  .card:hover { border-color: rgba(255,255,255,0.14); transform: translateY(-2px); }
+
+  .card-icon {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    margin-bottom: 12px;
+  }
+
+  .card-icon.green { background: rgba(0,229,160,0.1); }
+  .card-icon.blue { background: rgba(79,127,255,0.1); }
+  .card-icon.orange { background: rgba(255,107,53,0.1); }
+  .card-icon.purple { background: rgba(168,85,247,0.1); }
+
+  .card h4 {
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+
+  .card p {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.55;
+    margin: 0;
+  }
+
+  /* ── TECH STACK ── */
+  .tech-split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+
+  .tech-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 24px;
+  }
+
+  .tech-panel-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 16px;
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  .tech-panel-label::after {
+    content: '';
+    flex: 1; height: 1px;
+    background: var(--border);
+  }
+
+  .tech-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13.5px;
+  }
+
+  .tech-row:last-child { border: none; }
+
+  .tech-label { color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+  .tech-value { color: var(--muted); font-size: 12px; }
+
+  /* ── CODE BLOCK ── */
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+    overflow-x: auto;
+    margin: 16px 0;
+    position: relative;
+  }
+
+  pre::before {
+    content: attr(data-label);
+    position: absolute; top: 10px; right: 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--accent);
+    line-height: 1.7;
+  }
+
+  p code, li code {
+    background: var(--surface2);
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: 12.5px;
+    color: var(--accent2);
+  }
+
+  /* ── ENDPOINT TABLE ── */
+  .endpoint-group { margin-bottom: 28px; }
+
+  .endpoint-group-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    padding: 0 0 10px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 10px;
+  }
+
+  .endpoint {
+    display: grid;
+    grid-template-columns: 60px 1fr auto;
+    gap: 12px;
+    align-items: start;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    font-size: 13px;
+  }
+
+  .endpoint:last-child { border: none; }
+
+  .method {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 500;
+    padding: 3px 8px;
+    border-radius: 4px;
+    text-align: center;
+    letter-spacing: 0.05em;
+  }
+
+  .method.get { background: rgba(79,127,255,0.15); color: var(--accent2); }
+  .method.post { background: rgba(0,229,160,0.12); color: var(--accent); }
+
+  .endpoint-path {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text);
+  }
+
+  .endpoint-desc {
+    font-size: 12px;
+    color: var(--muted);
+    font-style: italic;
+    text-align: right;
+  }
+
+  /* ── DB TABLE ── */
+  .db-table {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 12px 0 24px;
+  }
+
+  .db-table-header {
+    background: var(--surface2);
+    padding: 12px 20px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .db-field {
+    display: flex; gap: 16px; align-items: baseline;
+    padding: 9px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    font-size: 13px;
+  }
+
+  .db-field:last-child { border: none; }
+
+  .db-field-name {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--accent2);
+    min-width: 180px;
+  }
+
+  .db-field-desc { color: var(--muted); }
+
+  /* ── FLOW STEPS ── */
+  .flow {
+    display: flex; flex-direction: column; gap: 0;
+    position: relative;
+    margin: 16px 0;
+  }
+
+  .flow-step {
+    display: flex; gap: 20px; align-items: flex-start;
+    padding: 14px 0;
+    position: relative;
+  }
+
+  .flow-step::after {
+    content: '';
+    position: absolute;
+    left: 17px; top: 42px; bottom: 0;
+    width: 1px;
+    background: var(--border);
+  }
+
+  .flow-step:last-child::after { display: none; }
+
+  .flow-num {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    flex-shrink: 0;
+    position: relative; z-index: 1;
+  }
+
+  .flow-content { padding-top: 6px; }
+
+  .flow-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 3px;
+  }
+
+  .flow-desc { font-size: 13px; color: var(--muted); }
+
+  /* ── LIST ── */
+  ul.styled {
+    list-style: none;
+    display: flex; flex-direction: column; gap: 6px;
+    margin: 10px 0;
+  }
+
+  ul.styled li {
+    display: flex; align-items: baseline; gap: 10px;
+    font-size: 14px;
+    color: var(--text);
+  }
+
+  ul.styled li::before {
+    content: '→';
+    color: var(--accent);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+
+  /* ── FILE TREE ── */
+  .tree {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px;
+    line-height: 2;
+  }
+
+  .tree-file { color: var(--text); }
+  .tree-comment { color: var(--muted); font-style: italic; margin-left: 12px; }
+  .tree-dir { color: var(--accent2); font-weight: 500; }
+
+  /* ── ALERT BOX ── */
+  .alert {
+    border-left: 3px solid var(--accent3);
+    background: rgba(255,107,53,0.06);
+    padding: 16px 20px;
+    border-radius: 0 8px 8px 0;
+    margin: 16px 0;
+    font-size: 13.5px;
+    color: var(--muted);
+  }
+
+  .alert strong { color: var(--accent3); }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 900px) {
+    .sidebar { display: none; }
+    .main { margin-left: 0; }
+    .hero, .content { padding-left: 24px; padding-right: 24px; }
+    .tech-split { grid-template-columns: 1fr; }
+    .endpoint { grid-template-columns: 60px 1fr; }
+    .endpoint-desc { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <span class="tag">System Docs</span>
+    <h2>REE Licensure<br>Prediction System</h2>
+  </div>
+  <nav>
+    <span class="nav-section-label">Overview</span>
+    <a href="#s1" class="nav-link"><span class="nav-num">01</span>Purpose</a>
+    <a href="#s2" class="nav-link"><span class="nav-num">02</span>Tech Stack</a>
+    <a href="#s3" class="nav-link"><span class="nav-num">03</span>Architecture</a>
+    <a href="#s4" class="nav-link"><span class="nav-num">04</span>Repo Structure</a>
+    <a href="#s5" class="nav-link"><span class="nav-num">05</span>Configuration</a>
+
+    <span class="nav-section-label">Backend</span>
+    <a href="#s6" class="nav-link"><span class="nav-num">06</span>Auth Flow</a>
+    <a href="#s7" class="nav-link"><span class="nav-num">07</span>Data Model</a>
+    <a href="#s8" class="nav-link"><span class="nav-num">08</span>System Flow</a>
+    <a href="#s9" class="nav-link"><span class="nav-num">09</span>API Endpoints</a>
+    <a href="#s10" class="nav-link"><span class="nav-num">10</span>ML Pipeline</a>
+
+    <span class="nav-section-label">Frontend</span>
+    <a href="#s11" class="nav-link"><span class="nav-num">11</span>Frontend Modules</a>
+    <a href="#s12" class="nav-link"><span class="nav-num">12</span>User Guide</a>
+
+    <span class="nav-section-label">Ops</span>
+    <a href="#s13" class="nav-link"><span class="nav-num">13</span>Data Flow</a>
+    <a href="#s14" class="nav-link"><span class="nav-num">14</span>Operational Notes</a>
+    <a href="#s15" class="nav-link"><span class="nav-num">15</span>Quick Run</a>
+    <a href="#s16" class="nav-link"><span class="nav-num">16</span>Next Steps</a>
+  </nav>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-eyebrow">Comprehensive Guide</div>
+    <h1>REE Licensure<br><span>Prediction System</span></h1>
+    <p>Full documentation covering technologies, architecture, data flow, core functions, API endpoints, and user workflows.</p>
+    <div class="hero-pills">
+      <span class="pill green">Python · FastAPI</span>
+      <span class="pill blue">React · Recharts</span>
+      <span class="pill orange">scikit-learn · Groq AI</span>
+      <span class="pill">PostgreSQL · JWT</span>
+      <span class="pill">Tailwind CSS</span>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- §1 PURPOSE -->
+    <section class="section" id="s1">
+      <div class="section-header">
+        <span class="section-num">01</span>
+        <h2>System Purpose</h2>
+      </div>
+      <p>The system predicts EE licensure outcomes for students and provides a comprehensive analytics layer for faculty.</p>
+      <div class="card-grid" style="margin-top:24px;">
+        <div class="card">
+          <div class="card-icon green">🎯</div>
+          <h4>Pass / Fail Prediction</h4>
+          <p>Binary classification with probability scores for both pass and fail outcomes.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon blue">📊</div>
+          <h4>Predicted Rating</h4>
+          <p>Two regression variants (A and B) providing numeric rating estimates.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon orange">🔍</div>
+          <h4>Reliability Score</h4>
+          <p>Measures the reliability of questionnaire responses from the student.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon purple">🤖</div>
+          <h4>AI Recommendations</h4>
+          <p>Groq-powered personalized feedback per section of the assessment.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon green">📈</div>
+          <h4>Professor Analytics</h4>
+          <p>Institutional trends, model metrics, and live monitoring dashboard.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- §2 TECH STACK -->
+    <section class="section" id="s2">
+      <div class="section-header">
+        <span class="section-num">02</span>
+        <h2>Languages, Frameworks &amp; Libraries</h2>
+      </div>
+      <div class="tech-split">
+        <div class="tech-panel">
+          <div class="tech-panel-label">Backend</div>
+          <div class="tech-row"><span class="tech-label">Language</span><span class="tech-value">Python</span></div>
+          <div class="tech-row"><span class="tech-label">Framework</span><span class="tech-value">FastAPI</span></div>
+          <div class="tech-row"><span class="tech-label">Server</span><span class="tech-value">Uvicorn</span></div>
+          <div class="tech-row"><span class="tech-label">Validation</span><span class="tech-value">Pydantic</span></div>
+          <div class="tech-row"><span class="tech-label">ML / Data</span><span class="tech-value">scikit-learn, pandas, numpy, joblib</span></div>
+          <div class="tech-row"><span class="tech-label">Visualization</span><span class="tech-value">matplotlib, seaborn</span></div>
+          <div class="tech-row"><span class="tech-label">Excel</span><span class="tech-value">openpyxl</span></div>
+          <div class="tech-row"><span class="tech-label">Auth / Security</span><span class="tech-value">python-jose (JWT), passlib</span></div>
+          <div class="tech-row"><span class="tech-label">DB ORM</span><span class="tech-value">SQLAlchemy</span></div>
+          <div class="tech-row"><span class="tech-label">DB Driver</span><span class="tech-value">psycopg2-binary</span></div>
+          <div class="tech-row"><span class="tech-label">Config</span><span class="tech-value">python-dotenv</span></div>
+          <div class="tech-row"><span class="tech-label">AI Service</span><span class="tech-value">Groq SDK</span></div>
+        </div>
+        <div class="tech-panel">
+          <div class="tech-panel-label">Frontend</div>
+          <div class="tech-row"><span class="tech-label">Language</span><span class="tech-value">JavaScript</span></div>
+          <div class="tech-row"><span class="tech-label">Framework</span><span class="tech-value">React (Create React App)</span></div>
+          <div class="tech-row"><span class="tech-label">Charts</span><span class="tech-value">Recharts</span></div>
+          <div class="tech-row"><span class="tech-label">Styling</span><span class="tech-value">Tailwind CSS + custom inline styles</span></div>
+          <div class="tech-row"><span class="tech-label">Build Tools</span><span class="tech-value">react-scripts, postcss, autoprefixer</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- §3 ARCHITECTURE -->
+    <section class="section" id="s3">
+      <div class="section-header">
+        <span class="section-num">03</span>
+        <h2>High-Level Architecture</h2>
+      </div>
+      <div class="card-grid">
+        <div class="card">
+          <div class="card-icon blue">🖥️</div>
+          <h4>Frontend <code>frontend/</code></h4>
+          <p>Role-based app shell — landing, login, student page, professor page. Calls backend via REST using <code>API_BASE_URL</code>. Stores JWT token and role in <code>localStorage</code>.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon green">⚙️</div>
+          <h4>Backend <code>backend/</code></h4>
+          <p>Loads trained model bundle <code>ree_survey_model.pkl</code>. Exposes prediction, recommendation, analytics, admin, and defense endpoints.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon orange">🗄️</div>
+          <h4>Database</h4>
+          <p>Tables: <code>users</code>, <code>prediction_attempts</code>, <code>recommendations_cache</code>. Managed via <code>backend/database.py</code>.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- §4 REPO STRUCTURE -->
+    <section class="section" id="s4">
+      <div class="section-header">
+        <span class="section-num">04</span>
+        <h2>Repository Structure</h2>
+      </div>
+      <div class="tree">
+        <div><span class="tree-dir">backend/</span></div>
+        <div>&nbsp;&nbsp;<span class="tree-file">main.py</span><span class="tree-comment">— main API and business logic</span></div>
+        <div>&nbsp;&nbsp;<span class="tree-file">train_model.py</span><span class="tree-comment">— model training pipeline</span></div>
+        <div>&nbsp;&nbsp;<span class="tree-file">database.py</span><span class="tree-comment">— DB models and persistence helpers</span></div>
+        <div style="margin-top:8px;"><span class="tree-dir">frontend/src/</span></div>
+        <div>&nbsp;&nbsp;<span class="tree-file">App.jsx</span><span class="tree-comment">— role/page routing</span></div>
+        <div>&nbsp;&nbsp;<span class="tree-dir">components/</span></div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="tree-file">PredictorForm.jsx</span><span class="tree-comment">— student input wizard</span></div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="tree-file">ResultCard.jsx</span><span class="tree-comment">— result + AI recommendation UI</span></div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="tree-file">StudentPage.jsx</span><span class="tree-comment">— student dashboard/history</span></div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="tree-file">ProfessorPage.jsx</span><span class="tree-comment">— professor dashboard</span></div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="tree-dir">professor/</span><span class="tree-comment">— modular professor UI components</span></div>
+      </div>
+    </section>
+
+    <!-- §5 CONFIG -->
+    <section class="section" id="s5">
+      <div class="section-header">
+        <span class="section-num">05</span>
+        <h2>Runtime Configuration</h2>
+      </div>
+      <h3>Frontend API Target</h3>
+      <p><code>frontend/src/apiBase.js</code> currently points to:</p>
+      <pre data-label="apiBase.js"><code>https://ee-predictor-backend.onrender.com</code></pre>
+      <h3>Backend Environment Variables</h3>
+      <div class="db-table">
+        <div class="db-field"><span class="db-field-name">DATABASE_URL</span><span class="db-field-desc">Enables DB persistence of predictions and history</span></div>
+        <div class="db-field"><span class="db-field-name">GROQ_API_KEY</span><span class="db-field-desc">Enables AI recommendations and trend insights</span></div>
+        <div class="db-field"><span class="db-field-name">EE_PREDICTOR_SECRET_KEY</span><span class="db-field-desc">JWT signing key (falls back to default if not set)</span></div>
+      </div>
+    </section>
+
+    <!-- §6 AUTH -->
+    <section class="section" id="s6">
+      <div class="section-header">
+        <span class="section-num">06</span>
+        <h2>Authentication &amp; Authorization Flow</h2>
+      </div>
+      <div class="flow">
+        <div class="flow-step">
+          <div class="flow-num">1</div>
+          <div class="flow-content">
+            <div class="flow-title">Register or Login</div>
+            <div class="flow-desc">User calls <code>/auth/register</code> or <code>/auth/login</code></div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-num">2</div>
+          <div class="flow-content">
+            <div class="flow-title">JWT Issued</div>
+            <div class="flow-desc">Backend returns <code>access_token</code> and role</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-num">3</div>
+          <div class="flow-content">
+            <div class="flow-title">Token Stored</div>
+            <div class="flow-desc">Frontend stores token in <code>localStorage</code></div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-num">4</div>
+          <div class="flow-content">
+            <div class="flow-title">Protected Requests</div>
+            <div class="flow-desc">All protected endpoints require <code>Authorization: Bearer &lt;token&gt;</code></div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-num">5</div>
+          <div class="flow-content">
+            <div class="flow-title">User Resolved</div>
+            <div class="flow-desc">Backend resolves current user via JWT using <code>get_current_user</code></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- §7 DATA MODEL -->
+    <section class="section" id="s7">
+      <div class="section-header">
+        <span class="section-num">07</span>
+        <h2>Data Model</h2>
+      </div>
+
+      <div class="db-table">
+        <div class="db-table-header">users</div>
+        <div class="db-field"><span class="db-field-name">id</span><span class="db-field-desc">UUID primary key</span></div>
+        <div class="db-field"><span class="db-field-name">student_id</span><span class="db-field-desc">Optional — for student accounts</span></div>
+        <div class="db-field"><span class="db-field-name">name, email</span><span class="db-field-desc">User identity fields</span></div>
+        <div class="db-field"><span class="db-field-name">password_hash</span><span class="db-field-desc">bcrypt-hashed password</span></div>
+        <div class="db-field"><span class="db-field-name">role</span><span class="db-field-desc">student | professor</span></div>
+        <div class="db-field"><span class="db-field-name">created_at</span><span class="db-field-desc">Timestamp</span></div>
+      </div>
+
+      <div class="db-table">
+        <div class="db-table-header">prediction_attempts</div>
+        <div class="db-field"><span class="db-field-name">id</span><span class="db-field-desc">Attempt UUID</span></div>
+        <div class="db-field"><span class="db-field-name">user_id</span><span class="db-field-desc">FK → users</span></div>
+        <div class="db-field"><span class="db-field-name">name, age, sex, year_taking_exam</span><span class="db-field-desc">Personal profile fields</span></div>
+        <div class="db-field"><span class="db-field-name">prediction, label</span><span class="db-field-desc">Pass/Fail output</span></div>
+        <div class="db-field"><span class="db-field-name">probability_pass, probability_fail</span><span class="db-field-desc">Classifier probabilities</span></div>
+        <div class="db-field"><span class="db-field-name">predicted_rating_a, predicted_rating_b</span><span class="db-field-desc">Regressor outputs</span></div>
+        <div class="db-field"><span class="db-field-name">passing_score</span><span class="db-field-desc">Threshold used</span></div>
+        <div class="db-field"><span class="db-field-name">input_json</span><span class="db-field-desc">Full request payload snapshot</span></div>
+        <div class="db-field"><span class="db-field-name">created_at</span><span class="db-field-desc">Timestamp</span></div>
+      </div>
+
+      <div class="db-table">
+        <div class="db-table-header">recommendations_cache</div>
+        <div class="db-field"><span class="db-field-name">user_id, attempt_id</span><span class="db-field-desc">Composite identity</span></div>
+        <div class="db-field"><span class="db-field-name">section_label</span><span class="db-field-desc">Which section the rec applies to</span></div>
+        <div class="db-field"><span class="db-field-name">recommendation_text</span><span class="db-field-desc">AI-generated advice</span></div>
+        <div class="db-field"><span class="db-field-name">unique constraint</span><span class="db-field-desc">Per user + attempt + section</span></div>
+      </div>
+    </section>
+
+    <!-- §8 SYSTEM FLOW -->
+    <section class="section" id="s8">
+      <div class="section-header">
+        <span class="section-num">08</span>
+        <h2>End-to-End System Flow</h2>
+      </div>
+
+      <h3>Student Prediction Flow</h3>
+      <div class="flow">
+        <div class="flow-step"><div class="flow-num">1</div><div class="flow-content"><div class="flow-title">Login</div><div class="flow-desc">Student authenticates and receives JWT</div></div></div>
+        <div class="flow-step"><div class="flow-num">2</div><div class="flow-content"><div class="flow-title">Fill Form</div><div class="flow-desc">Scores + survey answers + profile info via PredictorForm wizard</div></div></div>
+        <div class="flow-step"><div class="flow-num">3</div><div class="flow-content"><div class="flow-title">POST /predict</div><div class="flow-desc">Frontend submits payload to backend</div></div></div>
+        <div class="flow-step"><div class="flow-num">4</div><div class="flow-content"><div class="flow-title">Inference + Storage</div><div class="flow-desc">Backend builds feature vectors, runs classifier + 2 regressors, computes reliability score, stores attempt in DB</div></div></div>
+        <div class="flow-step"><div class="flow-num">5</div><div class="flow-content"><div class="flow-title">ResultCard</div><div class="flow-desc">Frontend renders prediction, probabilities, and ratings</div></div></div>
+        <div class="flow-step"><div class="flow-num">6</div><div class="flow-content"><div class="flow-title">AI Recommendations</div><div class="flow-desc">Per section, frontend calls POST /ai-recommend with attempt_id</div></div></div>
+        <div class="flow-step"><div class="flow-num">7</div><div class="flow-content"><div class="flow-title">History</div><div class="flow-desc">Student views past attempts via GET /student/attempts</div></div></div>
+      </div>
+
+      <h3>Professor Analytics Flow</h3>
+      <div class="flow">
+        <div class="flow-step"><div class="flow-num">1</div><div class="flow-content"><div class="flow-title">Login</div><div class="flow-desc">Professor authenticates</div></div></div>
+        <div class="flow-step"><div class="flow-num">2</div><div class="flow-content"><div class="flow-title">Dashboard Loads</div><div class="flow-desc">Fetches /analytics, /model-info, /correlation on mount</div></div></div>
+        <div class="flow-step"><div class="flow-num">3</div><div class="flow-content"><div class="flow-title">Trends / Admin Tabs</div><div class="flow-desc">DB-based monitoring: attempts, monthly summary, yearly pass/fail, usage, review analysis, timing analysis, trend insights</div></div></div>
+        <div class="flow-step"><div class="flow-num">4</div><div class="flow-content"><div class="flow-title">Export</div><div class="flow-desc">Optional performance report via /admin/performance-report</div></div></div>
+      </div>
+    </section>
+
+    <!-- §9 ENDPOINTS -->
+    <section class="section" id="s9">
+      <div class="section-header">
+        <span class="section-num">09</span>
+        <h2>API Endpoint Guide</h2>
+      </div>
+
+      <div class="endpoint-group">
+        <div class="endpoint-group-title">Auth</div>
+        <div class="endpoint"><span class="method post">POST</span><span class="endpoint-path">/auth/register</span><span class="endpoint-desc">Create account + return JWT</span></div>
+        <div class="endpoint"><span class="method post">POST</span><span class="endpoint-path">/auth/login</span><span class="endpoint-desc">Authenticate + return JWT</span></div>
+      </div>
+
+      <div class="endpoint-group">
+        <div class="endpoint-group-title">Student</div>
+        <div class="endpoint"><span class="method post">POST</span><span class="endpoint-path">/predict</span><span class="endpoint-desc">Main prediction — returns prediction, probabilities, ratings, reliability, attempt_id</span></div>
+        <div class="endpoint"><span class="method get">GET</span><span class="endpoint-path">/student/attempts</span><span class="endpoint-desc">Paginated student-specific history</span></div>
+        <div class="endpoint"><span class="method post">POST</span><span class="endpoint-path">/ai-recommend</span><span class="endpoint-desc">AI recommendation per section (cached)</span></div>
+      </div>
+
+      <div class="endpoint-group">
+        <div class="endpoint-group-title">Model &amp; Institutional Analytics</div>
+        <div class="endpoint"><span class="method get">GET</span><span class="endpoint-path">/model-info</span><span class="endpoint-desc">Dataset/model metrics</span></div>
+        <div class="endpoint"><span class="method get">GET</span><span class="endpoint-path">/analytics</span><span class="endpoint-desc">Institution-level analytics payload</span></div>
+        <div class="endpoint"><span class="method get">GET</span><span class="endpoint-path">/correlation</span><span class="endpoint-desc">Correlation matrix for key numeric variables</span></div>
+      </div>
+
+      <div class="endpoint-group">
+        <div class="endpoint-group-title">Admin / Monitoring</div>
+        <div class="endpoint"><span class="method get">GET</span><span class="endpoint-path">/admin/attempts</span><span class="endpoint-desc">All recorded attempts</span></div>
+        <div class="endpoint"><span class="method get">GET</span><span class="endpoint-path">/admin/monthly-summary</span><span class="endpoint-desc">Monthly aggregation</span></div>
+        <div class="endpoint"><span class="method get">GET</span><span class="endpoint-path">/admin/pass-fail-by-year</span><span class="endpoint-desc">Yearly pass/fail breakdown</span></div>
+        <div class="endpoint"><span class="method get">GET</span><span class="endpoint-path">/admin/review-analysis</span><span class="endpoint-desc">Review pattern analysis</span></div>
+        <div class="endpoint"><span class="method get">GET</span><span class="endpoint-path">/admin/timing-analysis</span><span class="endpoint-desc">Response timing statistics</span></div>
+        <div class="endpoint"><span class="method get">GET</span><span class="endpoint-path">/admin/attempt-timings</span><span class="endpoint-desc">Per-attempt timing breakdown</span></div>
+        <div class="endpoint"><span class="method get">GET</span><span class="endpoint-path">/admin/trend-stats</span><span class="endpoint-desc">Trend statistics</span></div>
+        <div class="endpoint"><span class="method get">GET</span><span class="endpoint-path">/admin/trend-insights</span><span class="endpoint-desc">AI-generated trend insights</span></div>
+        <div class="endpoint"><span class="method get">GET</span><span class="endpoint-path">/admin/usage-summary</span><span class="endpoint-desc">Usage summary</span></div>
+        <div class="endpoint"><span class="method get">GET</span><span class="endpoint-path">/admin/performance-report</span><span class="endpoint-desc">Exportable performance report</span></div>
+      </div>
+
+      <div class="endpoint-group">
+        <div class="endpoint-group-title">Defense / Testing</div>
+        <div class="endpoint"><span class="method get">GET</span><span class="endpoint-path">/defense/test-2025</span><span class="endpoint-desc"></span></div>
+        <div class="endpoint"><span class="method get">GET</span><span class="endpoint-path">/defense/test-2025-records</span><span class="endpoint-desc"></span></div>
+        <div class="endpoint"><span class="method get">GET</span><span class="endpoint-path">/defense/test-2025-predict</span><span class="endpoint-desc"></span></div>
+      </div>
+
+      <div class="endpoint-group">
+        <div class="endpoint-group-title">Health</div>
+        <div class="endpoint"><span class="method get">GET</span><span class="endpoint-path">/health</span><span class="endpoint-desc">Liveness check</span></div>
+      </div>
+    </section>
+
+    <!-- §10 ML -->
+    <section class="section" id="s10">
+      <div class="section-header">
+        <span class="section-num">10</span>
+        <h2>Machine Learning Pipeline</h2>
+      </div>
+      <p>Implemented in <code>backend/train_model.py</code>.</p>
+
+      <div class="card-grid" style="margin:20px 0;">
+        <div class="card">
+          <div class="card-icon green">🌲</div>
+          <h4>Classification</h4>
+          <p>RandomForestClassifier — predicts Pass / Fail.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon blue">📐</div>
+          <h4>Regression A</h4>
+          <p>RandomForestRegressor using subject scores + GWA basic feature set.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon orange">📐</div>
+          <h4>Regression B</h4>
+          <p>RandomForestRegressor excluding subject scores — GWA + survey profile only.</p>
+        </div>
+      </div>
+
+      <h3>Model Bundle Exports</h3>
+      <ul class="styled">
+        <li>Trained models (classifier + 2 regressors)</li>
+        <li>Feature lists: <code>FEATURES_ALL</code>, <code>FEATURES_BASIC</code>, <code>FEATURES_NOSUB</code></li>
+        <li>Encoders for categorical variables</li>
+        <li>Evaluation metrics</li>
+      </ul>
+
+      <h3>Runtime Inference</h3>
+      <p>The <code>/predict</code> endpoint calls <code>build_feature_vector()</code> to reconstruct feature vectors from the incoming request before passing them through each model.</p>
+    </section>
+
+    <!-- §11 FRONTEND MODULES -->
+    <section class="section" id="s11">
+      <div class="section-header">
+        <span class="section-num">11</span>
+        <h2>Frontend Module Guide</h2>
+      </div>
+
+      <div class="db-table">
+        <div class="db-table-header">App.jsx — Routing</div>
+        <div class="db-field"><span class="db-field-name">landing</span><span class="db-field-desc">Marketing/entry view</span></div>
+        <div class="db-field"><span class="db-field-name">login</span><span class="db-field-desc">Auth view (register + login)</span></div>
+        <div class="db-field"><span class="db-field-name">student</span><span class="db-field-desc">Student dashboard shell</span></div>
+        <div class="db-field"><span class="db-field-name">professor</span><span class="db-field-desc">Professor analytics shell</span></div>
+      </div>
+
+      <div class="db-table" style="margin-top:16px;">
+        <div class="db-table-header">StudentPage.jsx</div>
+        <div class="db-field"><span class="db-field-name">dashboard view</span><span class="db-field-desc">Overview with history from /student/attempts</span></div>
+        <div class="db-field"><span class="db-field-name">predictor view</span><span class="db-field-desc">Launches PredictorForm wizard</span></div>
+        <div class="db-field"><span class="db-field-name">result view</span><span class="db-field-desc">Shows ResultCard after prediction</span></div>
+        <div class="db-field"><span class="db-field-name">fallback</span><span class="db-field-desc">Local browser storage if DB fetch fails</span></div>
+      </div>
+
+      <div class="db-table" style="margin-top:16px;">
+        <div class="db-table-header">PredictorForm.jsx</div>
+        <div class="db-field"><span class="db-field-name">multi-step wizard</span><span class="db-field-desc">Guided survey flow with step validation</span></div>
+        <div class="db-field"><span class="db-field-name">validation</span><span class="db-field-desc">Score and GWA range checks</span></div>
+        <div class="db-field"><span class="db-field-name">question_timings</span><span class="db-field-desc">Captures per-question response timing for analytics</span></div>
+      </div>
+
+      <div class="db-table" style="margin-top:16px;">
+        <div class="db-table-header">ResultCard.jsx</div>
+        <div class="db-field"><span class="db-field-name">prediction output</span><span class="db-field-desc">Pass/Fail badge with probability bars</span></div>
+        <div class="db-field"><span class="db-field-name">ratings</span><span class="db-field-desc">Regressor A and B predicted rating display</span></div>
+        <div class="db-field"><span class="db-field-name">section scores</span><span class="db-field-desc">Per-section score breakdown</span></div>
+        <div class="db-field"><span class="db-field-name">AI recs</span><span class="db-field-desc">Calls /ai-recommend per section on render</span></div>
+      </div>
+    </section>
+
+    <!-- §12 USER GUIDE -->
+    <section class="section" id="s12">
+      <div class="section-header">
+        <span class="section-num">12</span>
+        <h2>User Guide</h2>
+      </div>
+
+      <h3>Student</h3>
+      <div class="flow">
+        <div class="flow-step"><div class="flow-num">1</div><div class="flow-content"><div class="flow-title">Open App → Choose Student</div></div></div>
+        <div class="flow-step"><div class="flow-num">2</div><div class="flow-content"><div class="flow-title">Register or Log In</div></div></div>
+        <div class="flow-step"><div class="flow-num">3</div><div class="flow-content"><div class="flow-title">Complete Predictor</div><div class="flow-desc">Exam scores → background details → questionnaire sections</div></div></div>
+        <div class="flow-step"><div class="flow-num">4</div><div class="flow-content"><div class="flow-title">Submit</div><div class="flow-desc">Backend runs all models and returns results</div></div></div>
+        <div class="flow-step"><div class="flow-num">5</div><div class="flow-content"><div class="flow-title">Review Results</div><div class="flow-desc">Pass/Fail, probabilities, ratings A/B, reliability score, AI recommendations by section</div></div></div>
+        <div class="flow-step"><div class="flow-num">6</div><div class="flow-content"><div class="flow-title">Check History</div><div class="flow-desc">View all previous prediction attempts</div></div></div>
+      </div>
+
+      <h3>Professor / Faculty</h3>
+      <div class="flow">
+        <div class="flow-step"><div class="flow-num">1</div><div class="flow-content"><div class="flow-title">Open App → Choose Faculty/Professor</div></div></div>
+        <div class="flow-step"><div class="flow-num">2</div><div class="flow-content"><div class="flow-title">Register or Log In</div></div></div>
+        <div class="flow-step"><div class="flow-num">3</div><div class="flow-content"><div class="flow-title">Use Dashboard Tabs</div><div class="flow-desc">Overview / Performance / Features / Curriculum → Classification / Regression / Correlation → Trends &amp; Monitoring → Model Overview</div></div></div>
+        <div class="flow-step"><div class="flow-num">4</div><div class="flow-content"><div class="flow-title">Apply Filters</div><div class="flow-desc">Year, month, review type, subject</div></div></div>
+        <div class="flow-step"><div class="flow-num">5</div><div class="flow-content"><div class="flow-title">Export Report</div><div class="flow-desc">Download performance report when needed</div></div></div>
+      </div>
+    </section>
+
+    <!-- §13 DATA FLOW -->
+    <section class="section" id="s13">
+      <div class="section-header">
+        <span class="section-num">13</span>
+        <h2>Data Flow Summary</h2>
+      </div>
+      <div class="card-grid">
+        <div class="card">
+          <div class="card-icon blue">📥</div>
+          <h4>Input Sources</h4>
+          <p>Student form entries, historical Excel datasets for institutional analytics, DB attempts for live monitoring.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon green">⚙️</div>
+          <h4>Processing</h4>
+          <p>Feature vector assembly → ML inference (classifier + 2 regressors) → reliability computation → optional Groq AI text generation.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon orange">💾</div>
+          <h4>Storage</h4>
+          <p>Prediction results + full input snapshot in DB. AI recommendation text cached per user + attempt + section.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon purple">📤</div>
+          <h4>Output</h4>
+          <p>Student-focused prediction result card. Professor-focused aggregate dashboards and trend reports.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- §14 OPERATIONAL NOTES -->
+    <section class="section" id="s14">
+      <div class="section-header">
+        <span class="section-num">14</span>
+        <h2>Important Operational Notes</h2>
+      </div>
+      <div class="alert">
+        <strong>Missing DATABASE_URL</strong> — Prediction can still run, but persistence, history, and live monitoring become limited.
+      </div>
+      <div class="alert">
+        <strong>Missing GROQ_API_KEY</strong> — AI recommendation and AI trend summary endpoints return fallback text rather than generated responses.
+      </div>
+      <div class="alert">
+        <strong>API URL</strong> — Frontend uses the fixed production URL in <code>apiBase.js</code>. Change this for local development.
+      </div>
+    </section>
+
+    <!-- §15 QUICK RUN -->
+    <section class="section" id="s15">
+      <div class="section-header">
+        <span class="section-num">15</span>
+        <h2>Quick Run Guide</h2>
+      </div>
+
+      <h3>Backend</h3>
+      <pre data-label="bash"><code>cd backend
+pip install -r requirements.txt
+uvicorn main:app --reload</code></pre>
+
+      <h3>Frontend</h3>
+      <pre data-label="bash"><code>cd frontend
+npm install
+npm start</code></pre>
+
+      <h3>Train Model</h3>
+      <pre data-label="bash"><code>cd backend
+python train_model.py</code></pre>
+    </section>
+
+    <!-- §16 NEXT STEPS -->
+    <section class="section" id="s16">
+      <div class="section-header">
+        <span class="section-num">16</span>
+        <h2>Recommended Next Documentation Enhancements</h2>
+      </div>
+      <ul class="styled">
+        <li>Add sequence diagrams — login, prediction, recommendation cache, analytics load</li>
+        <li>Add API request/response samples for each endpoint</li>
+        <li>Add role-permission matrix (student vs professor access)</li>
+        <li>Add production deployment section (Render + Netlify + DB)</li>
+      </ul>
+    </section>
+
+  </div>
+</main>
+
+<script>
+  // Active nav highlight on scroll
+  const sections = document.querySelectorAll('.section');
+  const navLinks = document.querySelectorAll('.nav-link');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        navLinks.forEach(l => l.classList.remove('active'));
+        const id = entry.target.id;
+        const active = document.querySelector(`.nav-link[href="#${id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { threshold: 0.3 });
+
+  sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

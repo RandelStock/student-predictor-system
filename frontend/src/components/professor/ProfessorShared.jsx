@@ -212,6 +212,42 @@ export function ChartContainer({
   );
 }
 
+// ── DashboardGuide ────────────────────────────────────────────────────────────
+export function DashboardGuide({ title = "How to Read This Dashboard", items = [] }) {
+  if (!items.length) return null;
+  return (
+    <div
+      style={{
+        background: "rgba(56,189,248,0.06)",
+        border: "1px solid rgba(56,189,248,0.2)",
+        borderRadius: 14,
+        padding: "12px 14px",
+        marginBottom: 16,
+      }}
+    >
+      <p
+        style={{
+          margin: "0 0 8px",
+          fontSize: 11,
+          color: c.blue,
+          textTransform: "uppercase",
+          letterSpacing: "0.07em",
+          fontWeight: 700,
+        }}
+      >
+        {title}
+      </p>
+      <div style={{ display: "grid", gap: 6 }}>
+        {items.map((item, idx) => (
+          <p key={idx} style={{ margin: 0, fontSize: 12, color: "#cbd5e1", lineHeight: 1.55 }}>
+            <strong style={{ color: "#f1f5f9" }}>{item.label}:</strong> {item.text}
+          </p>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── FilterPanel ───────────────────────────────────────────────────────────────
 export function FilterPanel({ filters, onChange, availableYears = [] }) {
   const inputStyle = {

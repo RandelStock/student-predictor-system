@@ -21,6 +21,7 @@ import {
   c,
   ChartContainer,
   CustomTooltip,
+  DashboardGuide,
   FilterPanel,
   InsightBox,
   MetricCard,
@@ -166,6 +167,14 @@ export default function ModelOverviewDashboard({
 
   return (
     <div className="fade-in space-y-4">
+      <DashboardGuide
+        title="How to Read This Model Dashboard"
+        items={[
+          { label: "Model behavior", text: "Sections summarize predictors, reliability, and prediction-vs-actual consistency." },
+          { label: "Data context", text: "Trend/distribution visuals show cohort patterns by year, subject, review, and strand." },
+          { label: "Actionable output", text: "Curriculum and correlation sections highlight weak areas and relationships to guide intervention." },
+        ]}
+      />
       <SectionCard
         icon="🧭"
         title="Model Overview Dashboard"
