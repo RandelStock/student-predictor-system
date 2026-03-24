@@ -14,7 +14,6 @@ import {
   CustomTooltip,
   MetricCard,
   ChartContainer,
-  DashboardGuide,
   FilterPanel,
 } from "./ProfessorShared";
 
@@ -86,13 +85,6 @@ export default function ProfessorTrendsDashboard({
       <div className="sticky-filter">
         <FilterPanel />
       </div>
-      <DashboardGuide
-        items={[
-          { label: "Live monitoring", text: "Uses runtime database activity (usage, attempts, pass/fail by period)." },
-          { label: "Behavior analysis", text: "Timing and review-split sections show potential quality and process issues." },
-          { label: "How to use", text: "Track direction month-to-month and investigate sudden drops or outlier behavior." },
-        ]}
-      />
 
       <ChartContainer title="System Usage & User Activity" icon="📊" subtitle="Active student users and prediction volume (last 30 days)" fullWidth accent={c.blue}>
         {usageLoading ? (

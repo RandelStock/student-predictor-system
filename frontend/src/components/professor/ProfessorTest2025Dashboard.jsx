@@ -16,7 +16,6 @@ import {
   num,
   MetricCard,
   ChartContainer,
-  DashboardGuide,
   FilterPanel,
 } from "./ProfessorShared";
 
@@ -82,13 +81,6 @@ export default function ProfessorTest2025Dashboard({
         <h2 style={{ margin: "0 0 4px", fontSize: 22, fontWeight: 800, fontFamily: "'Syne',sans-serif" }}>2025 Final Defense</h2>
         <p style={{ margin: 0, fontSize: 13, color: "#64748b" }}>Held-out evaluation on <strong>DATA_TEST.xlsx</strong> (2025).</p>
       </div>
-      <DashboardGuide
-        items={[
-          { label: "What this test is", text: "Held-out 2025 dataset evaluation to check model generalization beyond training data." },
-          { label: "Core visuals", text: "Metrics, scatter, and confusion matrix show overall accuracy and error behavior." },
-          { label: "Row-level check", text: "Examinee panel validates predictions per student record for defense transparency." },
-        ]}
-      />
 
       {testLoading ? (
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: 60, color: "#64748b" }}>Loading 2025 metrics…</div>

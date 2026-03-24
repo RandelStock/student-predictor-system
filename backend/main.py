@@ -54,6 +54,8 @@ SECRET_KEY = os.environ.get("EE_PREDICTOR_SECRET_KEY", "77284ebb88f5c8d3ba9d60b3
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 1 day
 
+FACULTY_INVITE_CODE = os.environ.get("FACULTY_CODE", "IIEE-SLSU-2025")
+
 pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
@@ -522,7 +524,7 @@ class RegisterRequest(BaseModel):
     password: str
     role: Literal["student", "professor"]
     student_id: Optional[str] = None
-
+    invite_code: Optional[str] = None
 
 class LoginRequest(BaseModel):
     email: str
@@ -610,6 +612,14 @@ class PredictRequest(BaseModel):
 
 @app.post("/auth/register", response_model=TokenResponse)
 def register(req: RegisterRequest, db: Session = Depends(get_db)):
+    # ── Faculty gate ──────────────────────────────────────────
+    if req.role == "professor":
+        if not req.invite_code or req.invite_code.strip() != FACULTY_INVITE_CODE:
+            raise HTTPException(
+                status_code=403,
+                detail="Invalid faculty access code. Contact your department administrator."
+            )
+    # ─────────────────────────────────────────────────────────
     email = req.email.strip().lower()
     existing = db.query(User).filter(User.email == email).first()
     if existing:
