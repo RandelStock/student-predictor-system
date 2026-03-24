@@ -85,20 +85,6 @@ const NAV_GROUPS = [
   },
 ];
 
-// ─── TAB_DESCRIPTIONS (same as original ProfessorPage) ───────────────────────
-const TAB_DESCRIPTIONS = {
-  model_overview:         "Comprehensive model analysis: data patterns, reliability, correlations, and curriculum-linked insights.",
-  overview:               "Institution-level snapshot of outcomes, pass/fail distribution, review participation, and key KPI trends.",
-  performance:            "Detailed performance breakdown by strand, survey sections, and subject-score movement over time.",
-  features:               "Top model predictors ranked by importance — which factors most influence pass/fail outcomes.",
-  curriculum:             "Curriculum gap view of weakest survey indicators to help prioritize intervention areas.",
-  classification_metrics: "Accuracy, precision, recall, F1, and CV results for pass/fail prediction.",
-  regression_metrics:     "MAE, RMSE, and R² comparisons for score prediction models.",
-  correlation:            "Correlation matrix of major variables — strength and direction of academic relationships.",
-  test2025:               "Held-out 2025 defense evaluation: generalization metrics, confusion matrix, and row-level checks.",
-  trends:                 "Live operational monitoring: usage, yearly/monthly outcomes, timing behavior, and recent attempts.",
-};
-
 // ─── Helper: get flat label for a tab id ─────────────────────────────────────
 function labelFor(id) {
   for (const g of NAV_GROUPS) {
@@ -108,102 +94,7 @@ function labelFor(id) {
   return id;
 }
 
-// ─── FilterPanel ─────────────────────────────────────────────────────────────
-function FilterPanel({ dashFilters, setDashFilters, availableYears }) {
-  const months = [
-    "January","February","March","April","May","June",
-    "July","August","September","October","November","December",
-  ];
-
-  const sel = (key, val) => setDashFilters(f => ({ ...f, [key]: val === f[key] ? "" : val }));
-
-  return (
-    <div style={{
-      background: T.navyCard,
-      border: `1px solid ${T.border}`,
-      borderRadius: 14,
-      padding: "14px 18px",
-      marginBottom: 20,
-      display: "flex",
-      flexWrap: "wrap",
-      gap: 14,
-      alignItems: "center",
-    }}>
-      {/* Year */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 120 }}>
-        <span style={{ fontSize: 10, color: T.gold, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em" }}>Year</span>
-        <select
-          value={dashFilters.year}
-          onChange={e => setDashFilters(f => ({ ...f, year: e.target.value }))}
-          style={selectStyle}
-        >
-          <option value="">All Years</option>
-          {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
-        </select>
-      </div>
-
-      {/* Month */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 130 }}>
-        <span style={{ fontSize: 10, color: T.gold, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em" }}>Month</span>
-        <select
-          value={dashFilters.month}
-          onChange={e => setDashFilters(f => ({ ...f, month: e.target.value }))}
-          style={selectStyle}
-        >
-          <option value="">All Months</option>
-          {months.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
-        </select>
-      </div>
-
-      {/* Review toggle */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-        <span style={{ fontSize: 10, color: T.gold, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em" }}>Formal Review</span>
-        <div style={{ display: "flex", gap: 6 }}>
-          {["Yes", "No"].map(v => (
-            <button
-              key={v}
-              onClick={() => sel("review", v)}
-              style={{
-                padding: "6px 14px",
-                borderRadius: 8,
-                border: `1px solid ${dashFilters.review === v ? T.gold : T.borderSub}`,
-                background: dashFilters.review === v ? T.goldGlow : "transparent",
-                color: dashFilters.review === v ? T.gold : T.muted,
-                fontSize: 12,
-                fontWeight: 700,
-                cursor: "pointer",
-                transition: "all 0.18s",
-                fontFamily: "'DM Sans',sans-serif",
-              }}
-            >{v}</button>
-          ))}
-        </div>
-      </div>
-
-      {/* Clear */}
-      {(dashFilters.year || dashFilters.month || dashFilters.review) && (
-        <button
-          onClick={() => setDashFilters({ year: "", month: "", review: "", subject: "" })}
-          style={{
-            marginLeft: "auto",
-            padding: "7px 16px",
-            borderRadius: 8,
-            border: `1px solid ${T.borderSub}`,
-            background: "transparent",
-            color: T.dimText,
-            fontSize: 11,
-            cursor: "pointer",
-            fontFamily: "'DM Sans',sans-serif",
-            transition: "all 0.18s",
-          }}
-          onMouseEnter={e => { e.currentTarget.style.color = T.fail; e.currentTarget.style.borderColor = "rgba(248,113,113,0.3)"; }}
-          onMouseLeave={e => { e.currentTarget.style.color = T.dimText; e.currentTarget.style.borderColor = T.borderSub; }}
-        >✕ Clear filters</button>
-      )}
-    </div>
-  );
-}
-
+// ─── Sidebar ─────────────────────────────────────────────────────────────────
 const selectStyle = {
   background: T.navyHover,
   border: `1px solid ${T.borderSub}`,
@@ -463,9 +354,6 @@ function Topbar({ activeTab, mobileOpen, setMobileOpen }) {
         <p style={{ margin: 0, fontSize: 10, color: T.gold, textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 700 }}>
           {labelFor(activeTab)}
         </p>
-        <p style={{ margin: 0, fontSize: 11, color: T.dimText, lineHeight: 1.4 }}>
-          {TAB_DESCRIPTIONS[activeTab]?.slice(0, 80)}…
-        </p>
       </div>
     </header>
   );
@@ -636,36 +524,6 @@ export default function ProfessorSidebarLayout({
                 <span style={{ fontSize: 10, color: T.muted, fontWeight: 600, letterSpacing: "0.07em" }}>{p.label}</span>
               </div>
             ))}
-          </div>
-        </div>
-
-        {/* Filter panel */}
-        {dashFilters !== undefined && (
-          <div style={{ padding: "18px 28px 0" }}>
-            <FilterPanel
-              dashFilters={dashFilters}
-              setDashFilters={setDashFilters}
-              availableYears={availableYears}
-            />
-          </div>
-        )}
-
-        {/* Tab description card */}
-        <div style={{ padding: "0 28px" }}>
-          <div
-            className="fade-in"
-            style={{
-              marginBottom: 18,
-              padding: "10px 16px",
-              borderRadius: 12,
-              background: "rgba(245,197,24,0.06)",
-              border: `1px solid rgba(245,197,24,0.18)`,
-            }}
-          >
-            <p style={{ margin: 0, fontSize: 12, color: T.muted, lineHeight: 1.6 }}>
-              <span style={{ color: T.gold, fontWeight: 700 }}>{labelFor(activeTab)} · </span>
-              {TAB_DESCRIPTIONS[activeTab] || "Dashboard view."}
-            </p>
           </div>
         </div>
 

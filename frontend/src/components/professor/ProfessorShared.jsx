@@ -264,7 +264,7 @@ export function FilterPanel({ filters, onChange, availableYears = [] }) {
   };
   const labelStyle = {
     fontSize: 11,
-    color: "#64748b",
+    color: T.gold,
     fontFamily: "'DM Sans',sans-serif",
     display: "block",
     marginBottom: 5,
@@ -341,30 +341,6 @@ export function FilterPanel({ filters, onChange, availableYears = [] }) {
                 borderColor:
                   filters.review === v || (!filters.review && v === "All") ? c.blue : "rgba(255,255,255,0.1)",
                 color: filters.review === v || (!filters.review && v === "All") ? c.blue : "#94a3b8",
-                padding: "8px 14px",
-                fontWeight: 600,
-              }}
-            >
-              {v}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div>
-        <label style={labelStyle}>📘 Subject Filter</label>
-        <div style={{ display: "flex", gap: 6 }}>
-          {["All", "Math", "EE", "ESAS", "GWA"].map((v) => (
-            <button
-              key={v}
-              onClick={() => onChange({ ...filters, subject: v === "All" ? "" : v })}
-              style={{
-                ...inputStyle,
-                background:
-                  filters.subject === v || (!filters.subject && v === "All") ? `${c.indigo}25` : "rgba(255,255,255,0.04)",
-                borderColor:
-                  filters.subject === v || (!filters.subject && v === "All") ? c.indigo : "rgba(255,255,255,0.1)",
-                color: filters.subject === v || (!filters.subject && v === "All") ? c.indigo : "#94a3b8",
                 padding: "8px 14px",
                 fontWeight: 600,
               }}

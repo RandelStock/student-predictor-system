@@ -1,0 +1,8 @@
+{
+    "chat.tools.terminal.autoApprove": {
+        "/^cd \"c:\\\\Users\\\\Randel\\\\Downloads\\\\Von Files\\\\Von_Thesis\\\\Von_Thesis\\\\frontend\" ; cmd /c npm run build$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    }
+}

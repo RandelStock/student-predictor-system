@@ -849,6 +849,7 @@ export default function ModelOverviewDashboard({
     return `Average absolute prediction gap is ${avgAbsError.toFixed(2)} points across ${scatterData.length} records.`;
   }, [scatterData]);
 
+  const [dashboardMode, setDashboardMode] = useState("institutional");
   const barColor = (rate) =>
     rate >= 70 ? IIEE.passGreen : rate >= 55 ? IIEE.amber : IIEE.failRed;
 
@@ -862,13 +863,40 @@ export default function ModelOverviewDashboard({
           <span className="comb-hero-badge gold">📊 Dashboard</span>
           <span className="comb-hero-badge blue">🧭 Model Overview</span>
         </div>
+        <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+          {[
+            { key: "institutional", title: "Institutional Dashboard" },
+            { key: "model", title: "Model Dashboard" },
+          ].map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setDashboardMode(tab.key)}
+              style={{
+                padding: "8px 14px",
+                borderRadius: 8,
+                border: `1px solid ${dashboardMode === tab.key ? IIEE.gold : "rgba(255,255,255,0.15)"}`,
+                background: dashboardMode === tab.key ? "rgba(245,197,24,0.2)" : "rgba(11,20,55,0.7)",
+                color: dashboardMode === tab.key ? IIEE.gold : IIEE.white,
+                fontWeight: 700,
+                cursor: "pointer",
+                fontSize: 12,
+              }}
+            >
+              {tab.title}
+            </button>
+          ))}
+        </div>
         <h2 className="comb-hero-title">
-          Institutional <span className="accent-gold">Overview</span>{" "}
-          <span style={{ color: IIEE.dimText, fontWeight: 400 }}>&amp;</span>{" "}
-          <span className="accent-blue">Model</span> Dashboard
+          {dashboardMode === "institutional" ? (
+            <>PRC 2022-2025 <span className="accent-gold">Institutional</span> Dashboard</>
+          ) : (
+            <>PRC 2022-2025 <span className="accent-blue">Model</span> Dashboard</>
+          )}
         </h2>
         <p className="comb-hero-sub">
-          Aggregate EE board exam outcomes, model behavior, reliability, and curriculum insights — all in one view.
+          {dashboardMode === "institutional"
+            ? "PRC results of SLSU examinees across 2022-2025, institutional cohort metrics and KPI trends."
+            : "Model overview including reliability, predictions, and correlation insights for SLSU PRC data (2022-2025)."}
         </p>
       </div>
 
@@ -876,15 +904,7 @@ export default function ModelOverviewDashboard({
 
         {/* ── Sticky Filter Strip ── */}
         <div className="comb-filter-strip">
-          <DashboardGuide
-            title="How to Read This Dashboard"
-            items={[
-              { label: "KPI cards",     text: "Totals and rates for students, passers/failers, and GWA gap." },
-              { label: "Charts",        text: "Compare outcomes by year, strand, review status, and subject." },
-              { label: "Model section", text: "Covers reliability, correlation, and curriculum gap analysis." },
-              { label: "Threshold",     text: "Gold 70% reference lines and color cues judge cohort performance." },
-            ]}
-          />
+          
           <FilterPanel filters={dashFilters} onChange={setDashFilters} availableYears={availableYears} />
           
           {/* Year Selection Indicator */}
@@ -930,7 +950,8 @@ export default function ModelOverviewDashboard({
             PART A — INSTITUTIONAL OVERVIEW
         ════════════════════════════════════════════════════════ */}
 
-        <SectionDivider label="Key Performance Indicators" icon="📌" />
+        <div style={{ display: dashboardMode === "institutional" ? "block" : "none" }}>
+          <SectionDivider label="Key Performance Indicators" icon="📌" />
 
         {/* KPI Metric Cards */}
         <div className="comb-metrics-grid" style={{ marginBottom: 28 }}>
@@ -1210,7 +1231,10 @@ export default function ModelOverviewDashboard({
             PART B — MODEL OVERVIEW (numbered sections)
         ════════════════════════════════════════════════════════ */}
 
-        <SectionDivider label="Model Summary" icon="🧠" />
+        </div>
+
+        <div style={{ display: dashboardMode === "model" ? "block" : "none" }}>
+          <SectionDivider label="Model Summary" icon="🧠" />
 
         {/* Section 1 — Model Summary */}
         <SectionCard number="1" icon="🧠" title="Model Summary" subtitle="Purpose, structure, and major predictor groups.">
@@ -1466,6 +1490,7 @@ export default function ModelOverviewDashboard({
           </p>
         </div>
 
+        </div>
       </div>
     </div>
   );
