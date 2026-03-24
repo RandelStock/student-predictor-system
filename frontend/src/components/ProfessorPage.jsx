@@ -1,11 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import API_BASE_URL from "../apiBase";
-import {
-  LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
-  ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip,
-  Legend, ResponsiveContainer, ReferenceLine, RadarChart,
-  Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis
-} from "recharts";
 import ProfessorTabsNav from "./professor/ProfessorTabsNav";
 import ProfessorTimingModal from "./professor/ProfessorTimingModal";
 import ModelOverviewDashboard from "./professor/ModelOverviewDashboard";
@@ -20,15 +14,6 @@ import ProfessorTest2025Dashboard from "./professor/ProfessorTest2025Dashboard";
 import ProfessorTrendsDashboard from "./professor/ProfessorTrendsDashboard";
 import {
   c,
-  MONTH_NAMES,
-  CHART_COLORS,
-  pct,
-  num,
-  CustomTooltip,
-  MetricCard,
-  ChartContainer,
-  FilterPanel,
-  InsightBox,
   buildMockData,
   generateInsights,
 } from "./professor/ProfessorShared";
