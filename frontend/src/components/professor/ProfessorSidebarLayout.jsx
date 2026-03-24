@@ -95,20 +95,6 @@ function labelFor(id) {
 }
 
 // ─── Sidebar ─────────────────────────────────────────────────────────────────
-const selectStyle = {
-  background: T.navyHover,
-  border: `1px solid ${T.borderSub}`,
-  borderRadius: 8,
-  padding: "7px 11px",
-  color: T.white,
-  fontSize: 12,
-  fontFamily: "'DM Sans',sans-serif",
-  outline: "none",
-  cursor: "pointer",
-  minWidth: 120,
-};
-
-// ─── Sidebar ─────────────────────────────────────────────────────────────────
 function Sidebar({ activeTab, onTabChange, onRefresh, onLogout, collapsed, setCollapsed, mobileOpen, setMobileOpen }) {
   const isCollapsed = collapsed && !mobileOpen;
 

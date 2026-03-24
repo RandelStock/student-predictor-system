@@ -20,7 +20,6 @@ import {
 import {
   pct,
   num,
-  DashboardGuide,
   FilterPanel,
   InsightBox,
   MONTH_NAMES,
