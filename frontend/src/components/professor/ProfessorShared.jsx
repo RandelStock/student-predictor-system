@@ -269,7 +269,8 @@ export function DashboardGuide({ title = "How to Read This Dashboard", items = [
 }
 
 // ── FilterPanel ───────────────────────────────────────────────────────────────
-export function FilterPanel({ filters, onChange, availableYears = [] }) {
+export function FilterPanel({ filters = {}, onChange = () => {}, availableYears = [] }) {
+
   const inputStyle = {
     background: "rgba(255,255,255,0.05)",
     border: "1px solid rgba(255,255,255,0.1)",
