@@ -968,22 +968,10 @@ export default function LandingPage({ onEnter }) {
           <div className="lp-contact-btm">
             {[
               {
-                icon: "🕐",
-                title: "Office Hours",
-                body: "Monday to Friday\n8:00 AM – 5:00 PM PHT\nClosed on weekends & holidays",
-                tag: "Available Now",
-              },
-              {
-                icon: "📬",
-                title: "Response Time",
-                body: "Email inquiries are typically answered within 1–2 business days. Urgent concerns may be raised directly at the department office.",
-                tag: "1–2 Business Days",
-              },
-              {
                 icon: "🔬",
                 title: "Research Collaboration",
-                body: "Interested in partnering with the SLSU EE Research Team? Select "Research Collaboration" in the contact form above.",
-                tag: "Open to Partners",
+                body: "Have a question about the SLSU EE Research Team? Select 'Research Collaboration' in the contact form above.",
+                tag: "Open to Questions",
               },
             ].map((c, i) => (
               <div key={i} className="lp-cic-card" style={{
