@@ -17,6 +17,7 @@ import {
   num,
   MetricCard,
   ChartContainer,
+  DashboardGuide,
   FilterPanel,
 } from "./ProfessorShared";
 
