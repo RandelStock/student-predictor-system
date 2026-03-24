@@ -30,7 +30,7 @@
  *   );
  */
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 
 // ─── Colour tokens (SLSU IIEE palette) ───────────────────────────────────────
 const T = {
