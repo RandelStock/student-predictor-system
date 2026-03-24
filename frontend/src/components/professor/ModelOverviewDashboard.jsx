@@ -1312,8 +1312,8 @@ export default function ModelOverviewDashboard({
           </div>
         </SectionCard>
 
-        {/* Section 3 — Visualization & Trends */
-        <SectionCard number="4" icon="📈" title="Data Visualization & Trends" subtitle="Monthly, yearly, and subject trend behavior with indicators.">
+        {/* Section 3 — Visualization & Trends */}
+        <SectionCard number="3" icon="📈" title="Data Visualization & Trends" subtitle="Monthly, yearly, and subject trend behavior with indicators.">
           <div className="comb-2col">
             <ChartCard icon="🗓️" title="Monthly Trends" subtitle="Line chart for trend continuity" blueTint
               description="Pass rate movement mapped across months using year data as proxy."
