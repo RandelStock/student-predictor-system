@@ -90,19 +90,46 @@ const accentBarStyle = {
   background: "linear-gradient(90deg,transparent 0%,rgba(255,255,255,.20) 20%,rgba(245,197,24,.65) 50%,rgba(255,255,255,.20) 80%,transparent 100%)",
 };
 
-const inputBase = {
-  width: "100%",
-  background: "rgba(255,255,255,0.04)",
-  border: `1px solid ${T.borderSub}`,
-  borderRadius: "10px",
-  padding: "11px 14px",
-  color: T.white100,
-  fontSize: "13px",
-  fontFamily: "'DM Sans', sans-serif",
-  outline: "none",
-  transition: "border-color 0.2s, background 0.2s",
-  boxSizing: "border-box",
-};
+// ── SVG icon helpers (copyright-safe, no emoji) ───────────────────────────────
+const PhoneIcon = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#F5C518" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.4 2 2 0 0 1 3.6 1.22h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.78a16 16 0 0 0 6 6l1.63-1.63a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+  </svg>
+);
+const MailIcon = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#F5C518" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2" y="4" width="20" height="16" rx="2"/>
+    <path d="M2 7l10 7 10-7"/>
+  </svg>
+);
+const MapPinIcon = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#F5C518" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0z"/>
+    <circle cx="12" cy="10" r="3"/>
+  </svg>
+);
+const StarIcon = () => (
+  <svg width="30" height="30" viewBox="0 0 24 24" fill="#F5C518" stroke="#F5C518" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
+    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+  </svg>
+);
+const PencilIcon = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+  </svg>
+);
+const FacebookIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>
+  </svg>
+);
+const EmailSocialIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2" y="4" width="20" height="16" rx="2"/>
+    <path d="M2 7l10 7 10-7"/>
+  </svg>
+);
 
 // ── Contact form state hook ───────────────────────────────────────────────────
 function useContactForm() {
@@ -248,17 +275,6 @@ export default function LandingPage({ onEnter }) {
           border-color:#F5C518; color:#F5C518;
           background:rgba(245,197,24,.08);
         }
-        .lp-btn-submit {
-          background:#F5C518; border:none; color:#07102B;
-          font-family:'Syne',sans-serif; font-weight:800;
-          cursor:pointer; transition:all .22s; border-radius:11px;
-          white-space:nowrap; flex-shrink:0;
-        }
-        .lp-btn-submit:hover {
-          background:#fff;
-          transform:translateY(-2px);
-          box-shadow:0 8px 24px rgba(245,197,24,.42);
-        }
 
         /* ── Card hovers ── */
         .lp-feature-card:hover {
@@ -270,13 +286,15 @@ export default function LandingPage({ onEnter }) {
           transform:translateY(-4px) !important;
           border-color:rgba(245,197,24,.32) !important;
         }
-        .lp-contact-detail:hover {
-          transform:translateX(4px) !important;
+        .lp-contact-card:hover {
+          transform:translateY(-4px) !important;
           border-color:rgba(245,197,24,.38) !important;
+          box-shadow:0 12px 32px rgba(245,197,24,.10) !important;
         }
-        .lp-cic-card:hover {
-          transform:translateY(-3px) !important;
-          border-color:rgba(245,197,24,.35) !important;
+        .lp-action-card:hover {
+          transform:translateY(-5px) !important;
+          border-color:rgba(245,197,24,.42) !important;
+          box-shadow:0 16px 40px rgba(245,197,24,.14) !important;
         }
 
         /* ── Role buttons ── */
@@ -307,38 +325,19 @@ export default function LandingPage({ onEnter }) {
           background:rgba(255,255,255,.05);
         }
 
-        /* ── Social links ── */
-        .lp-social-btn {
-          display:flex; align-items:center; gap:7px;
-          padding:9px 14px; border-radius:10px;
-          background:#112250;
-          border:1px solid rgba(245,197,24,.18);
-          color:#94A3B8; font-size:12px; font-weight:600;
-          cursor:pointer; transition:all .2s;
-          text-decoration:none; white-space:nowrap;
-          font-family:'DM Sans',sans-serif;
+        /* ── Contact action buttons ── */
+        .lp-contact-action-btn {
+          display:inline-flex; align-items:center; justify-content:center; gap:8px;
+          background:#F5C518; border:none; color:#07102B;
+          font-family:'Syne',sans-serif; font-weight:800;
+          cursor:pointer; transition:all .22s; border-radius:999px;
+          padding:11px 28px; font-size:13px;
         }
-        .lp-social-btn:hover {
-          border-color:#F5C518; color:#F5C518;
-          background:rgba(245,197,24,.08);
+        .lp-contact-action-btn:hover {
+          background:#fff;
+          transform:translateY(-2px);
+          box-shadow:0 8px 24px rgba(245,197,24,.42);
         }
-
-        /* ── Form inputs ── */
-        .lp-input:focus, .lp-select:focus, .lp-textarea:focus {
-          border-color:#F5C518 !important;
-          background:rgba(245,197,24,.04) !important;
-          outline:none;
-        }
-        .lp-select {
-          appearance:none;
-          background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394A3B8' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
-          background-repeat:no-repeat;
-          background-position:right 12px center;
-          padding-right:32px !important;
-          cursor:pointer;
-        }
-        .lp-select option { background:#0D1B3E; color:#F1F5F9; }
-        .lp-textarea     { resize:vertical; min-height:110px; line-height:1.6; }
 
         /* ── RESPONSIVE GRIDS ── */
         .lp-stats-grid    { display:grid; grid-template-columns:repeat(4,1fr); }
@@ -347,29 +346,25 @@ export default function LandingPage({ onEnter }) {
         .lp-steps-grid    { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:24px; }
         .lp-usage-grid    { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
         .lp-roles-grid    { display:grid; grid-template-columns:1fr 1fr; gap:16px; max-width:540px; margin:0 auto; }
-        .lp-contact-top   { display:grid; grid-template-columns:1fr 1fr; gap:48px; margin-bottom:48px; align-items:start; }
-        .lp-contact-btm   { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
-        .lp-form-row      { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px; }
+        .lp-contact-top-cards { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:24px; }
+        .lp-contact-bottom-cards { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
 
         /* ── BREAKPOINTS ── */
         @media(max-width:900px){
           .lp-stats-grid  { grid-template-columns:repeat(2,1fr) !important; }
-          .lp-contact-top { grid-template-columns:1fr !important; gap:24px !important; }
-          .lp-contact-btm { grid-template-columns:1fr 1fr !important; }
           .lp-brand-sub   { display:none !important; }
+          .lp-contact-top-cards { grid-template-columns:1fr !important; }
         }
         @media(max-width:680px){
           .lp-usage-grid  { grid-template-columns:1fr !important; }
           .lp-roles-grid  { grid-template-columns:1fr !important; }
-          .lp-contact-btm { grid-template-columns:1fr !important; }
           .lp-steps-grid  { grid-template-columns:repeat(2,1fr) !important; }
+          .lp-contact-top-cards { grid-template-columns:1fr !important; }
+          .lp-contact-bottom-cards { grid-template-columns:1fr !important; }
         }
         @media(max-width:540px){
-          .lp-form-row      { grid-template-columns:1fr !important; }
           .lp-logo-mid      { display:none !important; }
           .lp-steps-grid    { grid-template-columns:1fr !important; }
-          .lp-form-footer   { flex-direction:column !important; align-items:stretch !important; }
-          .lp-btn-submit    { text-align:center; }
         }
         @media(max-width:420px){
           .lp-badge-iiee  { display:none !important; }
@@ -405,15 +400,12 @@ export default function LandingPage({ onEnter }) {
       }}>
         {/* Brand */}
         <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
-          {/* Logo 1 — always visible */}
           <div className="lp-logo" style={logoCircleStyle("clamp(36px,4vw,46px)", "rgba(245,197,24,0.22)")}>
             <img src={slsuLogo} alt="SLSU" style={{ width: "85%", height: "85%", objectFit: "contain" }} />
           </div>
-          {/* Logo 2 — hidden on ≤540px */}
           <div className="lp-logo lp-logo-mid" style={logoCircleStyle("clamp(34px,4vw,44px)", "rgba(220,38,38,0.20)")}>
             <img src={slsuLogo1} alt="COE" style={{ width: "85%", height: "85%", objectFit: "contain" }} />
           </div>
-          {/* Logo 3 — hidden on ≤420px */}
           <div className="lp-logo lp-logo-right" style={logoCircleStyle("clamp(36px,4vw,46px)", "rgba(245,197,24,0.22)")}>
             <img src={slsuLogo2} alt="IIEE" style={{ width: "85%", height: "85%", objectFit: "contain" }} />
           </div>
@@ -790,209 +782,175 @@ export default function LandingPage({ onEnter }) {
             <p style={{ margin: "0 0 10px", fontSize: "10px", color: T.gold, textTransform: "uppercase", letterSpacing: "0.18em", fontWeight: 700 }}>
               Get in Touch
             </p>
-            <h2 style={{ margin: "0 0 18px", fontSize: "clamp(22px,4vw,42px)", fontWeight: 800, letterSpacing: "-0.025em", lineHeight: 1.1, fontFamily: "'Syne',sans-serif", color: T.white100 }}>
-              Contact Us
+            <h2 style={{ margin: "0 0 10px", fontSize: "clamp(22px,4vw,42px)", fontWeight: 800, letterSpacing: "-0.025em", lineHeight: 1.1, fontFamily: "'Syne',sans-serif", color: T.white100 }}>
+              Get In Touch
             </h2>
-            <p style={{ margin: "0 auto", maxWidth: "580px", fontSize: "clamp(13px,1.5vw,16px)", color: T.dim, lineHeight: 1.8, fontWeight: 300 }}>
-              Have questions about the EE Licensure Predictor? Reach out to the research team
-              or the College of Engineering — we're happy to help.
-            </p>
+            {/* Gold underline accent */}
+            <div style={{ width: "60px", height: "3px", background: T.gold, borderRadius: "2px", margin: "0 auto" }} />
           </div>
 
-          {/* Top: info + form */}
-          <div className="lp-contact-top">
 
-            {/* ── Info column ── */}
-            <div>
-              <p style={{ margin: "0 0 24px", fontSize: "clamp(12px,1.5vw,14px)", color: T.dim, lineHeight: 1.75 }}>
-                Whether you're a student needing guidance, a faculty member exploring the dashboard,
-                or a researcher interested in collaboration — drop us a message.
-              </p>
+          {/* Top row — Phone, Email, Location (SVG icons) */}
+          <div className="lp-contact-top-cards">
+            {[
+              { Icon: PhoneIcon,  title: "Phone",    line1: "Contact us through our", line2: "official channels" },
+              { Icon: MailIcon,   title: "Email",    line1: "electricalengineering.slsu", line2: "@gmail.com" },
+              { Icon: MapPinIcon, title: "Location", line1: "Quezon Avenue, Kulapi,", line2: "Lucban, 4328 Quezon, Philippines" },
+            ].map(({ Icon, title, line1, line2 }, i) => (
+              <div key={i} className="lp-contact-card" style={{
+                background: T.navyCard, border: `1px solid ${T.border}`,
+                borderRadius: "18px", padding: "clamp(20px,3vw,28px)",
+                display: "flex", alignItems: "flex-start", gap: "16px",
+                transition: "transform 0.25s, border-color 0.25s, box-shadow 0.25s",
+              }}>
+                <div style={{
+                  width: "48px", height: "48px", borderRadius: "50%",
+                  background: "rgba(245,197,24,0.15)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  flexShrink: 0,
+                }}>
+                  <Icon />
+                </div>
+                <div>
+                  <p style={{ margin: "0 0 6px", fontSize: "15px", fontWeight: 800, color: T.white100, fontFamily: "'Syne',sans-serif" }}>{title}</p>
+                  <p style={{ margin: 0, fontSize: "12px", color: T.muted, lineHeight: 1.65 }}>{line1}<br />{line2}</p>
+                </div>
+              </div>
+            ))}
+          </div>
 
-              {/* Detail cards */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: "24px" }}>
-                {[
-                  { icon: "📍", label: "Address",    value: "Southern Luzon State University", sub: "Lucban, Quezon, Philippines 4328" },
-                  { icon: "📧", label: "Email",      value: "ee.research@slsu.edu.ph",         sub: "College of Engineering — IIEE Chapter" },
-                  { icon: "📞", label: "Phone",      value: "(042) 000-0000",                  sub: "Mon – Fri, 8:00 AM – 5:00 PM PHT" },
-                  { icon: "🏛️", label: "Department", value: "College of Engineering",          sub: "Electrical Engineering Department" },
-                ].map((item, i) => (
-                  <div key={i} className="lp-contact-detail" style={{
-                    display: "flex", alignItems: "flex-start", gap: "14px",
-                    background: T.navyCard, border: `1px solid ${T.border}`,
-                    borderRadius: "14px", padding: "14px 16px",
-                    transition: "border-color 0.2s, transform 0.2s",
-                  }}>
-                    <div style={{ ...iconBoxStyle(38, 10), flexShrink: 0, fontSize: "16px" }}>{item.icon}</div>
-                    <div>
-                      <p style={{ margin: "0 0 3px", fontSize: "10px", color: T.gold, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.10em" }}>
-                        {item.label}
-                      </p>
-                      <p style={{ margin: "0 0 2px", fontSize: "13px", color: T.white100, fontWeight: 500, lineHeight: 1.4 }}>
-                        {item.value}
-                      </p>
-                      <p style={{ margin: 0, fontSize: "11px", color: T.dim }}>
-                        {item.sub}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+          {/* Evaluation Form — full width, wired to real form */}
+          <div style={{ marginTop: "16px" }}>
+            <div className="lp-action-card" style={{
+              background: T.navyCard, border: `1px solid ${T.border}`,
+              borderRadius: "18px", padding: "clamp(28px,4vw,40px) clamp(20px,4vw,40px)",
+              transition: "transform 0.25s, border-color 0.25s, box-shadow 0.25s",
+            }}>
+              {/* Card header */}
+              <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "28px" }}>
+                <div style={{
+                  width: "60px", height: "60px", borderRadius: "50%",
+                  background: "rgba(245,197,24,0.15)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  flexShrink: 0,
+                }}>
+                  <StarIcon />
+                </div>
+                <div>
+                  <p style={{ margin: "0 0 4px", fontSize: "clamp(16px,2.5vw,20px)", fontWeight: 800, color: T.white100, fontFamily: "'Syne',sans-serif" }}>
+                    Evaluation Form
+                  </p>
+                  <p style={{ margin: 0, fontSize: "12px", color: T.muted }}>
+                    Share your feedback and help us improve our services. We typically respond within 1–2 business days.
+                  </p>
+                </div>
               </div>
 
-              {/* Social links */}
-              <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+              {/* Form fields */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "12px" }}>
                 {[
-                  { icon: "🌐", label: "slsu.edu.ph" },
-                  { icon: "📘", label: "Facebook"    },
-                  { icon: "💼", label: "LinkedIn"    },
-                ].map((s, i) => (
-                  <a key={i} href="#" className="lp-social-btn">
-                    <span style={{ fontSize: "14px" }}>{s.icon}</span>
-                    {s.label}
-                  </a>
-                ))}
-              </div>
-            </div>
-
-            {/* ── Form column ── */}
-            <div style={{ background: T.navyCard, border: `1px solid ${T.border}`, borderRadius: "20px", padding: "clamp(20px,4vw,32px)" }}>
-              <p style={{ margin: "0 0 4px", fontSize: "16px", fontWeight: 800, color: T.white100, fontFamily: "'Syne',sans-serif" }}>
-                Send a Message
-              </p>
-              <p style={{ margin: "0 0 24px", fontSize: "12px", color: T.dim }}>
-                We typically respond within 1–2 business days.
-              </p>
-
-              {/* Name row */}
-              <div className="lp-form-row">
-                {[
-                  { key: "fname", label: "First Name", placeholder: "Juan"      },
-                  { key: "lname", label: "Last Name",  placeholder: "Dela Cruz" },
+                  { key: "fname", label: "First Name", placeholder: "Juan",      type: "text" },
+                  { key: "lname", label: "Last Name",  placeholder: "Dela Cruz", type: "text" },
                 ].map(f => (
                   <div key={f.key} style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                     <label style={{ fontSize: "11px", fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: "0.08em" }}>{f.label}</label>
                     <input
-                      className="lp-input"
-                      style={{ ...inputBase }}
-                      type="text"
-                      placeholder={f.placeholder}
+                      style={{
+                        width: "100%", background: "rgba(255,255,255,0.04)",
+                        border: `1px solid ${T.borderSub}`, borderRadius: "10px",
+                        padding: "11px 14px", color: T.white100, fontSize: "13px",
+                        fontFamily: "'DM Sans',sans-serif", outline: "none", boxSizing: "border-box",
+                        transition: "border-color 0.2s",
+                      }}
+                      type={f.type} placeholder={f.placeholder}
                       value={form.fields[f.key]}
                       onChange={e => form.update(f.key, e.target.value)}
+                      onFocus={e => { e.target.style.borderColor = T.gold; }}
+                      onBlur={e => { e.target.style.borderColor = T.borderSub; }}
                     />
                   </div>
                 ))}
               </div>
 
-              {/* Email */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginBottom: "12px" }}>
-                <label style={{ fontSize: "11px", fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: "0.08em" }}>Email Address</label>
-                <input className="lp-input" style={{ ...inputBase }} type="email" placeholder="you@example.com"
-                  value={form.fields.email} onChange={e => form.update("email", e.target.value)} />
+              <div style={{ marginBottom: "12px" }}>
+                <label style={{ display: "block", marginBottom: "6px", fontSize: "11px", fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: "0.08em" }}>Email Address</label>
+                <input
+                  style={{ width: "100%", background: "rgba(255,255,255,0.04)", border: `1px solid ${T.borderSub}`, borderRadius: "10px", padding: "11px 14px", color: T.white100, fontSize: "13px", fontFamily: "'DM Sans',sans-serif", outline: "none", boxSizing: "border-box", transition: "border-color 0.2s" }}
+                  type="email" placeholder="you@example.com"
+                  value={form.fields.email} onChange={e => form.update("email", e.target.value)}
+                  onFocus={e => { e.target.style.borderColor = T.gold; }} onBlur={e => { e.target.style.borderColor = T.borderSub; }}
+                />
               </div>
 
-              {/* Role */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginBottom: "12px" }}>
-                <label style={{ fontSize: "11px", fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: "0.08em" }}>I am a…</label>
-                <select className="lp-input lp-select" style={{ ...inputBase }}
-                  value={form.fields.role} onChange={e => form.update("role", e.target.value)}>
-                  <option value="" disabled>Select your role</option>
-                  <option value="student">Student — EE Board Exam Examinee</option>
-                  <option value="faculty">Faculty — SLSU College of Engineering</option>
-                  <option value="researcher">Researcher / Collaborator</option>
-                  <option value="other">Other</option>
-                </select>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "12px" }}>
+                <div>
+                  <label style={{ display: "block", marginBottom: "6px", fontSize: "11px", fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: "0.08em" }}>I am a…</label>
+                  <select
+                    style={{ width: "100%", background: "rgba(255,255,255,0.04)", border: `1px solid ${T.borderSub}`, borderRadius: "10px", padding: "11px 14px", color: form.fields.role ? T.white100 : T.muted, fontSize: "13px", fontFamily: "'DM Sans',sans-serif", outline: "none", boxSizing: "border-box", appearance: "none", cursor: "pointer" }}
+                    value={form.fields.role} onChange={e => form.update("role", e.target.value)}
+                  >
+                    <option value="" disabled>Select your role</option>
+                    <option value="student">Student — EE Board Exam Examinee</option>
+                    <option value="faculty">Faculty — SLSU College of Engineering</option>
+                    <option value="researcher">Researcher / Collaborator</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: "block", marginBottom: "6px", fontSize: "11px", fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: "0.08em" }}>Subject</label>
+                  <select
+                    style={{ width: "100%", background: "rgba(255,255,255,0.04)", border: `1px solid ${T.borderSub}`, borderRadius: "10px", padding: "11px 14px", color: form.fields.subject ? T.white100 : T.muted, fontSize: "13px", fontFamily: "'DM Sans',sans-serif", outline: "none", boxSizing: "border-box", appearance: "none", cursor: "pointer" }}
+                    value={form.fields.subject} onChange={e => form.update("subject", e.target.value)}
+                  >
+                    <option value="" disabled>Select a topic</option>
+                    <option>General Inquiry about the System</option>
+                    <option>Technical Issue / Bug Report</option>
+                    <option>Access &amp; Login Problems</option>
+                    <option>Research Collaboration</option>
+                    <option>Faculty Dashboard Access</option>
+                    <option>Other</option>
+                  </select>
+                </div>
               </div>
 
-              {/* Subject */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginBottom: "12px" }}>
-                <label style={{ fontSize: "11px", fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: "0.08em" }}>Subject</label>
-                <select className="lp-input lp-select" style={{ ...inputBase }}
-                  value={form.fields.subject} onChange={e => form.update("subject", e.target.value)}>
-                  <option value="" disabled>Select a topic</option>
-                  <option>General Inquiry about the System</option>
-                  <option>Technical Issue / Bug Report</option>
-                  <option>Access &amp; Login Problems</option>
-                  <option>Research Collaboration</option>
-                  <option>Faculty Dashboard Access</option>
-                  <option>Other</option>
-                </select>
-              </div>
-
-              {/* Message */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginBottom: "4px" }}>
-                <label style={{ fontSize: "11px", fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: "0.08em" }}>Message</label>
-                <textarea className="lp-input lp-textarea" style={{ ...inputBase, minHeight: "110px", resize: "vertical", lineHeight: 1.6 }}
+              <div style={{ marginBottom: "4px" }}>
+                <label style={{ display: "block", marginBottom: "6px", fontSize: "11px", fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: "0.08em" }}>Message</label>
+                <textarea
+                  style={{ width: "100%", background: "rgba(255,255,255,0.04)", border: `1px solid ${T.borderSub}`, borderRadius: "10px", padding: "11px 14px", color: T.white100, fontSize: "13px", fontFamily: "'DM Sans',sans-serif", outline: "none", boxSizing: "border-box", resize: "vertical", minHeight: "110px", lineHeight: 1.6 }}
                   placeholder="Write your message here…" maxLength={CHAR_MAX}
-                  value={form.fields.message} onChange={e => form.update("message", e.target.value)} />
+                  value={form.fields.message} onChange={e => form.update("message", e.target.value)}
+                  onFocus={e => { e.target.style.borderColor = T.gold; }} onBlur={e => { e.target.style.borderColor = T.borderSub; }}
+                />
               </div>
               <p style={{ margin: "0 0 16px", fontSize: "10px", color: T.dim, textAlign: "right" }}>
                 {form.fields.message.length} / {CHAR_MAX}
               </p>
 
-              {/* Error */}
               {form.error && (
                 <div style={{ marginBottom: "12px", padding: "10px 14px", background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.28)", borderRadius: "10px", fontSize: "12px", color: T.fail }}>
                   {form.error}
                 </div>
               )}
 
-              {/* Footer */}
-              <div className="lp-form-footer" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
-                <p style={{ fontSize: "10px", color: T.dim, lineHeight: 1.55, flex: 1, minWidth: 0 }}>
-                  🔒 Your information is used only to respond to your inquiry and will not be shared with third parties.
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
+                <p style={{ fontSize: "10px", color: T.dim, lineHeight: 1.55, flex: 1, minWidth: "160px" }}>
+                  Your information is used only to respond to your inquiry and will not be shared with third parties.
                 </p>
-                <button className="lp-btn-submit" onClick={form.submit}
-                  style={{ padding: "12px 26px", fontSize: "13px" }}>
-                  Send Message →
+                <button className="lp-contact-action-btn" onClick={form.submit}
+                  style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
+                  <PencilIcon /> Submit Evaluation
                 </button>
               </div>
 
-              {/* Success toast */}
               {form.submitted && (
-                <div style={{
-                  marginTop: "14px", display: "flex", alignItems: "center", gap: "10px",
-                  background: "rgba(74,222,128,0.08)", border: "1px solid rgba(74,222,128,0.28)",
-                  borderRadius: "12px", padding: "12px 16px",
-                  animation: "fadeUp .4s ease",
-                }}>
-                  <span style={{ fontSize: "16px", flexShrink: 0 }}>✅</span>
+                <div style={{ marginTop: "14px", display: "flex", alignItems: "center", gap: "10px", background: "rgba(74,222,128,0.08)", border: "1px solid rgba(74,222,128,0.28)", borderRadius: "12px", padding: "12px 16px" }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4ADE80" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                   <p style={{ margin: 0, fontSize: "12px", color: T.pass, fontWeight: 600 }}>
                     Message sent! We'll get back to you within 1–2 business days.
                   </p>
                 </div>
               )}
             </div>
-          </div>
-
-          {/* Bottom info cards */}
-          <div className="lp-contact-btm">
-            {[
-              {
-                icon: "🔬",
-                title: "Research Collaboration",
-                body: "Have a question about the SLSU EE Research Team? Select 'Research Collaboration' in the contact form above.",
-                tag: "Open to Questions",
-              },
-            ].map((c, i) => (
-              <div key={i} className="lp-cic-card" style={{
-                background: T.navyCard, border: `1px solid ${T.border}`,
-                borderRadius: "16px", padding: "clamp(16px,3vw,22px)",
-                textAlign: "center",
-                transition: "border-color 0.2s, transform 0.2s",
-              }}>
-                <div style={{ fontSize: "24px", marginBottom: "10px" }}>{c.icon}</div>
-                <p style={{ margin: "0 0 8px", fontSize: "13px", fontWeight: 800, color: T.white100, fontFamily: "'Syne',sans-serif" }}>{c.title}</p>
-                <p style={{ margin: "0 0 12px", fontSize: "11px", color: T.dim, lineHeight: 1.65, whiteSpace: "pre-line" }}>{c.body}</p>
-                <span style={{
-                  display: "inline-block",
-                  padding: "4px 12px", borderRadius: "999px",
-                  background: T.goldGlow, border: `1px solid ${T.border}`,
-                  fontSize: "10px", fontWeight: 700, color: T.gold,
-                }}>
-                  {c.tag}
-                </span>
-              </div>
-            ))}
           </div>
 
         </div>
@@ -1005,25 +963,93 @@ export default function LandingPage({ onEnter }) {
       ════════════════════════════════════════════════════════ */}
       <footer style={{
         position: "relative", zIndex: 1,
-        padding: "clamp(20px,4vw,32px) clamp(16px,5vw,24px)",
-        textAlign: "center",
+        background: T.navyMid,
         borderTop: `1px solid ${T.border}`,
-        display: "flex", flexDirection: "column", alignItems: "center", gap: "12px",
       }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
-          {[slsuLogo, slsuLogo1, slsuLogo2].map((src, i) => (
-            <div key={i} style={{ width: "22px", height: "22px", borderRadius: "50%", background: "rgba(255,255,255,0.04)", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <img src={src} alt="" style={{ width: "100%", height: "100%", objectFit: "contain", opacity: 0.3 }} />
+        {/* ── 3-column footer body ── */}
+        <div style={{
+          maxWidth: "1120px", margin: "0 auto",
+          padding: "clamp(36px,5vw,56px) clamp(16px,5vw,36px) 0",
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr 1fr",
+          gap: "clamp(24px,4vw,48px)",
+        }} className="lp-footer-grid">
+          {/* Col 1 — Brand */}
+          <div>
+            <p style={{ margin: "0 0 10px", fontSize: "15px", fontWeight: 800, color: T.gold, fontFamily: "'Syne',sans-serif" }}>
+              SLSU EE Licensure Predictor
+            </p>
+            <p style={{ margin: 0, fontSize: "13px", color: T.muted, lineHeight: 1.7 }}>
+              Tracking excellence, celebrating success.
+            </p>
+          </div>
+
+          {/* Col 2 — Quick Links */}
+          <div>
+            <p style={{ margin: "0 0 16px", fontSize: "14px", fontWeight: 800, color: T.gold, fontFamily: "'Syne',sans-serif" }}>
+              Quick Links
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              {["Home", "About", "Features", "Contact"].map(link => (
+                <button key={link}
+                  onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+                  style={{ background: "none", border: "none", padding: 0, textAlign: "left", cursor: "pointer", fontSize: "13px", color: T.muted, fontFamily: "'DM Sans',sans-serif", transition: "color 0.2s" }}
+                  onMouseEnter={e => { e.target.style.color = T.white100; }}
+                  onMouseLeave={e => { e.target.style.color = T.muted; }}
+                >
+                  {link}
+                </button>
+              ))}
             </div>
-          ))}
+          </div>
+
+          {/* Col 3 — Connect */}
+          <div>
+            <p style={{ margin: "0 0 16px", fontSize: "14px", fontWeight: 800, color: T.gold, fontFamily: "'Syne',sans-serif" }}>
+              Connect
+            </p>
+            <div style={{ display: "flex", gap: "10px" }}>
+              {[
+                { Icon: FacebookIcon, label: "Facebook" },
+                { Icon: EmailSocialIcon, label: "Email" },
+              ].map(({ Icon, label }) => (
+                <button key={label}
+                  aria-label={label}
+                  style={{
+                    width: "40px", height: "40px", borderRadius: "50%",
+                    background: "rgba(255,255,255,0.06)",
+                    border: `1px solid ${T.borderSub}`,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    cursor: "pointer", color: T.muted,
+                    transition: "background 0.2s, border-color 0.2s, color 0.2s",
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = "rgba(245,197,24,0.12)"; e.currentTarget.style.borderColor = T.goldBorder; e.currentTarget.style.color = T.gold; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; e.currentTarget.style.borderColor = T.borderSub; e.currentTarget.style.color = T.muted; }}
+                >
+                  <Icon />
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
-        <div style={{ width: "40px", height: "1px", background: T.border }} />
-        <p style={{ margin: 0, fontSize: "clamp(10px,1.5vw,12px)", color: T.muted }}>
-          Southern Luzon State University · College of Engineering · IIEE · EE Licensure Predictor · For Research Use Only
-        </p>
-        <p style={{ margin: 0, fontSize: "11px", color: T.dim }}>
-          © 2025 SLSU IIEE Chapter · All rights reserved
-        </p>
+
+        {/* ── Divider + copyright ── */}
+        <div style={{
+          maxWidth: "1120px", margin: "0 auto",
+          padding: "clamp(20px,3vw,28px) clamp(16px,5vw,36px)",
+          borderTop: `1px solid ${T.border}`,
+          marginTop: "clamp(28px,4vw,44px)",
+          textAlign: "center",
+        }}>
+          <p style={{ margin: 0, fontSize: "12px", color: T.muted }}>
+            © 2026 Southern Luzon State University. All rights reserved.
+          </p>
+        </div>
+
+        <style>{`
+          @media(max-width:680px){ .lp-footer-grid { grid-template-columns:1fr !important; } }
+          @media(max-width:900px){ .lp-footer-grid { grid-template-columns:1fr 1fr !important; } }
+        `}</style>
       </footer>
 
     </div>
