@@ -18,13 +18,9 @@ import {
   ReferenceLine,
 } from "recharts";
 import {
-  c,
-  ChartContainer,
-  CustomTooltip,
   DashboardGuide,
   FilterPanel,
   InsightBox,
-  MetricCard,
   MONTH_NAMES,
   num,
 } from "./ProfessorShared";

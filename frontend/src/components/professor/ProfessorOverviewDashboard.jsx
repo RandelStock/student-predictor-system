@@ -13,12 +13,8 @@ import {
   ReferenceLine,
 } from "recharts";
 import {
-  c,
   pct,
   num,
-  CustomTooltip,
-  MetricCard,
-  ChartContainer,
   DashboardGuide,
   FilterPanel,
   InsightBox,
