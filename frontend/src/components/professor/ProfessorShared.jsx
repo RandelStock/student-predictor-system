@@ -14,6 +14,24 @@ export const c = {
   border: "rgba(255,255,255,0.07)",
 };
 
+export const T = {
+  navy:      "#07102B",   // deepest background
+  navyMid:   "#0D1B3E",   // sidebar fill
+  navyCard:  "#112250",   // card surface
+  navyHover: "#162B60",   // hover surface
+  gold:      "#F5C518",   // primary accent
+  goldDim:   "#C9A010",   // pressed / muted gold
+  goldGlow:  "rgba(245,197,24,0.18)",
+  blue:      "#38BDF8",   // chart / info accent
+  white:     "#F1F5F9",
+  muted:     "#94A3B8",
+  dimText:   "#64748B",
+  border:    "rgba(245,197,24,0.14)",
+  borderSub: "rgba(255,255,255,0.07)",
+  fail:      "#F87171",
+  pass:      "#4ADE80",
+};
+
 export const MONTH_NAMES = [
   "Jan",
   "Feb",
