@@ -1,20 +1,17 @@
 /**
- * ProfessorPage.jsx  —  UPDATED (sidebar HUD integration)
+ * ProfessorPage.jsx  —  FIXED
  *
- * Changelog vs original:
- *   - Removed <ProfessorTabsNav> import and usage
- *   - Removed top-nav <style> block (moved to ProfessorSidebarLayout)
- *   - Removed TAB_DESCRIPTIONS (now lives in ProfessorSidebarLayout)
- *   - Wrapped <main> children with <ProfessorSidebarLayout>
- *   - ALL state, fetch logic, data transforms → untouched
+ * Fixes:
+ *  1. White screen on correlation / classification / regression / test2025 / trends
+ *     → those tabs no longer gated behind `&& data`
+ *  2. Removed page header banner from ProfessorSidebarLayout (see that file)
  */
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import API_BASE_URL from "../apiBase";
-import ProfessorSidebarLayout from "./professor/ProfessorSidebarLayout";   // ← NEW
+import ProfessorSidebarLayout from "./professor/ProfessorSidebarLayout";
 import ProfessorTimingModal from "./professor/ProfessorTimingModal";
 import ModelOverviewDashboard from "./professor/ModelOverviewDashboard";
-import ProfessorOverviewDashboard from "./professor/ProfessorOverviewDashboard";
 import ProfessorPerformanceDashboard from "./professor/ProfessorPerformanceDashboard";
 import ProfessorFeaturesDashboard from "./professor/ProfessorFeaturesDashboard";
 import ProfessorCurriculumDashboard from "./professor/ProfessorCurriculumDashboard";
@@ -29,44 +26,43 @@ import {
   generateInsights,
 } from "./professor/ProfessorShared";
 
-// ── Main ProfessorPage ────────────────────────────────────────────────────────
 export default function ProfessorPage({ onLogout }) {
 
-  // ── ALL ORIGINAL STATE (unchanged) ───────────────────────────────────────
+  // ── State (unchanged) ────────────────────────────────────────────────────
   const [data, setData]               = useState(null);
   const [loading, setLoading]         = useState(true);
-  const [activeTab, setActiveTab]     = useState("overview");
+  const [activeTab, setActiveTab]     = useState("model_overview");
   const [modelInfo, setModelInfo]     = useState(null);
   const [correlation, setCorrelation] = useState(null);
 
-  const [attempts, setAttempts]       = useState(null);
-  const [monthly, setMonthly]         = useState(null);
-  const [yearlyPF, setYearlyPF]       = useState(null);
+  const [attempts, setAttempts]           = useState(null);
+  const [monthly, setMonthly]             = useState(null);
+  const [yearlyPF, setYearlyPF]           = useState(null);
   const [trendInsights, setTrendInsights] = useState(null);
   const [selectedYear, setSelectedYear]   = useState(new Date().getFullYear());
-  const [attPage, setAttPage]         = useState(1);
-  const [attFilter, setAttFilter]     = useState({ year: "", month: "" });
+  const [attPage, setAttPage]             = useState(1);
+  const [attFilter, setAttFilter]         = useState({ year: "", month: "" });
   const [insightsLoading, setInsightsLoading] = useState(false);
-  const [usageSummary, setUsageSummary] = useState(null);
-  const [usageLoading, setUsageLoading] = useState(false);
+  const [usageSummary, setUsageSummary]   = useState(null);
+  const [usageLoading, setUsageLoading]   = useState(false);
   const [reportLoading, setReportLoading] = useState(false);
   const [reviewAnalysis, setReviewAnalysis] = useState(null);
   const [timingAnalysis, setTimingAnalysis] = useState(null);
   const [timingModalOpen, setTimingModalOpen] = useState(false);
   const [selectedTimingAttempt, setSelectedTimingAttempt] = useState(null);
-  const [selectedTimingData, setSelectedTimingData] = useState(null);
+  const [selectedTimingData, setSelectedTimingData]       = useState(null);
   const [selectedTimingLoading, setSelectedTimingLoading] = useState(false);
 
-  const [test2025, setTest2025] = useState(null);
-  const [testLoading, setTestLoading] = useState(false);
+  const [test2025, setTest2025]               = useState(null);
+  const [testLoading, setTestLoading]         = useState(false);
   const [test2025Records, setTest2025Records] = useState(null);
   const [selectedTestIdx, setSelectedTestIdx] = useState(0);
-  const [test2025Run, setTest2025Run] = useState(null);
+  const [test2025Run, setTest2025Run]         = useState(null);
   const [test2025RunLoading, setTest2025RunLoading] = useState(false);
 
   const [dashFilters, setDashFilters] = useState({ year: "", month: "", review: "", subject: "" });
 
-  // ── ALL ORIGINAL FETCH LOGIC (unchanged) ─────────────────────────────────
+  // ── Fetch logic (unchanged) ───────────────────────────────────────────────
   const fetchAnalytics = useCallback(async () => {
     setLoading(true);
     try {
@@ -234,16 +230,16 @@ export default function ProfessorPage({ onLogout }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [attPage, attFilter, selectedYear, activeTab]);
 
-  // ── Safe data accessors (unchanged) ──────────────────────────────────────
-  const ov           = useMemo(() => data?.overview ?? {},                   [data]);
-  const passByYear   = useMemo(() => data?.pass_rate_by_year     ?? [],      [data]);
-  const passByStrand = useMemo(() => data?.pass_rate_by_strand   ?? [],      [data]);
-  const passByReview = useMemo(() => data?.pass_rate_by_review   ?? [],      [data]);
-  const passByDur    = useMemo(() => data?.pass_rate_by_duration ?? [],      [data]);
-  const featureImp   = useMemo(() => data?.feature_importance    ?? [],      [data]);
-  const sectionScores= useMemo(() => data?.section_scores        ?? [],      [data]);
-  const weakestQ     = useMemo(() => data?.weakest_questions     ?? [],      [data]);
-  const subjectTrends= useMemo(() => data?.subject_trends_by_year ?? [],     [data]);
+  // ── Derived data (unchanged) ──────────────────────────────────────────────
+  const ov            = useMemo(() => data?.overview ?? {},                 [data]);
+  const passByYear    = useMemo(() => data?.pass_rate_by_year     ?? [],    [data]);
+  const passByStrand  = useMemo(() => data?.pass_rate_by_strand   ?? [],    [data]);
+  const passByReview  = useMemo(() => data?.pass_rate_by_review   ?? [],    [data]);
+  const passByDur     = useMemo(() => data?.pass_rate_by_duration ?? [],    [data]);
+  const featureImp    = useMemo(() => data?.feature_importance    ?? [],    [data]);
+  const sectionScores = useMemo(() => data?.section_scores        ?? [],    [data]);
+  const weakestQ      = useMemo(() => data?.weakest_questions     ?? [],    [data]);
+  const subjectTrends = useMemo(() => data?.subject_trends_by_year ?? [],   [data]);
 
   const reviewYesTotal = useMemo(() => passByReview.find(x => String(x.label).toLowerCase().includes("attended"))?.total ?? 0, [passByReview]);
   const reviewNoTotal  = useMemo(() => passByReview.find(x => String(x.label).toLowerCase().includes("no formal"))?.total ?? 0, [passByReview]);
@@ -262,7 +258,10 @@ export default function ProfessorPage({ onLogout }) {
     return passByYear.filter(x => String(x.label) === String(dashFilters.year));
   }, [passByYear, dashFilters.year]);
 
-  const availableYears = useMemo(() => [...new Set([...passByYear.map(x => x.label), ...subjectTrends.map(x => String(x.year))])].sort(), [passByYear, subjectTrends]);
+  const availableYears = useMemo(() =>
+    [...new Set([...passByYear.map(x => x.label), ...subjectTrends.map(x => String(x.year))])].sort(),
+    [passByYear, subjectTrends]
+  );
 
   const filteredSubjectTrends = useMemo(() => {
     if (!dashFilters.year) return subjectTrends;
@@ -297,24 +296,12 @@ export default function ProfessorPage({ onLogout }) {
 
   const reviewPieData = useMemo(() => [
     { name: "Attended Review", value: reviewYesTotal, color: c.teal },
-    { name: "No Review", value: reviewNoTotal, color: c.amber },
+    { name: "No Review",       value: reviewNoTotal,  color: c.amber },
   ], [reviewYesTotal, reviewNoTotal]);
 
-  // ── Tab list (for sidebar to consume) ────────────────────────────────────
-  const TABS = [
-    { id: "model_overview",         label: "Model Overview",        icon: "🧭" },
-    { id: "overview",               label: "Overview",              icon: "📊" },
-    { id: "performance",            label: "Performance",           icon: "📈" },
-    { id: "features",               label: "Feature Importance",    icon: "🤖" },
-    { id: "curriculum",             label: "Curriculum Gaps",       icon: "🏫" },
-    { id: "classification_metrics", label: "Classification",        icon: "🎯" },
-    { id: "regression_metrics",     label: "Regression",            icon: "📐" },
-    { id: "correlation",            label: "Correlation",           icon: "🧮" },
-    { id: "test2025",               label: "2025 Defense",          icon: "🧪" },
-    { id: "trends",                 label: "Trends & Monitoring",   icon: "📅" },
-  ];
+  const sharedProps = { dashFilters, setDashFilters, availableYears, localInsights };
 
-  // ── Loading spinner (same as original) ───────────────────────────────────
+  // ── Loading spinner ───────────────────────────────────────────────────────
   const loadingSpinner = (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "100px 0", gap: 16 }}>
       <svg style={{ animation: "spin 0.8s linear infinite", width: 36, height: 36, color: "#F5C518" }} viewBox="0 0 24 24" fill="none">
@@ -325,28 +312,18 @@ export default function ProfessorPage({ onLogout }) {
     </div>
   );
 
-  // ── Shared props bundle ───────────────────────────────────────────────────
-  const sharedProps = {
-    dashFilters, setDashFilters,
-    availableYears, localInsights,
-  };
-
   // ─────────────────────────────────────────────────────────────────────────
   return (
     <ProfessorSidebarLayout
       activeTab={activeTab}
-      tabs={TABS}
       onTabChange={setActiveTab}
       onRefresh={fetchAnalytics}
       onLogout={onLogout}
-      dashFilters={dashFilters}
-      setDashFilters={setDashFilters}
-      availableYears={availableYears}
     >
-      {/* Loading state */}
+      {/* Show spinner while main analytics load */}
       {loading && loadingSpinner}
 
-      {/* Dashboard content */}
+      {/* ── Tabs that need `data` from /analytics ── */}
       {!loading && data && (
         <div className="fade-in">
           {activeTab === "model_overview" && (
@@ -360,7 +337,6 @@ export default function ProfessorPage({ onLogout }) {
               filteredReview={filteredReview}
               passByDur={passByDur}
               modelInfo={modelInfo}
-              // — already existed —
               passByStrand={passByStrand}
               sectionScores={sectionScores}
               weakestQ={weakestQ}
@@ -368,21 +344,6 @@ export default function ProfessorPage({ onLogout }) {
               filteredSubjectTrends={filteredSubjectTrends}
               correlation={correlation}
               scatterData={scatterData}
-            />
-
-          )}
-
-          {activeTab === "overview" && (
-            <ProfessorOverviewDashboard
-              {...sharedProps}
-              ov={ov}
-              pieData={pieData}
-              reviewPieData={reviewPieData}
-              filteredYears={filteredYears}
-              passByYear={passByYear}
-              filteredReview={filteredReview}
-              passByDur={passByDur}
-              modelInfo={modelInfo}
             />
           )}
 
@@ -404,7 +365,12 @@ export default function ProfessorPage({ onLogout }) {
           {activeTab === "curriculum" && (
             <ProfessorCurriculumDashboard weakestQ={weakestQ} />
           )}
+        </div>
+      )}
 
+      {/* ── Tabs with their OWN fetch — NOT gated behind `data` ── */}
+      {!loading && (
+        <div className="fade-in">
           {activeTab === "classification_metrics" && (
             <ProfessorClassificationMetricsDashboard modelInfo={modelInfo} />
           )}
@@ -456,7 +422,7 @@ export default function ProfessorPage({ onLogout }) {
         </div>
       )}
 
-      {/* Timing modal stays at root level */}
+      {/* Timing modal */}
       <ProfessorTimingModal
         attempt={selectedTimingAttempt}
         open={timingModalOpen}

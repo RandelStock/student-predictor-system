@@ -1,47 +1,15 @@
-/**
- * ProfessorSidebarLayout.jsx
- *
- * DROP-IN REPLACEMENT for ProfessorPage's outer shell.
- * - Replaces the top nav + tab-bar with a fixed HUD sidebar (left)
- * - Preserves ALL existing dashboard tabs / logic / state — unchanged
- * - Uses the SLSU deep-blue + gold palette from the IIEE banner image
- * - Responsive: desktop = fixed sidebar | tablet = icon-only | mobile = drawer
- *
- * HOW TO USE
- * ----------
- * Replace the <nav> + tab-bar JSX inside ProfessorPage.jsx with:
- *
- *   import ProfessorSidebarLayout from "./professor/ProfessorSidebarLayout";
- *
- *   // wrap your <main> content:
- *   return (
- *     <ProfessorSidebarLayout
- *       activeTab={activeTab}
- *       tabs={TABS}
- *       onTabChange={setActiveTab}
- *       onRefresh={fetchAnalytics}
- *       onLogout={onLogout}
- *       dashFilters={dashFilters}
- *       setDashFilters={setDashFilters}s
- *       availableYears={availableYears}
- *     >
- *       {/* your existing <main> content goes here *\/}
- *     </ProfessorSidebarLayout>
- *   );
- */
-
 import { useState, useEffect } from "react";
 
 // ─── Colour tokens (SLSU IIEE palette) ───────────────────────────────────────
 const T = {
-  navy:      "#07102B",   // deepest background
-  navyMid:   "#0D1B3E",   // sidebar fill
-  navyCard:  "#112250",   // card surface
-  navyHover: "#162B60",   // hover surface
-  gold:      "#F5C518",   // primary accent
-  goldDim:   "#C9A010",   // pressed / muted gold
+  navy:      "#07102B",
+  navyMid:   "#0D1B3E",
+  navyCard:  "#112250",
+  navyHover: "#162B60",
+  gold:      "#F5C518",
+  goldDim:   "#C9A010",
   goldGlow:  "rgba(245,197,24,0.18)",
-  blue:      "#38BDF8",   // chart / info accent
+  blue:      "#38BDF8",
   white:     "#F1F5F9",
   muted:     "#94A3B8",
   dimText:   "#64748B",
@@ -56,35 +24,34 @@ const NAV_GROUPS = [
   {
     label: "Analytics",
     items: [
-      { id: "model_overview",         icon: "🧭", label: "Overview"       },
-      { id: "performance",            icon: "📈", label: "Performance"          },
+      { id: "model_overview", icon: "🧭", label: "Overview"           },
+      { id: "performance",    icon: "📈", label: "Performance"        },
     ],
   },
   {
     label: "Intelligence",
     items: [
-      { id: "features",               icon: "🤖", label: "Feature Importance"   },
-      { id: "curriculum",             icon: "🏫", label: "Curriculum Gaps"      },
-      { id: "correlation",            icon: "🧮", label: "Correlation"          },
+      { id: "features",     icon: "🤖", label: "Feature Importance"  },
+      { id: "curriculum",   icon: "🏫", label: "Curriculum Gaps"     },
+      { id: "correlation",  icon: "🧮", label: "Correlation"         },
     ],
   },
   {
     label: "Metrics",
     items: [
-      { id: "classification_metrics", icon: "🎯", label: "Classification"       },
-      { id: "regression_metrics",     icon: "📐", label: "Regression"           },
+      { id: "classification_metrics", icon: "🎯", label: "Classification" },
+      { id: "regression_metrics",     icon: "📐", label: "Regression"     },
     ],
   },
   {
     label: "Defense & Ops",
     items: [
-      { id: "test2025",               icon: "🧪", label: "2025 Defense"         },
-      { id: "trends",                 icon: "📅", label: "Trends & Monitoring"  },
+      { id: "test2025", icon: "🧪", label: "2025 Defense"        },
+      { id: "trends",   icon: "📅", label: "Trends & Monitoring" },
     ],
   },
 ];
 
-// ─── Helper: get flat label for a tab id ─────────────────────────────────────
 function labelFor(id) {
   for (const g of NAV_GROUPS) {
     const found = g.items.find(i => i.id === id);
@@ -94,12 +61,12 @@ function labelFor(id) {
 }
 
 // ─── Sidebar ─────────────────────────────────────────────────────────────────
-function Sidebar({ activeTab, onTabChange, onRefresh, onLogout, collapsed, setCollapsed, mobileOpen, setMobileOpen }) {
+function Sidebar({ activeTab, onTabChange, onRefresh, onLogout, collapsed, setCollapsed, mobileOpen, setMobileOpen, windowWidth }) {
   const isCollapsed = collapsed && !mobileOpen;
+  const isMobile = windowWidth < 768;
 
   return (
     <>
-      {/* Mobile overlay */}
       {mobileOpen && (
         <div
           onClick={() => setMobileOpen(false)}
@@ -121,33 +88,66 @@ function Sidebar({ activeTab, onTabChange, onRefresh, onLogout, collapsed, setCo
         display: "flex",
         flexDirection: "column",
         transition: "width 0.28s cubic-bezier(.4,0,.2,1), transform 0.28s cubic-bezier(.4,0,.2,1)",
-        // Mobile: slide in/out
-        transform: window.innerWidth < 768 && !mobileOpen ? "translateX(-100%)" : "translateX(0)",
+        transform: isMobile && !mobileOpen ? "translateX(-100%)" : "translateX(0)",
         overflowY: "auto",
         overflowX: "hidden",
         scrollbarWidth: "none",
       }}>
         {/* Logo / brand */}
         <div style={{
-          padding: isCollapsed ? "18px 0" : "18px 16px",
+          padding: isCollapsed ? "14px 0" : "14px 12px",
           borderBottom: `1px solid ${T.border}`,
           display: "flex",
-          alignItems: "center",
-          gap: 10,
-          justifyContent: isCollapsed ? "center" : "flex-start",
-          minHeight: 72,
+          flexDirection: "column",
+          alignItems: isCollapsed ? "center" : "flex-start",
+          gap: 8,
+          minHeight: isCollapsed ? 72 : "auto",
+          justifyContent: "center",
         }}>
-          <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
-            {["/slsulogo.png", "/slsulogo1.png", "/slsulogo2.png"].map((src, i) => (
-              <img key={i} src={src} alt="" style={{ width: 24, height: 24, objectFit: "contain" }} />
+          {/* Faculty Portal badge — top */}
+          {!isCollapsed && (
+            <div style={{
+              display: "flex", alignItems: "center", gap: 7,
+              background: "rgba(139,92,246,0.12)",
+              border: "1px solid rgba(139,92,246,0.28)",
+              borderRadius: 999,
+              padding: "5px 10px",
+              alignSelf: "flex-start",
+            }}>
+              <span style={{ fontSize: 11 }}>🔬</span>
+              <span style={{ fontSize: 10, fontWeight: 700, color: "#a78bfa", letterSpacing: "0.06em", fontFamily: "'DM Sans',sans-serif" }}>Faculty Portal</span>
+            </div>
+          )}
+
+          {/* Logo circles row */}
+          <div style={{ display: "flex", gap: isCollapsed ? 0 : 5, flexShrink: 0, flexDirection: isCollapsed ? "column" : "row", alignItems: "center" }}>
+            {[
+              { src: "/slsulogo.png",  glow: "rgba(14,165,233,0.25)"  },
+              { src: "/slsulogo1.png", glow: "rgba(220,38,38,0.22)"   },
+              { src: "/slsulogo2.png", glow: "rgba(251,191,36,0.25)"  },
+            ].map((logo, i) => (
+              <div key={i} style={{
+                width: isCollapsed ? 32 : 26,
+                height: isCollapsed ? 32 : 26,
+                borderRadius: "50%",
+                background: "rgba(255,255,255,0.08)",
+                border: "1px solid rgba(255,255,255,0.13)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                overflow: "hidden",
+                flexShrink: 0,
+                boxShadow: `0 0 8px ${logo.glow}`,
+                marginBottom: isCollapsed ? 4 : 0,
+              }}>
+                <img src={logo.src} alt="" style={{ width: "85%", height: "85%", objectFit: "contain", display: "block" }} />
+              </div>
             ))}
           </div>
+
+          {/* SLSU IIEE label */}
           {!isCollapsed && (
-            <div style={{ overflow: "hidden" }}>
-              <p style={{ margin: 0, fontSize: 9, color: T.dimText, textTransform: "uppercase", letterSpacing: "0.1em" }}>
-                SLSU IIEE 
-              </p>
-            </div>
+            <p style={{ margin: 0, fontSize: 9, color: T.dimText, textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: "'DM Sans',sans-serif" }}>
+              SLSU IIEE
+            </p>
           )}
         </div>
 
@@ -239,18 +239,17 @@ function Sidebar({ activeTab, onTabChange, onRefresh, onLogout, collapsed, setCo
           flexDirection: "column",
           gap: 6,
         }}>
-          {/* Collapse toggle (desktop) */}
-          <button
-            onClick={() => setCollapsed(c => !c)}
-            style={{
-              ...actionBtnStyle(isCollapsed),
-              display: window.innerWidth < 768 ? "none" : "flex",
-            }}
-            title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-          >
-            <span style={{ fontSize: 14 }}>{isCollapsed ? "»" : "«"}</span>
-            {!isCollapsed && <span style={{ fontSize: 11, color: T.muted }}>Collapse</span>}
-          </button>
+          {/* Collapse toggle (desktop only) */}
+          {!isMobile && (
+            <button
+              onClick={() => setCollapsed(c => !c)}
+              style={actionBtnStyle(isCollapsed)}
+              title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            >
+              <span style={{ fontSize: 14, color: T.muted }}>{isCollapsed ? "»" : "«"}</span>
+              {!isCollapsed && <span style={{ fontSize: 11, color: T.muted }}>Collapse</span>}
+            </button>
+          )}
 
           <button onClick={onRefresh} style={actionBtnStyle(isCollapsed)} title="Refresh data">
             <span style={{ fontSize: 14, color: T.blue }}>↻</span>
@@ -267,21 +266,6 @@ function Sidebar({ activeTab, onTabChange, onRefresh, onLogout, collapsed, setCo
             <span style={{ fontSize: 14, color: T.fail }}>⏻</span>
             {!isCollapsed && <span style={{ fontSize: 11, color: T.fail }}>Sign Out</span>}
           </button>
-
-          {/* Faculty badge */}
-          {!isCollapsed && (
-            <div style={{
-              display: "flex", alignItems: "center", gap: 7,
-              background: "rgba(139,92,246,0.1)",
-              border: "1px solid rgba(139,92,246,0.22)",
-              borderRadius: 999,
-              padding: "7px 12px",
-              marginTop: 4,
-            }}>
-              <span style={{ fontSize: 12 }}>🔬</span>
-              <span style={{ fontSize: 11, fontWeight: 700, color: "#a78bfa" }}>Faculty Portal</span>
-            </div>
-          )}
         </div>
       </aside>
     </>
@@ -304,7 +288,7 @@ const actionBtnStyle = (collapsed) => ({
 });
 
 // ─── Topbar (mobile hamburger + breadcrumb) ───────────────────────────────────
-function Topbar({ activeTab, mobileOpen, setMobileOpen }) {
+function Topbar({ activeTab, setMobileOpen }) {
   return (
     <header style={{
       position: "sticky", top: 0, zIndex: 50,
@@ -317,7 +301,6 @@ function Topbar({ activeTab, mobileOpen, setMobileOpen }) {
       alignItems: "center",
       gap: 14,
     }}>
-      {/* Hamburger (mobile only) */}
       <button
         onClick={() => setMobileOpen(o => !o)}
         style={{
@@ -329,12 +312,11 @@ function Topbar({ activeTab, mobileOpen, setMobileOpen }) {
           cursor: "pointer",
           fontSize: 16,
           lineHeight: 1,
-          display: "none", // shown via CSS below
+          display: "none",
         }}
         className="hud-hamburger"
       >☰</button>
 
-      {/* Breadcrumb */}
       <div>
         <p style={{ margin: 0, fontSize: 10, color: T.gold, textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 700 }}>
           {labelFor(activeTab)}
@@ -354,7 +336,9 @@ export default function ProfessorSidebarLayout({
 }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [windowWidth, setWindowWidth] = useState(typeof window !== "undefined" ? window.innerWidth : 1280);
+  const [windowWidth, setWindowWidth] = useState(
+    typeof window !== "undefined" ? window.innerWidth : 1280
+  );
 
   useEffect(() => {
     const handler = () => setWindowWidth(window.innerWidth);
@@ -365,7 +349,6 @@ export default function ProfessorSidebarLayout({
   const isMobile = windowWidth < 768;
   const isTablet = windowWidth >= 768 && windowWidth < 1100;
 
-  // On tablet auto-collapse sidebar
   const effectiveCollapsed = collapsed || isTablet;
   const sidebarWidth = isMobile ? 0 : (effectiveCollapsed ? 68 : 240);
 
@@ -383,37 +366,30 @@ export default function ProfessorSidebarLayout({
         .fade-in { animation: fadeUp 0.38s ease; }
         .hud-content { transition: margin-left 0.28s cubic-bezier(.4,0,.2,1); }
 
-        /* Scrollbar */
         ::-webkit-scrollbar{width:5px;height:5px}
         ::-webkit-scrollbar-track{background:rgba(255,255,255,0.02)}
         ::-webkit-scrollbar-thumb{background:rgba(245,197,24,0.2);border-radius:99px}
         ::-webkit-scrollbar-thumb:hover{background:rgba(245,197,24,0.4)}
 
-        /* Recharts overrides */
         .recharts-cartesian-grid line { stroke: rgba(255,255,255,0.05) !important; }
         .recharts-text { fill: #64748b !important; font-family:'DM Sans',sans-serif !important; font-size:11px !important; }
         .recharts-legend-item-text { color:#94a3b8 !important; }
         .recharts-tooltip-wrapper { filter: drop-shadow(0 4px 16px rgba(0,0,0,0.5)); }
 
-        /* Table styles */
         .att-table { width:100%; border-collapse:collapse; font-size:12px; font-family:'DM Sans',sans-serif; }
         .att-table th { padding:10px 12px; border-bottom:1px solid rgba(245,197,24,0.1); text-align:left; color:${T.gold}; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; font-size:10px; }
         .att-table td { padding:10px 12px; border-bottom:1px solid rgba(255,255,255,0.05); color:${T.muted}; }
         .att-table tr:hover td { background:rgba(245,197,24,0.03); }
 
-        /* Filter inputs */
         .filter-input { background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:7px 11px; color:${T.white}; font-size:12px; font-family:'DM Sans',sans-serif; outline:none; transition:border-color 0.2s; }
         .filter-input:focus { border-color:rgba(245,197,24,0.45); }
 
-        /* Dashboard grid */
         .dash-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:14px; }
 
-        /* Prose */
         .prof-ui p { color:#dbeafe; font-size:14px; line-height:1.6; }
         .prof-ui td,.prof-ui th { color:#dbeafe; font-size:13px; }
         .prof-ui label { color:${T.muted}; font-size:13px; }
 
-        /* Mobile */
         @media(max-width:767px){
           .hud-hamburger { display:flex !important; }
           .dash-grid { grid-template-columns:1fr !important; }
@@ -423,18 +399,12 @@ export default function ProfessorSidebarLayout({
           .dash-grid { grid-template-columns:1fr !important; }
         }
 
-        /* Tab btn (kept for sub-components that might use it) */
         .tab-btn { background:transparent; border:none; cursor:pointer; font-family:'DM Sans',sans-serif; transition:all 0.2s; }
-
-        /* Gold accent line */
         .gold-line { width:32px; height:3px; background:${T.gold}; border-radius:2px; }
-
-        /* Card hover */
         .hud-card { transition: border-color 0.18s, box-shadow 0.18s; }
         .hud-card:hover { border-color: rgba(245,197,24,0.25) !important; box-shadow: 0 0 0 1px rgba(245,197,24,0.1), 0 8px 24px rgba(0,0,0,0.35) !important; }
       `}</style>
 
-      {/* Sidebar */}
       <Sidebar
         activeTab={activeTab}
         onTabChange={onTabChange}
@@ -444,72 +414,17 @@ export default function ProfessorSidebarLayout({
         setCollapsed={setCollapsed}
         mobileOpen={mobileOpen}
         setMobileOpen={setMobileOpen}
+        windowWidth={windowWidth}
       />
 
-      {/* Content area */}
-      <div
-        className="hud-content"
-        style={{ marginLeft: sidebarWidth }}
-      >
-        {/* Mobile / tablet topbar */}
-        <Topbar activeTab={activeTab} mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} />
+      <div className="hud-content" style={{ marginLeft: sidebarWidth }}>
+        {/* Mobile topbar only */}
+        <Topbar activeTab={activeTab} setMobileOpen={setMobileOpen} />
 
-        {/* Page header banner */}
-        <div style={{
-          background: `linear-gradient(135deg, ${T.navyMid} 0%, ${T.navy} 100%)`,
-          borderBottom: `1px solid ${T.border}`,
-          padding: "22px 28px 18px",
-          display: "flex",
-          alignItems: "flex-end",
-          justifyContent: "space-between",
-          gap: 16,
-          flexWrap: "wrap",
-        }}>
-          <div>
-            <p style={{ margin: "0 0 4px", fontSize: 9, color: T.gold, textTransform: "uppercase", letterSpacing: "0.14em", fontWeight: 700, fontFamily: "'DM Sans',sans-serif" }}>
-              Faculty Portal · SLSU IIEE
-            </p>
-            <h1 style={{
-              margin: 0,
-              fontSize: "clamp(20px, 2.5vw, 28px)",
-              fontWeight: 800,
-              color: T.white,
-              fontFamily: "'Syne',sans-serif",
-              letterSpacing: "0.01em",
-              lineHeight: 1.15,
-            }}>
-              {labelFor(activeTab)}
-            </h1>
-            <div className="gold-line" style={{ marginTop: 8 }} />
-          </div>
+        {/* ✅ Page header banner REMOVED as requested */}
 
-          {/* Quick stats pill */}
-          <div style={{
-            display: "flex",
-            gap: 10,
-            flexWrap: "wrap",
-          }}>
-            {[
-              { label: "Live Data", dot: T.pass },
-              { label: "ML-Powered", dot: T.blue },
-              { label: "SLSU 2025", dot: T.gold },
-            ].map(p => (
-              <div key={p.label} style={{
-                display: "flex", alignItems: "center", gap: 6,
-                background: "rgba(255,255,255,0.04)",
-                border: `1px solid ${T.borderSub}`,
-                borderRadius: 999,
-                padding: "5px 12px",
-              }}>
-                <span style={{ width: 6, height: 6, borderRadius: "50%", background: p.dot, flexShrink: 0 }} />
-                <span style={{ fontSize: 10, color: T.muted, fontWeight: 600, letterSpacing: "0.07em" }}>{p.label}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Dashboard children content */}
-        <main style={{ padding: "0 28px 80px" }}>
+        {/* Dashboard content */}
+        <main style={{ padding: "20px 28px 80px" }}>
           {children}
         </main>
       </div>
@@ -518,42 +433,46 @@ export default function ProfessorSidebarLayout({
 }
 
 /**
- * ═══════════════════════════════════════════════════════════════
- *  USAGE — replace the return statement in ProfessorPage.jsx:
- * ═══════════════════════════════════════════════════════════════
+ * ══════════════════════════════════════════════════════════════════
+ *  ✅ FIX FOR WHITE SCREEN — ProfessorPage.jsx
+ * ══════════════════════════════════════════════════════════════════
  *
- *  import ProfessorSidebarLayout from "./professor/ProfessorSidebarLayout";
+ *  The white screen happens because the old code had:
+ *    {!loading && data && (...tab content...)}
+ *
+ *  The `data` object only covers some tabs. For tabs like
+ *  correlation, classification_metrics, regression_metrics,
+ *  test2025, and trends — their props come from SEPARATE fetches,
+ *  not from the main `data` object. So `data` is falsy → blank screen.
+ *
+ *  SOLUTION — replace your render block in ProfessorPage.jsx with:
  *
  *  return (
  *    <ProfessorSidebarLayout
  *      activeTab={activeTab}
- *      tabs={TABS}
  *      onTabChange={setActiveTab}
  *      onRefresh={fetchAnalytics}
  *      onLogout={onLogout}
- *      dashFilters={dashFilters}
- *      setDashFilters={setDashFilters}
- *      availableYears={availableYears}
  *    >
  *      {loading && <LoadingSpinner />}
  *
- *      {!loading && data && (
+ *      {!loading && (                          // ← REMOVE "&& data" from here
  *        <>
  *          {activeTab === "model_overview"         && <ModelOverviewDashboard         {...props} />}
- *          {activeTab === "overview"               && <ProfessorOverviewDashboard     {...props} />}
  *          {activeTab === "performance"            && <ProfessorPerformanceDashboard  {...props} />}
  *          {activeTab === "features"               && <ProfessorFeaturesDashboard     {...props} />}
  *          {activeTab === "curriculum"             && <ProfessorCurriculumDashboard   {...props} />}
- *          {activeTab === "classification_metrics" && <ProfessorClassificationMetricsDashboard {...props} />}
- *          {activeTab === "regression_metrics"     && <ProfessorRegressionMetricsDashboard     {...props} />}
- *          {activeTab === "correlation"            && <ProfessorCorrelationDashboard  {...props} />}
- *          {activeTab === "test2025"               && <ProfessorTest2025Dashboard     {...props} />}
- *          {activeTab === "trends"                 && <ProfessorTrendsDashboard       {...props} />}
+ *          {activeTab === "correlation"            && <ProfessorCorrelationDashboard  correlation={correlation} />}
+ *          {activeTab === "classification_metrics" && <ProfessorClassificationMetricsDashboard modelInfo={modelInfo} />}
+ *          {activeTab === "regression_metrics"     && <ProfessorRegressionMetricsDashboard     modelInfo={modelInfo} />}
+ *          {activeTab === "test2025"               && <ProfessorTest2025Dashboard     {...test2025Props} />}
+ *          {activeTab === "trends"                 && <ProfessorTrendsDashboard       {...trendsProps} />}
  *        </>
  *      )}
  *    </ProfessorSidebarLayout>
  *  );
  *
- *  NOTE: Remove the old <ProfessorTabsNav> and its <style> block.
- *        Keep ALL state, fetch logic, and child component props exactly as-is.
+ *  Each child dashboard already handles missing data gracefully
+ *  with optional chaining (?.) and "—" fallbacks, so removing
+ *  the `&& data` gate is safe.
  */
