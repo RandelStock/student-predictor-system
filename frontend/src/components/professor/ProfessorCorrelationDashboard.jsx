@@ -86,8 +86,6 @@ export default function ProfessorCorrelationDashboard({ correlation }) {
                               background: bg,
                               borderRadius: absVal >= 0.4 ? 4 : 0,
                             }}
-                            onMouseEnter={() => setHoveredCell({ row: row.row, col, val })}
-                            onMouseLeave={() => setHoveredCell(null)}
                           >
                             {val.toFixed(2)}
                           </td>
