@@ -646,6 +646,8 @@ function ProgressBar({ value, color }) {
 }
 
 function CorrelationBlock({ title, explanation, points = [], color = IIEE.blue, xLabel = "X", yLabel = "Y" }) {
+  const [activeScatterIndex, setActiveScatterIndex] = React.useState(null);
+  const brightColor = color === IIEE.blue ? "#60a5fa" : color === IIEE.teal ? "#2dd4bf" : color === IIEE.indigo ? "#a78bfa" : color;
   return (
     <div className="comb-corr-block">
       <div>
@@ -654,12 +656,28 @@ function CorrelationBlock({ title, explanation, points = [], color = IIEE.blue, 
       </div>
       <div style={{ height: 220 }}>
         <ResponsiveContainer width="100%" height="100%">
-          <ScatterChart margin={{ top: 8, right: 8, left: 0, bottom: 8 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.1)" />
+          <ScatterChart margin={{ top: 8, right: 8, left: 0, bottom: 8 }} isAnimationActive={true} animationDuration={600}>
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(245,197,24,0.12)" />
             <XAxis dataKey="x" tick={{ fill: IIEE.muted, fontSize: 11 }} axisLine={false} tickLine={false} name={xLabel} />
             <YAxis dataKey="y" tick={{ fill: IIEE.muted, fontSize: 11 }} axisLine={false} tickLine={false} name={yLabel} />
             <Tooltip content={<IIEETooltip />} />
-            <Scatter data={points} fill={color} opacity={0.8} />
+            <Scatter 
+              data={points} 
+              fill={color} 
+              opacity={0.8}
+              onMouseEnter={(_, index) => setActiveScatterIndex(index)}
+              onMouseLeave={() => setActiveScatterIndex(null)}
+              shape={
+                <circle
+                  r={activeScatterIndex !== null ? 4.5 : 3.5}
+                  style={{ 
+                    transition: "all 0.3s ease",
+                    filter: activeScatterIndex !== null ? `drop-shadow(0 0 10px ${color}cc)` : "none",
+                    opacity: activeScatterIndex === null ? 0.8 : 1
+                  }}
+                />
+              }
+            />
           </ScatterChart>
         </ResponsiveContainer>
       </div>
@@ -676,11 +694,11 @@ export default function ModelOverviewDashboard({
   localInsights,
   // From ProfessorOverviewDashboard props
   ov,
-  pieData,
-  reviewPieData,
-  filteredYears,
+  pieData: propPieData,
+  reviewPieData: propReviewPieData,
+  filteredYears: propFilteredYears,
   passByYear,
-  filteredReview,
+  filteredReview: propFilteredReview,
   passByDur,
   modelInfo,
   // From ModelOverviewDashboard props
@@ -689,7 +707,7 @@ export default function ModelOverviewDashboard({
   sectionScores,
   weakestQ,
   subjectTrends,
-  filteredSubjectTrends,
+  filteredSubjectTrends: propFilteredSubjectTrends,
   correlation,
   scatterData,
 }) {
@@ -698,10 +716,89 @@ export default function ModelOverviewDashboard({
   const [sheetError, setSheetError]     = useState("");
   const [sheetPreview, setSheetPreview] = useState([]);
 
+  /* ── Pie Chart Hover State ── */
+  const [activeDistributionIndex, setActiveDistributionIndex] = useState(null);
+  const [activeReviewIndex, setActiveReviewIndex] = useState(null);
+  const [activeDatasetIndex, setActiveDatasetIndex] = useState(null);
+  const [activeShapeIndex, setActiveShapeIndex] = useState(null);
+
+  /* ── Year Filter Logic ── */
+  const selectedYear = dashFilters?.year || "";
+
   /* ── Derived data ── */
+  // Filter all data based on selected year
   const chartData = useMemo(() => {
-    return filteredYears?.length ? filteredYears : (passByYear ?? []);
-  }, [filteredYears, passByYear]);
+    if (!selectedYear) {
+      return propFilteredYears?.length ? propFilteredYears : (passByYear ?? []);
+    }
+    // If a year is selected, filter the data to show only that year
+    const yearData = passByYear?.find((d) => d.label === selectedYear || d.year === selectedYear);
+    return yearData ? [yearData] : [];
+  }, [selectedYear, propFilteredYears, passByYear]);
+
+  // Filter pie data based on selected year
+  const pieData = useMemo(() => {
+    if (!selectedYear || !propPieData) return propPieData;
+    // Recalculate pie data for the selected year
+    if (chartData.length > 0) {
+      const yearItem = chartData[0];
+      return [
+        { name: "Passers", value: yearItem.passers ?? Math.round((yearItem.pass_rate >> 0) / 100 * (yearItem.total || 0)), color: IIEE.passGreen },
+        { name: "Failers", value: yearItem.failers ?? ((yearItem.total || 0) - Math.round((yearItem.pass_rate ?? 0) / 100 * (yearItem.total || 0))), color: IIEE.failRed },
+      ];
+    }
+    return propPieData;
+  }, [selectedYear, propPieData, chartData]);
+
+  // Filter review pie data
+  const reviewPieData = useMemo(() => {
+    if (!selectedYear || !propReviewPieData) return propReviewPieData;
+    // If a year is selected, adjust review data accordingly
+    return propReviewPieData;
+  }, [selectedYear, propReviewPieData]);
+
+  // Filter KPI data based on selected year
+  const filteredOv = useMemo(() => {
+    if (!selectedYear) return ov;
+    // Calculate stats for the selected year only
+    if (chartData.length > 0) {
+      const yearItem = chartData[0];
+      return {
+        total_students: yearItem.total ?? 0,
+        total_passers: yearItem.passers ?? Math.round((yearItem.pass_rate ?? 0) / 100 * (yearItem.total || 0)),
+        total_failers: yearItem.failers ?? ((yearItem.total || 0) - Math.round((yearItem.pass_rate ?? 0) / 100 * (yearItem.total || 0))),
+        overall_pass_rate: yearItem.pass_rate ?? 0,
+        avg_gwa_passers: ov?.avg_gwa_passers ?? 0,
+        avg_gwa_failers: ov?.avg_gwa_failers ?? 0,
+      };
+    }
+    return ov;
+  }, [selectedYear, ov, chartData]);
+
+  // Filter strand data based on selected year
+  const filteredStrandData = useMemo(() => {
+    if (!selectedYear) return passByStrand;
+    // Filter strand data for the selected year if available
+    if (passByStrand?.some((s) => s.year === selectedYear)) {
+      return passByStrand.filter((s) => s.year === selectedYear);
+    }
+    return passByStrand;
+  }, [selectedYear, passByStrand]);
+
+  // Filter review data
+  const filteredReview = useMemo(() => {
+    if (!selectedYear) return propFilteredReview;
+    return propFilteredReview;
+  }, [selectedYear, propFilteredReview]);
+
+  // Filter subject trends for the selected year
+  const filteredSubjectTrends = useMemo(() => {
+    if (!selectedYear) return propFilteredSubjectTrends?.length ? propFilteredSubjectTrends : subjectTrends;
+    if (subjectTrends?.some((s) => s.year === selectedYear)) {
+      return subjectTrends.filter((s) => s.year === selectedYear);
+    }
+    return propFilteredSubjectTrends?.length ? propFilteredSubjectTrends : subjectTrends;
+  }, [selectedYear, propFilteredSubjectTrends, subjectTrends]);
 
   const stackData = useMemo(() =>
     chartData.map((d) => ({
@@ -712,28 +809,29 @@ export default function ModelOverviewDashboard({
   [chartData]);
 
   const monthlyTrend = useMemo(() => {
-    if (!passByYear?.length) return [];
-    return passByYear.map((x, idx) => ({
+    const dataToUse = selectedYear ? chartData : (passByYear ?? []);
+    if (!dataToUse?.length) return [];
+    return dataToUse.map((x, idx) => ({
       month: (MONTH_NAMES ?? ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"])[idx % 12],
       passRate: Number(x.pass_rate ?? 0),
     }));
-  }, [passByYear]);
+  }, [selectedYear, chartData, passByYear]);
 
   const yearlyTrend = useMemo(() =>
-    (passByYear ?? []).map((x) => ({
-      year: x.label,
+    (selectedYear ? chartData : (passByYear ?? [])).map((x) => ({
+      year: x.label || x.year,
       passRate: Number(x.pass_rate ?? 0),
       total: Number(x.total ?? 0),
     })),
-  [passByYear]);
+  [selectedYear, chartData, passByYear]);
 
   const strandSummary = useMemo(() =>
-    (passByStrand ?? []).map((x) => ({
+    (filteredStrandData ?? []).map((x) => ({
       name: x.label,
       passRate: Number(x.pass_rate ?? 0),
       total: Number(x.total ?? 0),
     })),
-  [passByStrand]);
+  [filteredStrandData]);
 
   const weakAreas = useMemo(() => (weakestQ ?? []).slice(0, 6), [weakestQ]);
 
@@ -799,6 +897,37 @@ export default function ModelOverviewDashboard({
             ]}
           />
           <FilterPanel filters={dashFilters} onChange={setDashFilters} availableYears={availableYears} />
+          
+          {/* Year Selection Indicator */}
+          {selectedYear && (
+            <div style={{
+              marginTop: 12,
+              padding: "10px 14px",
+              background: `${IIEE.gold}12`,
+              border: `1px solid ${IIEE.goldBorder}`,
+              borderRadius: 10,
+              fontSize: 12,
+              color: IIEE.gold,
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+            }}>
+              <span style={{ fontWeight: 700 }}>📅 Currently Viewing:</span>
+              <span style={{ background: `${IIEE.gold}22`, padding: "4px 10px", borderRadius: 6, fontWeight: 600 }}>
+                {selectedYear}
+              </span>
+              {chartData.length > 0 && chartData[0].pass_rate && (
+                <>
+                  <span style={{ opacity: 0.7 }}>•</span>
+                  <span>
+                    Pass Rate: <strong style={{ color: chartData[0].pass_rate >= 70 ? IIEE.passGreen : IIEE.amber }}>
+                      {pct(chartData[0].pass_rate)}
+                    </strong>
+                  </span>
+                </>
+              )}
+            </div>
+          )}
         </div>
 
         {/* ── Insights ── */}
@@ -816,12 +945,12 @@ export default function ModelOverviewDashboard({
 
         {/* KPI Metric Cards */}
         <div className="comb-metrics-grid" style={{ marginBottom: 28 }}>
-          <MetricCard label="Total Students"    value={ov?.total_students ?? "—"}                                                                    icon="👥" color={IIEE.blue} />
-          <MetricCard label="Total Passers"     value={ov?.total_passers ?? "—"}                                                                     icon="✅" color={IIEE.passGreen} />
-          <MetricCard label="Total Failers"     value={ov?.total_failers ?? "—"}                                                                     icon="❌" color={IIEE.failRed} />
-          <MetricCard label="Overall Pass Rate" value={pct(ov?.overall_pass_rate)} color={(ov?.overall_pass_rate ?? 0) >= 70 ? IIEE.passGreen : IIEE.amber} icon="📊" />
-          <MetricCard label="Avg GWA (Passers)" value={num(ov?.avg_gwa_passers)}   icon="🎓" color={IIEE.passGreen} sub="1.0 = Highest" />
-          <MetricCard label="Avg GWA (Failers)" value={num(ov?.avg_gwa_failers)}   icon="📉" color={IIEE.failRed}   sub="1.0 = Highest" />
+          <MetricCard label="Total Students"    value={filteredOv?.total_students ?? "—"}                                                                    icon="👥" color={IIEE.blue} />
+          <MetricCard label="Total Passers"     value={filteredOv?.total_passers ?? "—"}                                                                     icon="✅" color={IIEE.passGreen} />
+          <MetricCard label="Total Failers"     value={filteredOv?.total_failers ?? "—"}                                                                     icon="❌" color={IIEE.failRed} />
+          <MetricCard label="Overall Pass Rate" value={pct(filteredOv?.overall_pass_rate)} color={(filteredOv?.overall_pass_rate ?? 0) >= 70 ? IIEE.passGreen : IIEE.amber} icon="📊" />
+          <MetricCard label="Avg GWA (Passers)" value={num(filteredOv?.avg_gwa_passers)}   icon="🎓" color={IIEE.passGreen} sub="1.0 = Highest" />
+          <MetricCard label="Avg GWA (Failers)" value={num(filteredOv?.avg_gwa_failers)}   icon="📉" color={IIEE.failRed}   sub="1.0 = Highest" />
         </div>
 
         <SectionDivider label="Distribution Analysis" icon="🥧" />
@@ -833,8 +962,27 @@ export default function ModelOverviewDashboard({
             insight="A larger green slice indicates stronger cohort performance above the 70% benchmark.">
             <ResponsiveContainer width="100%" height={220}>
               <PieChart>
-                <Pie data={pieData} cx="50%" cy="50%" innerRadius={55} outerRadius={88} paddingAngle={3} dataKey="value">
-                  {(pieData ?? []).map((entry, i) => <Cell key={i} fill={entry.color} stroke="none" />)}
+                <Pie 
+                  data={pieData} 
+                  cx="50%" 
+                  cy="50%" 
+                  innerRadius={55} 
+                  outerRadius={88} 
+                  paddingAngle={3} 
+                  dataKey="value"
+                  onMouseEnter={(_, index) => setActiveDistributionIndex(index)}
+                  onMouseLeave={() => setActiveDistributionIndex(null)}
+                >
+                  {(pieData ?? []).map((entry, i) => (
+                    <Cell 
+                      key={i} 
+                      fill={entry.color} 
+                      stroke={activeDistributionIndex === i ? IIEE.gold : "none"}
+                      strokeWidth={activeDistributionIndex === i ? 3 : 0}
+                      opacity={activeDistributionIndex === null || activeDistributionIndex === i ? 1 : 0.5}
+                      style={{ transition: "all 0.3s ease" }}
+                    />
+                  ))}
                 </Pie>
                 <Tooltip content={<IIEETooltip />} />
                 <Legend iconType="circle" iconSize={9} formatter={(v) => <span style={{ color: IIEE.muted, fontSize: 12 }}>{v}</span>} />
@@ -847,8 +995,27 @@ export default function ModelOverviewDashboard({
             insight="Higher review attendance consistently correlates with improved pass rates.">
             <ResponsiveContainer width="100%" height={220}>
               <PieChart>
-                <Pie data={reviewPieData} cx="50%" cy="50%" innerRadius={55} outerRadius={88} paddingAngle={3} dataKey="value">
-                  {(reviewPieData ?? []).map((entry, i) => <Cell key={i} fill={entry.color} stroke="none" />)}
+                <Pie 
+                  data={reviewPieData} 
+                  cx="50%" 
+                  cy="50%" 
+                  innerRadius={55} 
+                  outerRadius={88} 
+                  paddingAngle={3} 
+                  dataKey="value"
+                  onMouseEnter={(_, index) => setActiveReviewIndex(index)}
+                  onMouseLeave={() => setActiveReviewIndex(null)}
+                >
+                  {(reviewPieData ?? []).map((entry, i) => (
+                    <Cell 
+                      key={i} 
+                      fill={entry.color} 
+                      stroke={activeReviewIndex === i ? IIEE.gold : "none"}
+                      strokeWidth={activeReviewIndex === i ? 3 : 0}
+                      opacity={activeReviewIndex === null || activeReviewIndex === i ? 1 : 0.5}
+                      style={{ transition: "all 0.3s ease" }}
+                    />
+                  ))}
                 </Pie>
                 <Tooltip content={<IIEETooltip />} />
                 <Legend iconType="circle" iconSize={9} formatter={(v) => <span style={{ color: IIEE.muted, fontSize: 12 }}>{v}</span>} />
@@ -860,14 +1027,14 @@ export default function ModelOverviewDashboard({
             description="Bar chart tracking year-over-year pass rate movement across all exam cohorts."
             insight="Bars above the gold 70% threshold are strong; amber/red bars indicate cohorts requiring intervention.">
             <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={chartData} margin={{ top: 8, right: 16, left: -8, bottom: 4 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(245,197,24,0.07)" />
+              <BarChart data={chartData} margin={{ top: 8, right: 16, left: -8, bottom: 4 }} isAnimationActive={true} animationDuration={600}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(245,197,24,0.12)" />
                 <XAxis dataKey="label"   tick={{ fill: IIEE.dimText, fontSize: 11 }} axisLine={false} tickLine={false} />
                 <YAxis domain={[0, 100]} tick={{ fill: IIEE.dimText, fontSize: 11 }} axisLine={false} tickLine={false} unit="%" />
                 <Tooltip content={<IIEETooltip formatter={(v) => `${v.toFixed(1)}%`} />} />
                 <ReferenceLine y={70} stroke={IIEE.gold} strokeDasharray="5 3"
                   label={{ value: "70% threshold", position: "insideTopRight", fill: IIEE.gold, fontSize: 10 }} />
-                <Bar dataKey="pass_rate" name="Pass Rate" radius={[6, 6, 0, 0]}>
+                <Bar dataKey="pass_rate" name="Pass Rate" radius={[6, 6, 0, 0]} activeBar={{ fill: IIEE.gold, filter: "drop-shadow(0 0 8px rgba(245,197,24,0.6))" }}>
                   {chartData.map((entry, i) => <Cell key={i} fill={barColor(entry.pass_rate)} />)}
                 </Bar>
               </BarChart>
@@ -878,14 +1045,14 @@ export default function ModelOverviewDashboard({
             description="Stacked chart revealing the absolute number of passers and failers in each cohort year."
             insight="Years with large total bars but low green proportion are high-volume low-performance cohorts.">
             <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={stackData} margin={{ top: 8, right: 16, left: -8, bottom: 4 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(245,197,24,0.07)" />
+              <BarChart data={stackData} margin={{ top: 8, right: 16, left: -8, bottom: 4 }} isAnimationActive={true} animationDuration={700}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(245,197,24,0.12)" />
                 <XAxis dataKey="label" tick={{ fill: IIEE.dimText, fontSize: 11 }} axisLine={false} tickLine={false} />
                 <YAxis                 tick={{ fill: IIEE.dimText, fontSize: 11 }} axisLine={false} tickLine={false} />
                 <Tooltip content={<IIEETooltip />} />
                 <Legend iconType="circle" iconSize={9} formatter={(v) => <span style={{ color: IIEE.muted, fontSize: 12 }}>{v}</span>} />
-                <Bar dataKey="Passers" stackId="a" fill={IIEE.passGreen} />
-                <Bar dataKey="Failers" stackId="a" fill={IIEE.failRed} radius={[6, 6, 0, 0]} />
+                <Bar dataKey="Passers" stackId="a" fill={IIEE.passGreen} activeBar={{ fill: "#34d399", filter: "drop-shadow(0 0 6px rgba(34, 197, 94, 0.5))" }} />
+                <Bar dataKey="Failers" stackId="a" fill={IIEE.failRed} radius={[6, 6, 0, 0]} activeBar={{ fill: "#f87171", filter: "drop-shadow(0 0 6px rgba(244, 63, 94, 0.5))" }} />
               </BarChart>
             </ResponsiveContainer>
           </ChartCard>
@@ -899,13 +1066,13 @@ export default function ModelOverviewDashboard({
             description="Horizontal bar comparing pass rates of students who attended formal review vs those who did not."
             insight="A significant gap between groups validates the impact of review programs on board exam outcomes.">
             <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={filteredReview ?? []} layout="vertical" margin={{ top: 4, right: 24, left: 4, bottom: 4 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(245,197,24,0.07)" horizontal={false} />
+              <BarChart data={filteredReview ?? []} layout="vertical" margin={{ top: 4, right: 24, left: 4, bottom: 4 }} isAnimationActive={true} animationDuration={600}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(245,197,24,0.12)" horizontal={false} />
                 <XAxis type="number" domain={[0, 100]} tick={{ fill: IIEE.dimText, fontSize: 11 }} unit="%" axisLine={false} tickLine={false} />
                 <YAxis type="category" dataKey="label" tick={{ fill: IIEE.muted, fontSize: 11 }} axisLine={false} tickLine={false} width={130} />
                 <Tooltip content={<IIEETooltip formatter={(v) => `${v.toFixed(1)}%`} />} />
                 <ReferenceLine x={70} stroke={IIEE.gold} strokeDasharray="4 3" />
-                <Bar dataKey="pass_rate" name="Pass Rate" radius={[0, 6, 6, 0]}>
+                <Bar dataKey="pass_rate" name="Pass Rate" radius={[0, 6, 6, 0]} activeBar={{ filter: "drop-shadow(0 0 8px rgba(245,197,24,0.6))" }}>
                   {(filteredReview ?? []).map((entry, i) => <Cell key={i} fill={entry.pass_rate >= 70 ? IIEE.passGreen : IIEE.failRed} />)}
                 </Bar>
               </BarChart>
@@ -938,22 +1105,22 @@ export default function ModelOverviewDashboard({
         <div className="comb-standalone-grid" style={{ marginBottom: 8 }}>
           <ChartCard standalone icon="📐" title="GWA: Passers vs Failers" subtitle="Lower GWA is better in PH grading (1.0 = highest)"
             description="Compares average General Weighted Average between passers and failers — a core predictive signal."
-            insight={`GWA gap: ${num((ov?.avg_gwa_failers ?? 0) - (ov?.avg_gwa_passers ?? 0))} points — a strong board exam predictor.`}>
+            insight={`GWA gap: ${num((filteredOv?.avg_gwa_failers ?? 0) - (filteredOv?.avg_gwa_passers ?? 0))} points — a strong board exam predictor.`}>
             <div className="comb-gwa-pills">
               <div className="comb-gwa-pill">
                 <div className="comb-gwa-pill-label">Passers Avg GWA</div>
-                <div className="comb-gwa-pill-val" style={{ color: IIEE.passGreen }}>{num(ov?.avg_gwa_passers)}</div>
+                <div className="comb-gwa-pill-val" style={{ color: IIEE.passGreen }}>{num(filteredOv?.avg_gwa_passers)}</div>
               </div>
               <div className="comb-gwa-pill">
                 <div className="comb-gwa-pill-label">Failers Avg GWA</div>
-                <div className="comb-gwa-pill-val" style={{ color: IIEE.failRed }}>{num(ov?.avg_gwa_failers)}</div>
+                <div className="comb-gwa-pill-val" style={{ color: IIEE.failRed }}>{num(filteredOv?.avg_gwa_failers)}</div>
               </div>
             </div>
             <ResponsiveContainer width="100%" height={110}>
               <BarChart
                 data={[
-                  { name: "Passers", value: ov?.avg_gwa_passers },
-                  { name: "Failers", value: ov?.avg_gwa_failers },
+                  { name: "Passers", value: filteredOv?.avg_gwa_passers },
+                  { name: "Failers", value: filteredOv?.avg_gwa_failers },
                 ]}
                 margin={{ top: 0, right: 8, left: -20, bottom: 0 }}
               >
@@ -973,32 +1140,61 @@ export default function ModelOverviewDashboard({
             insight="Higher accuracy and F1 confirm the model reliably identifies at-risk students before the exam.">
             {modelInfo ? (
               <div className="comb-model-metrics">
-                {[
-                  { label: "Classification Accuracy", value: modelInfo.classification?.accuracy, color: IIEE.blue },
-                  { label: "Classification F1",        value: modelInfo.classification?.f1,       color: IIEE.gold },
-                  { label: "CV Accuracy",              value: modelInfo.classification?.cv_acc,   color: IIEE.indigo },
-                  { label: "CV F1",                    value: modelInfo.classification?.cv_f1,    color: IIEE.passGreen },
-                ].map((m, i) => (
-                  <div key={i}>
-                    <div className="comb-model-row">
-                      <span className="comb-model-row-label">{m.label}</span>
-                      <span className="comb-model-row-val" style={{ color: m.color }}>{pct((m.value ?? 0) * 100)}</span>
-                    </div>
-                    <ProgressBar value={(m.value ?? 0) * 100} color={m.color} />
-                  </div>
-                ))}
-                <div className="comb-model-mini-grid">
+                {/* Classification Metrics */}
+                <div style={{ marginBottom: "18px" }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: IIEE.gold, marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.5px" }}>📊 Classification Metrics</div>
                   {[
-                    { label: "Reg A — MAE", v: modelInfo.regression_a?.mae, d: 2 },
-                    { label: "Reg A — R²",  v: modelInfo.regression_a?.r2,  d: 3 },
-                    { label: "Reg B — MAE", v: modelInfo.regression_b?.mae, d: 2 },
-                    { label: "Reg B — R²",  v: modelInfo.regression_b?.r2,  d: 3 },
+                    { label: "Classification Accuracy", value: modelInfo.classification?.accuracy, color: IIEE.blue },
+                    { label: "Classification F1",        value: modelInfo.classification?.f1,       color: IIEE.gold },
+                    { label: "CV Accuracy",              value: modelInfo.classification?.cv_acc,   color: IIEE.indigo },
+                    { label: "CV F1",                    value: modelInfo.classification?.cv_f1,    color: IIEE.passGreen },
                   ].map((m, i) => (
-                    <div key={i} className="comb-model-mini">
-                      <div className="comb-model-mini-label">{m.label}</div>
-                      <div className="comb-model-mini-val">{num(m.v, m.d)}</div>
+                    <div key={i}>
+                      <div className="comb-model-row">
+                        <span className="comb-model-row-label">{m.label}</span>
+                        <span className="comb-model-row-val" style={{ color: m.color }}>{pct((m.value ?? 0) * 100)}</span>
+                      </div>
+                      <ProgressBar value={(m.value ?? 0) * 100} color={m.color} />
                     </div>
                   ))}
+                </div>
+
+                {/* Regression Metrics */}
+                <div style={{ borderTop: `1px solid rgba(245,197,24,0.2)`, paddingTop: 14 }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: IIEE.gold, marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.5px" }}>📈 Regression Metrics</div>
+                  <div className="comb-model-mini-grid" style={{ gridTemplateColumns: "repeat(2, 1fr)" }}>
+                    {/* Regression A */}
+                    <div style={{ gridColumn: "1 / -1", marginBottom: 10 }}>
+                      <div style={{ fontSize: 11, fontWeight: 500, color: IIEE.teal, marginBottom: 8 }}>Regression Model A</div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                        <div className="comb-model-mini" style={{ borderLeft: `3px solid ${IIEE.teal}`, paddingLeft: 8 }}>
+                          <div className="comb-model-mini-label">MAE</div>
+                          <div className="comb-model-mini-val">{num(modelInfo.regression_a?.mae, 2)}</div>
+                        </div>
+                        <div className="comb-model-mini">
+                          <div className="comb-model-mini-label">R² Score</div>
+                          <div className="comb-model-mini-val" style={{ color: IIEE.teal }}>{num(modelInfo.regression_a?.r2, 3)}</div>
+                          <ProgressBar value={(modelInfo.regression_a?.r2 ?? 0) * 100} color={IIEE.teal} />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Regression B */}
+                    <div style={{ gridColumn: "1 / -1" }}>
+                      <div style={{ fontSize: 11, fontWeight: 500, color: IIEE.indigo, marginBottom: 8 }}>Regression Model B</div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                        <div className="comb-model-mini" style={{ borderLeft: `3px solid ${IIEE.indigo}`, paddingLeft: 8 }}>
+                          <div className="comb-model-mini-label">MAE</div>
+                          <div className="comb-model-mini-val">{num(modelInfo.regression_b?.mae, 2)}</div>
+                        </div>
+                        <div className="comb-model-mini">
+                          <div className="comb-model-mini-label">R² Score</div>
+                          <div className="comb-model-mini-val" style={{ color: IIEE.indigo }}>{num(modelInfo.regression_b?.r2, 3)}</div>
+                          <ProgressBar value={(modelInfo.regression_b?.r2 ?? 0) * 100} color={IIEE.indigo} />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             ) : (
@@ -1016,7 +1212,7 @@ export default function ModelOverviewDashboard({
         {/* Section 1 — Model Summary */}
         <SectionCard number="1" icon="🧠" title="Model Summary" subtitle="Purpose, structure, and major predictor groups.">
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(155px, 1fr))", gap: 12 }}>
-            <InnerMetric icon="🎓" label="GWA Signal"     value={num((ov?.avg_gwa_failers ?? 0) - (ov?.avg_gwa_passers ?? 0))} sub="gap (failers − passers)" color={IIEE.indigo} />
+            <InnerMetric icon="🎓" label="GWA Signal"     value={num((filteredOv?.avg_gwa_failers ?? 0) - (filteredOv?.avg_gwa_passers ?? 0))} sub="gap (failers − passers)" color={IIEE.indigo} />
             <InnerMetric icon="📘" label="Math / EE / ESAS" value="3 Core" sub="subject score predictors"       color={IIEE.blue} />
             <InnerMetric icon="🧾" label="Survey Inputs"  value={`${sectionScores?.length ?? 0}`} sub="survey sections used"  color={IIEE.teal} />
             <InnerMetric icon="🎯" label="Pass Threshold" value="70%"    sub="system pass reference"            color={IIEE.amber} />
@@ -1031,8 +1227,24 @@ export default function ModelOverviewDashboard({
               insight="Green-dominant chart = strong cohort performance.">
               <ResponsiveContainer width="100%" height={220}>
                 <PieChart>
-                  <Pie data={pieData} innerRadius={50} outerRadius={85} dataKey="value">
-                    {(pieData ?? []).map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                  <Pie 
+                    data={pieData} 
+                    innerRadius={50} 
+                    outerRadius={85} 
+                    dataKey="value"
+                    onMouseEnter={(_, index) => setActiveDatasetIndex(index)}
+                    onMouseLeave={() => setActiveDatasetIndex(null)}
+                  >
+                    {(pieData ?? []).map((entry, i) => (
+                      <Cell 
+                        key={i} 
+                        fill={entry.color}
+                        stroke={activeDatasetIndex === i ? IIEE.gold : "none"}
+                        strokeWidth={activeDatasetIndex === i ? 3 : 0}
+                        opacity={activeDatasetIndex === null || activeDatasetIndex === i ? 1 : 0.5}
+                        style={{ transition: "all 0.3s ease" }}
+                      />
+                    ))}
                   </Pie>
                   <Tooltip content={<IIEETooltip />} />
                   <Legend iconType="circle" iconSize={9} formatter={(v) => <span style={{ color: IIEE.muted, fontSize: 12 }}>{v}</span>} />
@@ -1043,14 +1255,14 @@ export default function ModelOverviewDashboard({
             <ChartCard icon="📊" title="Survey Section Summary" subtitle={`Aggregated responses: ${totalSurveyResponses}`} blueTint
               description="Compares pass/fail counts per survey section — reveals where performance diverges.">
               <ResponsiveContainer width="100%" height={220}>
-                <BarChart data={(sectionScores ?? []).map((s) => ({ name: s.label, pass: s.pass, fail: s.fail }))}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(245,197,24,0.07)" />
+                <BarChart data={(sectionScores ?? []).map((s) => ({ name: s.label, pass: s.pass, fail: s.fail }))} isAnimationActive={true} animationDuration={700}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(245,197,24,0.12)" />
                   <XAxis dataKey="name" tick={{ fill: IIEE.dimText, fontSize: 10 }} axisLine={false} tickLine={false} />
                   <YAxis               tick={{ fill: IIEE.dimText, fontSize: 11 }} axisLine={false} tickLine={false} />
                   <Tooltip content={<IIEETooltip />} />
                   <Legend iconType="circle" iconSize={9} formatter={(v) => <span style={{ color: IIEE.muted, fontSize: 12 }}>{v}</span>} />
-                  <Bar dataKey="pass" name="Passers" fill={IIEE.passGreen} radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="fail" name="Failers" fill={IIEE.failRed}   radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="pass" name="Passers" fill={IIEE.passGreen} radius={[4, 4, 0, 0]} activeBar={{ fill: "#34d399", filter: "drop-shadow(0 0 8px rgba(52,211,153,0.8))" }} />
+                  <Bar dataKey="fail" name="Failers" fill={IIEE.failRed}   radius={[4, 4, 0, 0]} activeBar={{ fill: "#f87171", filter: "drop-shadow(0 0 8px rgba(248,113,113,0.8))" }} />
                 </BarChart>
               </ResponsiveContainer>
             </ChartCard>
@@ -1091,12 +1303,12 @@ export default function ModelOverviewDashboard({
               description="Pass rate movement mapped across months using year data as proxy."
               insight="Rising line = improving cohort performance over time.">
               <ResponsiveContainer width="100%" height={220}>
-                <LineChart data={monthlyTrend}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(245,197,24,0.07)" />
+                <LineChart data={monthlyTrend} isAnimationActive={true} animationDuration={800} animationEasing="ease-in-out">
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(245,197,24,0.12)" />
                   <XAxis dataKey="month"    tick={{ fill: IIEE.dimText, fontSize: 11 }} axisLine={false} tickLine={false} />
                   <YAxis                    tick={{ fill: IIEE.dimText, fontSize: 11 }} axisLine={false} tickLine={false} />
                   <Tooltip content={<IIEETooltip formatter={(v) => `${v.toFixed(1)}%`} />} />
-                  <Line type="monotone" dataKey="passRate" stroke={IIEE.teal} strokeWidth={2.5} dot={{ r: 3, fill: IIEE.teal }} />
+                  <Line type="monotone" dataKey="passRate" stroke={IIEE.teal} strokeWidth={2.5} dot={{ r: 5, fill: IIEE.teal, filter: "drop-shadow(0 2px 4px rgba(45,212,191,0.3))" }} activeDot={{ r: 8, fill: IIEE.gold, filter: "drop-shadow(0 0 10px rgba(245,197,24,0.8))" }} isAnimationActive={true} animationDuration={400} />
                 </LineChart>
               </ResponsiveContainer>
             </ChartCard>
@@ -1105,12 +1317,12 @@ export default function ModelOverviewDashboard({
               description="Compares overall pass rates per exam year to reveal performance trajectory."
               insight="Consistent upward movement signals effective academic intervention.">
               <ResponsiveContainer width="100%" height={220}>
-                <BarChart data={yearlyTrend}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(245,197,24,0.07)" />
+                <BarChart data={yearlyTrend} isAnimationActive={true} animationDuration={700}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(245,197,24,0.12)" />
                   <XAxis dataKey="year"  tick={{ fill: IIEE.dimText, fontSize: 11 }} axisLine={false} tickLine={false} />
                   <YAxis                 tick={{ fill: IIEE.dimText, fontSize: 11 }} axisLine={false} tickLine={false} />
                   <Tooltip content={<IIEETooltip formatter={(v) => `${v.toFixed(1)}%`} />} />
-                  <Bar dataKey="passRate" name="Pass Rate" fill={IIEE.blue} radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="passRate" name="Pass Rate" fill={IIEE.blue} radius={[4, 4, 0, 0]} activeBar={{ fill: "#60a5fa", filter: "drop-shadow(0 0 8px rgba(56, 189, 248, 0.8))" }} />
                 </BarChart>
               </ResponsiveContainer>
             </ChartCard>
@@ -1120,15 +1332,15 @@ export default function ModelOverviewDashboard({
                 description="Tracks subject-level average score movement across cohort years."
                 insight="Diverging lines suggest uneven subject performance that requires targeted intervention.">
                 <ResponsiveContainer width="100%" height={240}>
-                  <LineChart data={(filteredSubjectTrends?.length ? filteredSubjectTrends : subjectTrends) ?? []}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(245,197,24,0.07)" />
+                  <LineChart data={(filteredSubjectTrends?.length ? filteredSubjectTrends : subjectTrends) ?? []} isAnimationActive={true} animationDuration={800} animationEasing="ease-in-out">
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(245,197,24,0.12)" />
                     <XAxis dataKey="year" tick={{ fill: IIEE.dimText, fontSize: 11 }} axisLine={false} tickLine={false} />
                     <YAxis               tick={{ fill: IIEE.dimText, fontSize: 11 }} axisLine={false} tickLine={false} />
                     <Tooltip content={<IIEETooltip />} />
                     <Legend iconType="circle" iconSize={9} formatter={(v) => <span style={{ color: IIEE.muted, fontSize: 12 }}>{v}</span>} />
-                    <Line dataKey="EE_avg"   name="EE"   stroke={IIEE.blue}   strokeWidth={2} dot={{ r: 3 }} />
-                    <Line dataKey="MATH_avg" name="MATH" stroke={IIEE.indigo} strokeWidth={2} dot={{ r: 3 }} />
-                    <Line dataKey="ESAS_avg" name="ESAS" stroke={IIEE.teal}   strokeWidth={2} dot={{ r: 3 }} />
+                    <Line dataKey="EE_avg"   name="EE"   stroke={IIEE.blue}   strokeWidth={2.5} dot={{ r: 5, fill: IIEE.blue, filter: "drop-shadow(0 2px 4px rgba(56,189,248,0.3))" }} activeDot={{ r: 8, fill: IIEE.gold, filter: "drop-shadow(0 0 10px rgba(245,197,24,0.8))" }} isAnimationActive={true} animationDuration={400} />
+                    <Line dataKey="MATH_avg" name="MATH" stroke={IIEE.indigo} strokeWidth={2.5} dot={{ r: 5, fill: IIEE.indigo, filter: "drop-shadow(0 2px 4px rgba(129,140,248,0.3))" }} activeDot={{ r: 8, fill: IIEE.gold, filter: "drop-shadow(0 0 10px rgba(245,197,24,0.8))" }} isAnimationActive={true} animationDuration={400} />
+                    <Line dataKey="ESAS_avg" name="ESAS" stroke={IIEE.teal}   strokeWidth={2.5} dot={{ r: 5, fill: IIEE.teal, filter: "drop-shadow(0 2px 4px rgba(45,212,191,0.3))" }} activeDot={{ r: 8, fill: IIEE.gold, filter: "drop-shadow(0 0 10px rgba(245,197,24,0.8))" }} isAnimationActive={true} animationDuration={400} />
                   </LineChart>
                 </ResponsiveContainer>
               </ChartCard>
@@ -1143,8 +1355,8 @@ export default function ModelOverviewDashboard({
             description="Each point represents one student record — X axis is actual PRC rating, Y axis is model prediction."
             insight="Points close to the diagonal reference line indicate high model accuracy.">
             <ResponsiveContainer width="100%" height={260}>
-              <ScatterChart>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(245,197,24,0.07)" />
+              <ScatterChart isAnimationActive={true} animationDuration={600}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(245,197,24,0.12)" />
                 <XAxis dataKey="actual"    tick={{ fill: IIEE.dimText, fontSize: 11 }} axisLine={false} tickLine={false} />
                 <YAxis dataKey="predicted" tick={{ fill: IIEE.dimText, fontSize: 11 }} axisLine={false} tickLine={false} />
                 <Tooltip content={<IIEETooltip />} />
@@ -1163,12 +1375,12 @@ export default function ModelOverviewDashboard({
               description="Bar comparison of board exam performance split by senior high school strand."
               insight="Strands with STEM alignment tend to outperform other tracks.">
               <ResponsiveContainer width="100%" height={220}>
-                <BarChart data={strandSummary}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(245,197,24,0.07)" />
+                <BarChart data={strandSummary} isAnimationActive={true} animationDuration={700}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(245,197,24,0.12)" />
                   <XAxis dataKey="name"     tick={{ fill: IIEE.dimText, fontSize: 11 }} axisLine={false} tickLine={false} />
                   <YAxis                    tick={{ fill: IIEE.dimText, fontSize: 11 }} axisLine={false} tickLine={false} />
                   <Tooltip content={<IIEETooltip formatter={(v) => `${v.toFixed(1)}%`} />} />
-                  <Bar dataKey="passRate" name="Pass Rate" fill={IIEE.teal} radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="passRate" name="Pass Rate" fill={IIEE.teal} radius={[4, 4, 0, 0]} activeBar={{ fill: "#2dd4bfcc", filter: "drop-shadow(0 0 8px rgba(45,212,191,0.7))" }} />
                 </BarChart>
               </ResponsiveContainer>
             </ChartCard>
@@ -1177,12 +1389,12 @@ export default function ModelOverviewDashboard({
               description="Shows how the length of a board review program affects exam success rates."
               insight="Longer review durations generally yield higher pass rates across all cohorts.">
               <ResponsiveContainer width="100%" height={220}>
-                <BarChart data={passByDur ?? []}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(245,197,24,0.07)" />
+                <BarChart data={passByDur ?? []} isAnimationActive={true} animationDuration={700}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(245,197,24,0.12)" />
                   <XAxis dataKey="label" tick={{ fill: IIEE.dimText, fontSize: 10 }} axisLine={false} tickLine={false} />
                   <YAxis                 tick={{ fill: IIEE.dimText, fontSize: 11 }} axisLine={false} tickLine={false} />
                   <Tooltip content={<IIEETooltip formatter={(v) => `${v.toFixed(1)}%`} />} />
-                  <Bar dataKey="pass_rate" name="Pass Rate" fill={IIEE.orange} radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="pass_rate" name="Pass Rate" fill={IIEE.orange} radius={[4, 4, 0, 0]} activeBar={{ fill: "#facc15", filter: "drop-shadow(0 0 8px rgba(250,204,21,0.7))" }} />
                 </BarChart>
               </ResponsiveContainer>
             </ChartCard>
@@ -1191,8 +1403,24 @@ export default function ModelOverviewDashboard({
               description="Proportion of students who attended formal board review versus those who did not.">
               <ResponsiveContainer width="100%" height={240}>
                 <PieChart>
-                  <Pie data={reviewPieData} dataKey="value" innerRadius={55} outerRadius={90}>
-                    {(reviewPieData ?? []).map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                  <Pie 
+                    data={reviewPieData} 
+                    dataKey="value" 
+                    innerRadius={55} 
+                    outerRadius={90}
+                    onMouseEnter={(_, index) => setActiveShapeIndex(index)}
+                    onMouseLeave={() => setActiveShapeIndex(null)}
+                  >
+                    {(reviewPieData ?? []).map((entry, i) => (
+                      <Cell 
+                        key={i} 
+                        fill={entry.color}
+                        stroke={activeShapeIndex === i ? IIEE.gold : "none"}
+                        strokeWidth={activeShapeIndex === i ? 3 : 0}
+                        opacity={activeShapeIndex === null || activeShapeIndex === i ? 1 : 0.5}
+                        style={{ transition: "all 0.3s ease" }}
+                      />
+                    ))}
                   </Pie>
                   <Tooltip content={<IIEETooltip />} />
                   <Legend iconType="circle" iconSize={9} formatter={(v) => <span style={{ color: IIEE.muted, fontSize: 12 }}>{v}</span>} />
@@ -1209,12 +1437,12 @@ export default function ModelOverviewDashboard({
               description="Survey indicators with the lowest average scores — signals where students feel least supported."
               insight="Low scores indicate curriculum or facilities areas needing urgent review.">
               <ResponsiveContainer width="100%" height={240}>
-                <BarChart data={weakAreas.map((w) => ({ key: w.key, avg: w.avg }))}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(245,197,24,0.07)" />
+                <BarChart data={weakAreas.map((w) => ({ key: w.key, avg: w.avg }))} isAnimationActive={true} animationDuration={700}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(245,197,24,0.12)" />
                   <XAxis dataKey="key"  tick={{ fill: IIEE.dimText, fontSize: 11 }} axisLine={false} tickLine={false} />
                   <YAxis               tick={{ fill: IIEE.dimText, fontSize: 11 }} axisLine={false} tickLine={false} />
                   <Tooltip content={<IIEETooltip formatter={(v) => `${v.toFixed(2)}/4`} />} />
-                  <Bar dataKey="avg" name="Avg Score" fill={IIEE.failRed} radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="avg" name="Avg Score" fill={IIEE.failRed} radius={[4, 4, 0, 0]} activeBar={{ fill: "#ef6b6b", filter: "drop-shadow(0 0 8px rgba(239,75,75,0.7))" }} />
                 </BarChart>
               </ResponsiveContainer>
             </ChartCard>
