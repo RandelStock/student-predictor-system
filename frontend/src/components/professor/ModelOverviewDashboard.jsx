@@ -699,7 +699,9 @@ export default function ModelOverviewDashboard({
   const [sheetPreview, setSheetPreview] = useState([]);
 
   /* ── Derived data ── */
-  const chartData = filteredYears?.length ? filteredYears : passByYear ?? [];
+  const chartData = useMemo(() => {
+    return filteredYears?.length ? filteredYears : (passByYear ?? []);
+  }, [filteredYears, passByYear]);
 
   const stackData = useMemo(() =>
     chartData.map((d) => ({
