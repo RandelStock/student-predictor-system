@@ -353,19 +353,23 @@ export default function ProfessorPage({ onLogout }) {
             <ModelOverviewDashboard
               {...sharedProps}
               ov={ov}
+              pieData={pieData}
+              reviewPieData={reviewPieData}
+              filteredYears={filteredYears}
               passByYear={passByYear}
-              passByStrand={passByStrand}
-              passByReview={passByReview}
+              filteredReview={filteredReview}
               passByDur={passByDur}
+              modelInfo={modelInfo}
+              // — already existed —
+              passByStrand={passByStrand}
               sectionScores={sectionScores}
               weakestQ={weakestQ}
               subjectTrends={subjectTrends}
               filteredSubjectTrends={filteredSubjectTrends}
               correlation={correlation}
               scatterData={scatterData}
-              pieData={pieData}
-              reviewPieData={reviewPieData}
             />
+
           )}
 
           {activeTab === "overview" && (
