@@ -647,6 +647,19 @@ function ProgressBar({ value, color }) {
 
 function CorrelationBlock({ title, explanation, points = [], color = IIEE.blue, xLabel = "X", yLabel = "Y" }) {
   const [activeScatterIndex, setActiveScatterIndex] = useState(null);
+  if (!points || points.length === 0) {
+    return (
+      <div className="comb-corr-block">
+        <div>
+          <div className="comb-corr-title">{title}</div>
+          <p className="comb-corr-text">{explanation}</p>
+        </div>
+        <div style={{ height: 220, display: "flex", alignItems: "center", justifyContent: "center", color: "#94a3b8" }}>
+          No data available for this correlation view with current filters.
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="comb-corr-block">
       <div>
@@ -798,6 +811,23 @@ export default function ModelOverviewDashboard({
     }
     return propFilteredSubjectTrends?.length ? propFilteredSubjectTrends : subjectTrends;
   }, [selectedYear, propFilteredSubjectTrends, subjectTrends]);
+
+  // Model regression chart data for Academic signal display
+  const regressionChartData = useMemo(() => {
+    if (!modelInfo) return [];
+    return [
+      {
+        category: "Reg A",
+        r2Percent: (modelInfo.regression_a?.r2 ?? 0) * 100,
+        maeValue: modelInfo.regression_a?.mae ?? 0,
+      },
+      {
+        category: "Reg B",
+        r2Percent: (modelInfo.regression_b?.r2 ?? 0) * 100,
+        maeValue: modelInfo.regression_b?.mae ?? 0,
+      },
+    ];
+  }, [modelInfo]);
 
   const stackData = useMemo(() =>
     chartData.map((d) => ({
@@ -1194,6 +1224,20 @@ export default function ModelOverviewDashboard({
                       </div>
                     </div>
                   </div>
+
+                  <div style={{ marginTop: 16 }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: IIEE.gold, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.5px" }}>📉 Regression R² Trend</div>
+                    <ResponsiveContainer width="100%" height={140}>
+                      <LineChart data={regressionChartData} margin={{ top: 6, right: 12, left: 2, bottom: 4 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(245,197,24,0.12)" />
+                        <XAxis dataKey="category" tick={{ fill: IIEE.dimText, fontSize: 11 }} axisLine={false} tickLine={false} />
+                        <YAxis domain={[0, 100]} tick={{ fill: IIEE.dimText, fontSize: 11 }} axisLine={false} tickLine={false} />
+                        <Tooltip content={<IIEETooltip formatter={(v) => `${v.toFixed(1)}%`} />} />
+                        <Line type="monotone" dataKey="r2Percent" stroke={IIEE.orange} strokeWidth={2.2} dot={{ r: 5, fill: IIEE.orange, filter: "drop-shadow(0 2px 4px rgba(251,145,60,0.35))" }} activeDot={{ r: 7, fill: IIEE.gold, filter: "drop-shadow(0 0 10px rgba(245,197,24,0.8))" }} isAnimationActive={true} animationDuration={500} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                    <p style={{ margin: 2, fontSize: 11, color: IIEE.dimText }}>R² is shown as percentage for quick regression comparability.</p>
+                  </div>
                 </div>
               </div>
             ) : (
@@ -1268,34 +1312,7 @@ export default function ModelOverviewDashboard({
           </div>
         </SectionCard>
 
-        {/* Section 3 — External Data Integration */}
-        <SectionCard number="3" icon="🔗" title="External Data Integration" subtitle="Google Sheets read-only preview — no change to backend logic.">
-          <div className="comb-sheet-row">
-            <input
-              className="comb-sheet-input"
-              value={sheetUrl}
-              onChange={(e) => setSheetUrl(e.target.value)}
-              placeholder="Paste Google Sheets link…"
-            />
-            <button className="comb-sheet-btn" onClick={handlePreviewSheet} disabled={sheetLoading}>
-              {sheetLoading ? "Loading…" : "Preview"}
-            </button>
-          </div>
-          {sheetError && <p style={{ fontSize: 12, color: IIEE.failRed, margin: "4px 0 0" }}>{sheetError}</p>}
-          {sheetPreview.length > 0 && (
-            <div style={{ overflowX: "auto", borderRadius: 10, border: `1px solid rgba(245,197,24,0.15)`, background: "rgba(11,20,55,0.7)", padding: 10, marginTop: 10 }}>
-              <table className="comb-sheet-table">
-                <tbody>
-                  {sheetPreview.map((row, i) => (
-                    <tr key={i}>{row.map((cell, j) => <td key={j}>{cell || "—"}</td>)}</tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </SectionCard>
-
-        {/* Section 4 — Visualization & Trends */}
+        {/* Section 3 — Visualization & Trends */
         <SectionCard number="4" icon="📈" title="Data Visualization & Trends" subtitle="Monthly, yearly, and subject trend behavior with indicators.">
           <div className="comb-2col">
             <ChartCard icon="🗓️" title="Monthly Trends" subtitle="Line chart for trend continuity" blueTint
@@ -1326,44 +1343,33 @@ export default function ModelOverviewDashboard({
               </ResponsiveContainer>
             </ChartCard>
 
-            {(subjectTrends?.length ?? 0) > 0 && (
-              <ChartCard icon="📘" title="Subject Trends" subtitle="EE, MATH, ESAS trend line behavior" fullWidth blueTint
-                description="Tracks subject-level average score movement across cohort years."
-                insight="Diverging lines suggest uneven subject performance that requires targeted intervention.">
-                <ResponsiveContainer width="100%" height={240}>
-                  <LineChart data={(filteredSubjectTrends?.length ? filteredSubjectTrends : subjectTrends) ?? []} isAnimationActive={true} animationDuration={800} animationEasing="ease-in-out">
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(245,197,24,0.12)" />
-                    <XAxis dataKey="year" tick={{ fill: IIEE.dimText, fontSize: 11 }} axisLine={false} tickLine={false} />
-                    <YAxis               tick={{ fill: IIEE.dimText, fontSize: 11 }} axisLine={false} tickLine={false} />
-                    <Tooltip content={<IIEETooltip />} />
-                    <Legend iconType="circle" iconSize={9} formatter={(v) => <span style={{ color: IIEE.muted, fontSize: 12 }}>{v}</span>} />
-                    <Line dataKey="EE_avg"   name="EE"   stroke={IIEE.blue}   strokeWidth={2.5} dot={{ r: 5, fill: IIEE.blue, filter: "drop-shadow(0 2px 4px rgba(56,189,248,0.3))" }} activeDot={{ r: 8, fill: IIEE.gold, filter: "drop-shadow(0 0 10px rgba(245,197,24,0.8))" }} isAnimationActive={true} animationDuration={400} />
-                    <Line dataKey="MATH_avg" name="MATH" stroke={IIEE.indigo} strokeWidth={2.5} dot={{ r: 5, fill: IIEE.indigo, filter: "drop-shadow(0 2px 4px rgba(129,140,248,0.3))" }} activeDot={{ r: 8, fill: IIEE.gold, filter: "drop-shadow(0 0 10px rgba(245,197,24,0.8))" }} isAnimationActive={true} animationDuration={400} />
-                    <Line dataKey="ESAS_avg" name="ESAS" stroke={IIEE.teal}   strokeWidth={2.5} dot={{ r: 5, fill: IIEE.teal, filter: "drop-shadow(0 2px 4px rgba(45,212,191,0.3))" }} activeDot={{ r: 8, fill: IIEE.gold, filter: "drop-shadow(0 0 10px rgba(245,197,24,0.8))" }} isAnimationActive={true} animationDuration={400} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </ChartCard>
-            )}
+
           </div>
         </SectionCard>
 
-        {/* Section 5 — Model Reliability */}
-        <SectionCard number="5" icon="🧪" title="Model Reliability" subtitle="Predicted vs actual consistency and confidence behavior.">
+        {/* Section 4 — Model Reliability */}
+        <SectionCard number="4" icon="🧪" title="Model Reliability" subtitle="Predicted vs actual consistency and confidence behavior.">
           <div className="comb-reliability-banner">{reliabilityText}</div>
           <ChartCard icon="🎯" title="Predicted vs Actual" subtitle="Scatter — relationship / consistency" blueTint
             description="Each point represents one student record — X axis is actual PRC rating, Y axis is model prediction."
             insight="Points close to the diagonal reference line indicate high model accuracy.">
-            <ResponsiveContainer width="100%" height={260}>
-              <ScatterChart isAnimationActive={true} animationDuration={600}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(245,197,24,0.12)" />
-                <XAxis dataKey="actual"    tick={{ fill: IIEE.dimText, fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis dataKey="predicted" tick={{ fill: IIEE.dimText, fontSize: 11 }} axisLine={false} tickLine={false} />
-                <Tooltip content={<IIEETooltip />} />
-                <ReferenceLine segment={[{ x: 40, y: 40 }, { x: 100, y: 100 }]}
-                  stroke="rgba(245,197,24,0.3)" strokeDasharray="5 4" />
-                <Scatter data={scatterData ?? []} fill={IIEE.passGreen} opacity={0.75} />
-              </ScatterChart>
-            </ResponsiveContainer>
+            {(!scatterData || scatterData.length === 0) ? (
+              <div style={{ height: 260, display: "flex", alignItems: "center", justifyContent: "center", color: IIEE.dimText }}>
+                No data returned for predicted vs actual scatter (try year/month filter updates).
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={260}>
+                <ScatterChart isAnimationActive={true} animationDuration={600}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(245,197,24,0.12)" />
+                  <XAxis dataKey="actual"    tick={{ fill: IIEE.dimText, fontSize: 11 }} axisLine={false} tickLine={false} />
+                  <YAxis dataKey="predicted" tick={{ fill: IIEE.dimText, fontSize: 11 }} axisLine={false} tickLine={false} />
+                  <Tooltip content={<IIEETooltip />} />
+                  <ReferenceLine segment={[{ x: 40, y: 40 }, { x: 100, y: 100 }]}
+                    stroke="rgba(245,197,24,0.3)" strokeDasharray="5 4" />
+                  <Scatter data={scatterData} fill={IIEE.passGreen} opacity={0.75} />
+                </ScatterChart>
+              </ResponsiveContainer>
+            )}
           </ChartCard>
         </SectionCard>
 
@@ -1463,8 +1469,8 @@ export default function ModelOverviewDashboard({
           </div>
         </SectionCard>
 
-        {/* Section 8 — Correlation */}
-        <SectionCard number="8" icon="🧮" title="Correlation Analysis Module" subtitle="One correlation per section — explanation left, chart right.">
+        {/* Section 7 — Correlation */}
+        <SectionCard number="7" icon="🧮" title="Correlation Analysis Module" subtitle="One correlation per section — explanation left, chart right.">
           <CorrelationBlock
             title="GWA vs Predicted Rating"
             explanation="Lower GWA (better academic standing) should generally align with stronger predicted scores. This validates GWA as the primary model predictor."

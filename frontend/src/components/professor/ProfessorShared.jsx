@@ -287,13 +287,19 @@ export function FilterPanel({ filters, onChange, availableYears = [] }) {
       <div>
         <label style={labelStyle}>📅 Year</label>
         <select
-          style={inputStyle}
+          style={{
+            ...inputStyle,
+            background: "rgba(15,26,46,0.75)",
+            color: "#f1f5f9",
+            borderColor: "rgba(56,189,248,0.35)",
+            appearance: "none",
+          }}
           value={filters.year || ""}
           onChange={(e) => onChange({ ...filters, year: e.target.value })}
         >
-          <option value="">All Years</option>
+          <option value="" style={{ background: "#0f1a2e", color: "#f1f5f9" }}>All Years</option>
           {availableYears.map((y) => (
-            <option key={y} value={y}>
+            <option key={y} value={y} style={{ background: "#0f1a2e", color: "#f1f5f9" }}>
               {y}
             </option>
           ))}
@@ -303,13 +309,19 @@ export function FilterPanel({ filters, onChange, availableYears = [] }) {
       <div>
         <label style={labelStyle}>🗓 Month</label>
         <select
-          style={inputStyle}
+          style={{
+            ...inputStyle,
+            background: "rgba(15,26,46,0.75)",
+            color: "#f1f5f9",
+            borderColor: "rgba(56,189,248,0.35)",
+            appearance: "none",
+          }}
           value={filters.month || ""}
           onChange={(e) => onChange({ ...filters, month: e.target.value })}
         >
-          <option value="">All Months</option>
+          <option value="" style={{ background: "#0f1a2e", color: "#f1f5f9" }}>All Months</option>
           {MONTH_NAMES.map((m, i) => (
-            <option key={i} value={i + 1}>
+            <option key={i} value={i + 1} style={{ background: "#0f1a2e", color: "#f1f5f9" }}>
               {m}
             </option>
           ))}
