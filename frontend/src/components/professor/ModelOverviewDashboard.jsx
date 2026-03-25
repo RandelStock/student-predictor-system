@@ -652,157 +652,6 @@ Focus on: which period consistently performs better, any alarming drops, and rec
   );
 }
 
-/* ─── FIX 2: Subject Score Trends ────────────────────────────── */
-function SubjectTrendsSection({ subjectTrend, selectedYear, kpi }) {
-  // Safety: ensure all values are valid numbers
-  const safeData = useMemo(() =>
-    (subjectTrend || []).map((d) => ({
-      year: String(d.year || d.label || ""),
-      EE:   Number(d.EE)   > 0 ? Number(d.EE)   : null,
-      MATH: Number(d.MATH) > 0 ? Number(d.MATH) : null,
-      ESAS: Number(d.ESAS) > 0 ? Number(d.ESAS) : null,
-    })).filter((d) => d.year),
-  [subjectTrend]);
-
-  const displayData = useMemo(() => {
-    if (!selectedYear) return safeData;
-    const filtered = safeData.filter((d) => String(d.year) === String(selectedYear));
-    return filtered.length ? filtered : safeData;
-  }, [safeData, selectedYear]);
-
-  const hasData = displayData.some((d) => d.EE || d.MATH || d.ESAS);
-
-  const aiPrompt = `Analyze the PRC REE subject score trends across years for SLSU students. 
-The subjects are: EE (Electrical Engineering), MATH (Mathematics), and ESAS (Engineering Sciences and Allied Subjects).
-Comment on which subject is the strongest predictor of passing, which has the most variance, and what faculty should prioritize.`;
-  const aiCacheKey = `subject-trends-${selectedYear || "all"}-${JSON.stringify(displayData).slice(0, 100)}`;
-
-  if (!hasData) {
-    return (
-      <div style={{ padding: 24, textAlign: "center", color: IIEE.dimText, fontSize: 12 }}>
-        No subject score data. Ensure <code>subjectByYear</code> contains EE_avg, MATH_avg, ESAS_avg fields with non-zero values.
-      </div>
-    );
-  }
-
-  // Build table data for single-year view
-  const subjects = [
-    { key: "EE",   label: "Electrical Engineering",              color: IIEE.blue    },
-    { key: "MATH", label: "Mathematics",                         color: IIEE.passGreen },
-    { key: "ESAS", label: "Engineering Sciences & Allied Subj.", color: IIEE.orange   },
-  ];
-
-  if (selectedYear && displayData.length === 1) {
-    const row = displayData[0];
-    return (
-      <div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12, marginBottom: 16 }}>
-          {subjects.map((s) => (
-            <div key={s.key} style={{ background: "rgba(255,255,255,.03)", border: `1px solid ${s.color}30`, borderRadius: 12, padding: "16px 14px", textAlign: "center" }}>
-              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: IIEE.dimText, marginBottom: 8 }}>{s.key}</div>
-              <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 36, fontWeight: 900, color: s.color, lineHeight: 1 }}>
-                {row[s.key] != null ? Number(row[s.key]).toFixed(1) : "—"}
-              </div>
-              <div style={{ fontSize: 10, color: IIEE.dimText, marginTop: 4 }}>{s.label}</div>
-              <div style={{ marginTop: 8 }}>
-                <div style={{ height: 4, background: "rgba(255,255,255,.06)", borderRadius: 99, overflow: "hidden" }}>
-                  <div style={{ height: "100%", borderRadius: 99, background: s.color, width: `${Math.min((row[s.key] / 100) * 100, 100)}%`, transition: "width .6s" }} />
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-        <ResponsiveContainer width="100%" height={160}>
-          <BarChart data={subjects.map((s) => ({ name: s.key, value: row[s.key] ?? 0, color: s.color }))} margin={{ top: 8, right: 16, left: -8, bottom: 4 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(245,197,24,.1)" />
-            <XAxis dataKey="name" tick={{ fill: IIEE.dimText, fontSize: 12 }} axisLine={false} tickLine={false} />
-            <YAxis domain={[0, 100]} tick={{ fill: IIEE.dimText, fontSize: 11 }} axisLine={false} tickLine={false} unit="pts" />
-            <Tooltip content={<Tip fmt={(v) => `${Number(v).toFixed(1)} pts`} />} />
-            <ReferenceLine y={70} stroke={IIEE.gold} strokeDasharray="4 3" label={{ value: "Pass (70)", position: "insideTopRight", fill: IIEE.gold, fontSize: 10 }} />
-            <Bar dataKey="value" name="Score" radius={[6,6,0,0]}>
-              {subjects.map((s, i) => <Cell key={i} fill={s.color} />)}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-        <AIInsight prompt={aiPrompt} data={{ year: selectedYear, scores: row }} cacheKey={aiCacheKey} />
-      </div>
-    );
-  }
-
-  // Multi-year: grouped bar + line trend
-  return (
-    <div>
-      {/* Subject summary table */}
-      <table className="subject-table" style={{ marginBottom: 16 }}>
-        <thead>
-          <tr>
-            <th>Year</th>
-            <th style={{ color: IIEE.blue }}>EE</th>
-            <th style={{ color: IIEE.passGreen }}>MATH</th>
-            <th style={{ color: IIEE.orange }}>ESAS</th>
-            <th>Best Subject</th>
-          </tr>
-        </thead>
-        <tbody>
-          {displayData.map((d, i) => {
-            const vals = { EE: d.EE, MATH: d.MATH, ESAS: d.ESAS };
-            const best = Object.entries(vals).filter(([,v]) => v != null).sort(([,a],[,b]) => b - a)[0];
-            return (
-              <tr key={i}>
-                <td style={{ fontWeight: 700, color: IIEE.white }}>{d.year}</td>
-                <td style={{ color: IIEE.blue, fontWeight: 700 }}>{d.EE != null ? Number(d.EE).toFixed(1) : "—"}</td>
-                <td style={{ color: IIEE.passGreen, fontWeight: 700 }}>{d.MATH != null ? Number(d.MATH).toFixed(1) : "—"}</td>
-                <td style={{ color: IIEE.orange, fontWeight: 700 }}>{d.ESAS != null ? Number(d.ESAS).toFixed(1) : "—"}</td>
-                <td style={{ color: IIEE.gold, fontWeight: 600, fontSize: 11 }}>
-                  {best ? `${best[0]} (${Number(best[1]).toFixed(1)})` : "—"}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-
-      {/* Grouped bar chart */}
-      <ResponsiveContainer width="100%" height={220}>
-        <BarChart data={displayData} margin={{ top: 8, right: 16, left: -4, bottom: 4 }} barCategoryGap="25%">
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(245,197,24,.10)" />
-          <XAxis dataKey="year" tick={{ fill: IIEE.dimText, fontSize: 11 }} axisLine={false} tickLine={false} />
-          <YAxis domain={[50, 90]} tick={{ fill: IIEE.dimText, fontSize: 11 }} axisLine={false} tickLine={false} unit="pts" />
-          <Tooltip content={<Tip fmt={(v) => `${Number(v).toFixed(1)} pts`} />} />
-          <ReferenceLine y={70} stroke={IIEE.gold} strokeDasharray="4 3"
-            label={{ value: "Pass (70)", position: "insideTopRight", fill: IIEE.gold, fontSize: 10 }} />
-          <Legend iconType="circle" iconSize={9}
-            formatter={(v) => <span style={{ color: IIEE.muted, fontSize: 12 }}>{v}</span>} />
-          <Bar dataKey="EE"   name="EE"   fill={IIEE.blue}       radius={[4,4,0,0]} maxBarSize={28} />
-          <Bar dataKey="MATH" name="MATH" fill={IIEE.passGreen}  radius={[4,4,0,0]} maxBarSize={28} />
-          <Bar dataKey="ESAS" name="ESAS" fill={IIEE.orange}     radius={[4,4,0,0]} maxBarSize={28} />
-        </BarChart>
-      </ResponsiveContainer>
-
-      {/* Line trend */}
-      <div style={{ marginTop: 14 }}>
-        <div style={{ fontSize: 11, color: IIEE.dimText, textTransform: "uppercase", letterSpacing: ".08em", marginBottom: 8 }}>
-          Score Trend Lines
-        </div>
-        <ResponsiveContainer width="100%" height={140}>
-          <LineChart data={displayData} margin={{ top: 4, right: 16, left: -4, bottom: 4 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(245,197,24,.08)" />
-            <XAxis dataKey="year" tick={{ fill: IIEE.dimText, fontSize: 10 }} axisLine={false} tickLine={false} />
-            <YAxis domain={[50, 90]} tick={{ fill: IIEE.dimText, fontSize: 10 }} axisLine={false} tickLine={false} unit="pts" />
-            <Tooltip content={<Tip fmt={(v) => `${Number(v).toFixed(1)} pts`} />} />
-            <ReferenceLine y={70} stroke={IIEE.gold} strokeDasharray="4 3" />
-            <Line type="monotone" dataKey="EE"   stroke={IIEE.blue}      strokeWidth={2.5} dot={{ r: 4 }} activeDot={{ r: 7, fill: IIEE.gold }} connectNulls />
-            <Line type="monotone" dataKey="MATH" stroke={IIEE.passGreen} strokeWidth={2.5} dot={{ r: 4 }} activeDot={{ r: 7, fill: IIEE.gold }} connectNulls />
-            <Line type="monotone" dataKey="ESAS" stroke={IIEE.orange}    strokeWidth={2.5} dot={{ r: 4 }} activeDot={{ r: 7, fill: IIEE.gold }} connectNulls />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
-
-      <AIInsight prompt={aiPrompt} data={displayData} cacheKey={aiCacheKey} />
-    </div>
-  );
-}
-
 /* ─── FIX 3: Predicted vs Actual (uses test2025 data) ────────── */
 function PredictedActualSection({ scatterData: rawScatter, modelInfo }) {
   // Build safe scatter data — works whether from scatterData prop OR test2025 evaluation
@@ -929,131 +778,6 @@ function PredictedActualSection({ scatterData: rawScatter, modelInfo }) {
   );
 }
 
-/* ─── FIX 4: Survey Section Visualization ────────────────────── */
-function SurveySectionViz({ sectionScores }) {
-  const data = useMemo(() => {
-    const raw = sectionScores ?? [];
-    return raw
-      .filter((s) => s && s.label)
-      .map((s) => ({
-        section:  String(s.label || s.section || ""),
-        pass_avg: Number(s.pass_avg ?? s.passer_avg ?? 0),
-        fail_avg: Number(s.fail_avg ?? s.failer_avg ?? 0),
-        items:    s.items ?? 0,
-      }))
-      .filter((s) => s.section && (s.pass_avg > 0 || s.fail_avg > 0));
-  }, [sectionScores]);
-
-  const hasData = data.length > 0;
-
-  if (!hasData) {
-    return (
-      <div style={{ padding: 24, textAlign: "center", color: IIEE.dimText, fontSize: 12 }}>
-        No section score data. Ensure <code>sectionScores</code> prop has items with <code>label</code>, <code>pass_avg</code>, <code>fail_avg</code>.
-      </div>
-    );
-  }
-
-  // Compute scale — Likert 1-4, normalize to 0-100 for bar widths
-  const maxVal = Math.max(...data.map((d) => Math.max(d.pass_avg, d.fail_avg)), 4);
-  const toWidth = (v) => `${(v / maxVal) * 100}%`;
-
-  return (
-    <div>
-      {/* Custom side-by-side progress bars — most reliable visualization */}
-      <div className="survey-legend">
-        <div className="survey-legend-item">
-          <div className="survey-legend-dot" style={{ background: IIEE.passGreen }} />
-          <span>Passers avg (lower = more agreement)</span>
-        </div>
-        <div className="survey-legend-item">
-          <div className="survey-legend-dot" style={{ background: IIEE.failRed }} />
-          <span>Failers avg</span>
-        </div>
-      </div>
-
-      {data.map((s, i) => (
-        <div key={i} className="survey-section-row">
-          <div className="survey-section-label">
-            <span className="survey-section-name">{s.section}</span>
-            <span className="survey-section-vals">
-              <span style={{ color: IIEE.passGreen }}>{s.pass_avg.toFixed(2)}</span>
-              <span style={{ color: IIEE.dimText }}> vs </span>
-              <span style={{ color: IIEE.failRed }}>{s.fail_avg.toFixed(2)}</span>
-            </span>
-          </div>
-          {/* Pass bar */}
-          <div className="survey-track" style={{ marginBottom: 2 }}>
-            <div className="survey-bar-pass" style={{ width: toWidth(s.pass_avg) }} />
-          </div>
-          {/* Fail bar */}
-          <div className="survey-track">
-            <div className="survey-bar-fail" style={{ width: toWidth(s.fail_avg) }} />
-          </div>
-        </div>
-      ))}
-
-      {/* Also render a proper recharts bar chart as secondary view */}
-      <div style={{ marginTop: 20 }}>
-        <div style={{ fontSize: 11, color: IIEE.dimText, textTransform: "uppercase", letterSpacing: ".08em", marginBottom: 8 }}>
-          Bar Chart View — Passers vs Failers by Section
-        </div>
-        <ResponsiveContainer width="100%" height={Math.max(data.length * 32 + 60, 200)}>
-          <BarChart
-            data={data}
-            layout="vertical"
-            margin={{ top: 4, right: 32, left: 90, bottom: 4 }}
-            barCategoryGap="20%"
-          >
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(245,197,24,.08)" horizontal={false} />
-            <XAxis
-              type="number"
-              domain={[1, 4]}
-              tick={{ fill: IIEE.dimText, fontSize: 10 }}
-              axisLine={false} tickLine={false}
-              tickCount={4}
-            />
-            <YAxis
-              type="category"
-              dataKey="section"
-              tick={{ fill: IIEE.muted, fontSize: 10 }}
-              axisLine={false} tickLine={false}
-              width={85}
-            />
-            <Tooltip content={<Tip fmt={(v) => `${Number(v).toFixed(2)} avg`} />} />
-            <Legend
-              iconType="circle" iconSize={9}
-              formatter={(v) => <span style={{ color: IIEE.muted, fontSize: 11 }}>{v}</span>}
-            />
-            <Bar dataKey="pass_avg" name="Passers" fill={IIEE.passGreen} radius={[0,4,4,0]} barSize={9} />
-            <Bar dataKey="fail_avg" name="Failers" fill={IIEE.failRed}   radius={[0,4,4,0]} barSize={9} />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-
-      {/* Radar as tertiary — only if data > 3 sections */}
-      {data.length >= 4 && (
-        <div style={{ marginTop: 20 }}>
-          <div style={{ fontSize: 11, color: IIEE.dimText, textTransform: "uppercase", letterSpacing: ".08em", marginBottom: 8 }}>
-            Radar View
-          </div>
-          <ResponsiveContainer width="100%" height={280}>
-            <RadarChart data={data} margin={{ top: 10, right: 20, left: 20, bottom: 10 }}>
-              <PolarGrid stroke="rgba(245,197,24,.15)" />
-              <PolarAngleAxis dataKey="section" tick={{ fill: IIEE.muted, fontSize: 10 }} />
-              <Radar name="Passers" dataKey="pass_avg" stroke={IIEE.passGreen} fill={IIEE.passGreen} fillOpacity={0.25} strokeWidth={2} />
-              <Radar name="Failers" dataKey="fail_avg" stroke={IIEE.failRed}   fill={IIEE.failRed}   fillOpacity={0.15} strokeWidth={2} />
-              <Legend iconType="circle" iconSize={9}
-                formatter={(v) => <span style={{ color: IIEE.muted, fontSize: 12 }}>{v}</span>} />
-              <Tooltip content={<Tip fmt={(v) => `${Number(v).toFixed(2)} avg`} />} />
-            </RadarChart>
-          </ResponsiveContainer>
-        </div>
-      )}
-    </div>
-  );
-}
-
 /* ═══════════════════════════════════════════════════════════════
    MAIN COMPONENT
 ═══════════════════════════════════════════════════════════════ */
@@ -1111,20 +835,6 @@ export default function ModelOverviewDashboard({
     }),
   [displayRows]);
 
-  const subjectTrend = useMemo(() => {
-    const rows = subjectByYear ?? [];
-    const toNum = (v) => {
-      const n = Number(v);
-      return Number.isFinite(n) ? n : null;
-    };
-    return rows.map((d) => ({
-      year: String(d.label || d.year || ""),
-      EE:   toNum(d.EE_avg   ?? d.EE_Avg   ?? d.EE),
-      MATH: toNum(d.MATH_avg ?? d.MATH_Avg ?? d.MATH),
-      ESAS: toNum(d.ESAS_avg ?? d.ESAS_Avg ?? d.ESAS),
-    }));
-  }, [subjectByYear]);
-
   /* Period data — respect period and year filters */
   const periodData = useMemo(() => {
     const base = passByPeriod ?? [];
@@ -1137,15 +847,6 @@ export default function ModelOverviewDashboard({
     return base;
   }, [passByPeriod, dashFilters]);
 
-  /* Survey radar */
-  const radarData = useMemo(() =>
-    (sectionScores ?? []).map((s) => ({
-      section:  s.label,
-      Passers:  Number(s.pass_avg ?? 0),
-      Failers:  Number(s.fail_avg ?? 0),
-    })),
-  [sectionScores]);
-
   const scatter = useMemo(() => scatterData ?? [], [scatterData]);
 
   const regTrend = useMemo(() => {
@@ -1155,21 +856,6 @@ export default function ModelOverviewDashboard({
       { model: "Reg B", r2: (modelInfo.regression_b?.r2 ?? 0) * 100, label: "GWA+Survey" },
     ];
   }, [modelInfo]);
-
-  const strandData = useMemo(() =>
-    (passByStrand ?? []).map((s) => ({ name: s.label, passRate: Number(s.pass_rate ?? 0), total: s.total })),
-  [passByStrand]);
-
-  const durData = useMemo(() => {
-    const raw = passByDur ?? [];
-    const merged = {};
-    raw.forEach((d) => {
-      const key = d.label?.trim().replace(/\s+/g, " ");
-      if (!merged[key]) merged[key] = { ...d, label: key };
-      else merged[key].pass_rate = (merged[key].pass_rate + d.pass_rate) / 2;
-    });
-    return Object.values(merged).sort((a, b) => a.pass_rate - b.pass_rate);
-  }, [passByDur]);
 
   const weakAreas = useMemo(() => (weakestQ ?? []).slice(0, 6), [weakestQ]);
 
