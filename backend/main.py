@@ -5,10 +5,30 @@ Models loaded from ree_survey_model.pkl:
   - regressor_a    → PRC rating prediction (all features)
   - regressor_b    → PRC rating prediction (GWA + survey only)
 
+DATA ARCHITECTURE (matches train_model.py)
+------------------------------------------
+DATA_MODEL.xlsx     60 rows, 98 cols, 2022-2025
+                    EE + MATH + ESAS + GWA + full survey + PRC result
+                    → PRIMARY training source (has survey answers)
+
+DATA_SYSTEM.xlsx    333 rows, 8 cols, 2022-2025
+                    EE + MATH + ESAS + GWA + PRC result, NO survey
+                    → Training only (2022-2024 slice for Reg-A)
+                    → NOT used for dashboard analytics
+
+DATA_TEST.xlsx      21 rows, 98 cols, 2025 Apr+Aug only
+                    EE + MATH + ESAS + GWA + full survey + PRC result
+                    → Held-out evaluation set
+
+DATA_UPCOMING.xlsx  333 rows, 8 cols, 2022-2025
+                    EE + MATH + ESAS + GWA + PRC result, NO survey
+                    → SINGLE SOURCE OF TRUTH for all dashboard analytics
+                    → Powers all /analytics, /correlation, KPI endpoints
+
 Endpoints:
   POST /predict               → individual student prediction
   POST /ai-recommend          → Groq AI section recommendations
-  GET  /analytics             → institutional dashboard data (merged 333 rows)
+  GET  /analytics             → institutional dashboard data (DATA_UPCOMING 333 rows)
   GET  /model-info            → model evaluation metrics
   GET  /correlation           → Pearson correlation matrix
   GET  /admin/attempts        → paginated prediction attempts from DB
@@ -143,6 +163,11 @@ try:
     print(f"  Regression B R2:          {EVAL['reg_b_r2']:.4f}")
     print(f"  Features (all):           {len(FEATURES_ALL)}")
     print(f"  Features (no subject):    {len(FEATURES_NOSUB)}")
+    # Log dataset sizes from bundle if available
+    print(f"  Dataset size (MODEL):     {bundle.get('dataset_size', 'N/A')} rows")
+    print(f"  Dataset size (SYSTEM):    {bundle.get('dataset_size_system', 'N/A')} rows")
+    print(f"  Dataset size (TEST):      {bundle.get('dataset_size_test', 'N/A')} rows")
+    print(f"  Reg-A train size:         {bundle.get('dataset_size_reg_a_train', 'N/A')} rows")
 except Exception as e:
     raise RuntimeError(f"Could not load ree_survey_model.pkl: {e}")
 
@@ -156,14 +181,21 @@ else:
 
 # ══════════════════════════════════════════════════════════════════════════════
 # ANALYTICS FILE PATHS
-# Data strategy:
-#   DATA_SYSTEM (250 rows, 2022-2024) + DATA_TEST (83 rows, 2025) = 333 examinees
-#   DATA_MODEL  (60 rows, 2022-2024) + DATA_TEST (83 rows, 2025)  = survey analyses
+#
+# Data strategy (matches train_model.py architecture):
+#   DATA_UPCOMING (333 rows, 2022-2025) → SINGLE SOURCE OF TRUTH for all
+#       dashboard analytics. This is the complete, deduplicated institutional
+#       dataset. DO NOT combine DATA_SYSTEM + DATA_TEST for analytics.
+#
+#   DATA_MODEL  (60 rows, 2022-2025) + DATA_TEST (21 rows, 2025) = 81 rows
+#       → survey-based analyses only (section_scores, weakest_questions)
+#
+#   DATA_TEST (21 rows, 2025) → held-out evaluation only
 # ══════════════════════════════════════════════════════════════════════════════
 
-FILE_MODEL  = "DATA_MODEL.xlsx"   # 60 rows, 2022-2024, full survey
-FILE_SYSTEM = "DATA_SYSTEM.xlsx"  # 250 rows, 2022-2024, no survey
-FILE_TEST   = "DATA_TEST.xlsx"    # 83 rows, 2025, full survey
+FILE_UPCOMING = "DATA_UPCOMING.xlsx"  # 333 rows, 2022-2025 — dashboard analytics source
+FILE_MODEL    = "DATA_MODEL.xlsx"     # 60 rows, 2022-2025, full survey
+FILE_TEST     = "DATA_TEST.xlsx"      # 21 rows, 2025 Apr+Aug, full survey
 
 COL_PASSED       = "PASSED / FAILED-RETAKE"
 COL_TOTAL_RATING = "TOTAL RATING"
@@ -301,11 +333,16 @@ def _normalise_year(df: pd.DataFrame) -> pd.DataFrame:
     """Extract 4-digit year from whatever format Excel stored it in."""
     col = next((c for c in ["YEAR", "Year", "year"] if c in df.columns), None)
     if col:
-        df[col] = (
-            df[col].astype(str)
-            .str.extract(r"(\d{4})")[0]
-        )
-        df[col] = pd.to_numeric(df[col], errors="coerce")
+        # Handle date strings like "2022-04-01" or plain "2022"
+        parsed = pd.to_datetime(df[col], errors="coerce")
+        if parsed.notna().sum() > len(df) * 0.5:
+            df[col] = parsed.dt.year.astype("Int64")
+        else:
+            df[col] = (
+                df[col].astype(str)
+                .str.extract(r"(\d{4})")[0]
+            )
+            df[col] = pd.to_numeric(df[col], errors="coerce")
         df = df[df[col].notna() & (df[col] > 0)]
         df[col] = df[col].astype(int)
         if col != COL_YEAR:
@@ -322,11 +359,31 @@ def _normalise_passed(df: pd.DataFrame) -> pd.DataFrame:
 
 def _load_main_df() -> pd.DataFrame:
     """
-    250 rows DATA_SYSTEM (2022-2024) + 83 rows DATA_TEST (2025) = 333 rows.
-    Used for all overview/KPI/year-trend calculations.
+    Load DATA_UPCOMING.xlsx — 333 rows (2022-2025).
+    This is the SINGLE SOURCE OF TRUTH for all dashboard/analytics KPIs.
+    DO NOT combine DATA_SYSTEM + DATA_TEST here — that causes duplicate
+    2025 rows and incorrect totals.
+
+    Falls back to DATA_SYSTEM.xlsx if DATA_UPCOMING is not found,
+    with a warning logged to the console.
     """
+    # Primary: DATA_UPCOMING (333 rows, all years, no survey)
+    for path, label in [(FILE_UPCOMING, "upcoming")]:
+        try:
+            d = pd.read_excel(path, sheet_name=0)
+            d.columns = d.columns.str.strip()
+            d["_source"] = label
+            d = _normalise_year(d)
+            d = _normalise_passed(d)
+            print(f"[analytics] Loaded {FILE_UPCOMING}: {len(d)} rows")
+            return d
+        except Exception as e:
+            print(f"[analytics] WARNING: Could not load {FILE_UPCOMING}: {e}")
+            print(f"[analytics] Falling back to DATA_SYSTEM + DATA_TEST (may produce duplicate 2025 rows)")
+
+    # Fallback: combine DATA_SYSTEM + DATA_TEST (legacy behaviour)
     frames = []
-    for path, label in [(FILE_SYSTEM, "system"), (FILE_TEST, "test")]:
+    for path, label in [("DATA_SYSTEM.xlsx", "system"), (FILE_TEST, "test")]:
         try:
             d = pd.read_excel(path, sheet_name=0)
             d.columns = d.columns.str.strip()
@@ -344,8 +401,9 @@ def _load_main_df() -> pd.DataFrame:
 
 def _load_survey_df() -> pd.DataFrame:
     """
-    60 rows DATA_MODEL (2022-2024) + 83 rows DATA_TEST (2025) = 143 rows.
-    Used only for survey-based analyses (section_scores, weakest_questions).
+    60 rows DATA_MODEL (2022-2025) + 21 rows DATA_TEST (2025) = 81 rows.
+    Used ONLY for survey-based analyses: section_scores, weakest_questions.
+    Both files have the full survey columns.
     """
     frames = []
     for path in [FILE_MODEL, FILE_TEST]:
@@ -717,7 +775,7 @@ def predict(req: PredictRequest, current_user: User = Depends(get_current_user))
 
 # ══════════════════════════════════════════════════════════════════════════════
 # STUDENT DB HISTORY (Phase 5 — DB-based student module)
-# ══════════════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════════════════
 @app.get("/student/attempts")
 def student_attempts(
     current_user: User = Depends(get_current_user),
@@ -800,10 +858,19 @@ def _rating_label(score: float) -> str:
 @app.get("/model-info")
 def model_info():
     return {
-        "dataset_size":   bundle["dataset_size"],
-        "pass_count":     bundle["pass_count"],
-        "fail_count":     bundle["fail_count"],
-        "passing_score":  PASSING_SCORE,
+        # Primary training dataset (DATA_MODEL, 60 rows with survey)
+        "dataset_size":               bundle["dataset_size"],
+        # System/upcoming dataset (333 rows, full institution 2022-2025)
+        "dataset_size_system":        bundle.get("dataset_size_system", 333),
+        # 2022-2024 slice used for Reg-A training (250 rows)
+        "dataset_size_system_train":  bundle.get("dataset_size_system_train", 250),
+        # Held-out test set (DATA_TEST, 21 rows, 2025)
+        "dataset_size_test":          bundle.get("dataset_size_test", 21),
+        # Combined Reg-A train rows (MODEL 60 + SYSTEM 2022-2024 250 = 310)
+        "dataset_size_reg_a_train":   bundle.get("dataset_size_reg_a_train", 310),
+        "pass_count":                 bundle["pass_count"],
+        "fail_count":                 bundle["fail_count"],
+        "passing_score":              PASSING_SCORE,
         "classification": {
             "accuracy":  round(EVAL["clf_accuracy"], 4),
             "precision": round(EVAL["clf_precision"], 4),
@@ -813,19 +880,21 @@ def model_info():
             "cv_f1":     round(EVAL["clf_cv_f1_mean"], 4),
         },
         "regression_a": {
-            "description": "All features including subject scores",
+            "description": f"EE+MATH+ESAS+GWA ({bundle.get('dataset_size_reg_a_train', 310)} train rows: MODEL 60 + SYSTEM 2022-2024 250)",
             "mae":  round(EVAL["reg_a_mae"], 4),
             "rmse": round(EVAL["reg_a_rmse"], 4),
             "mse":  round(float(EVAL["reg_a_rmse"]) ** 2, 4),
             "r2":   round(EVAL["reg_a_r2"], 4),
         },
         "regression_b": {
-            "description": "GWA + survey features only (no subject scores)",
+            "description": "GWA + survey features only (no subject scores, 60 train rows)",
             "mae":  round(EVAL["reg_b_mae"], 4),
             "rmse": round(EVAL["reg_b_rmse"], 4),
             "mse":  round(float(EVAL["reg_b_rmse"]) ** 2, 4),
             "r2":   round(EVAL["reg_b_r2"], 4),
         },
+        "test_year": EVAL.get("test_year", 2025),
+        "test_size": EVAL.get("test_size", 21),
     }
 
 
@@ -948,13 +1017,15 @@ Start with a 1-sentence overall assessment, then list action steps."""
 
 @app.get("/analytics")
 def analytics():
-    # ── main dataframe: 333 rows (250 system 2022-2024 + 83 test 2025) ───────
+    # ── main dataframe: DATA_UPCOMING 333 rows (2022-2025) ───────────────────
+    # This is the single source of truth for all institutional KPIs.
     try:
         df = _load_main_df()
     except Exception as e:
         return {"error": f"Could not load dataset: {e}"}
 
-    # ── survey dataframe: 143 rows (60 model + 83 test) ──────────────────────
+    # ── survey dataframe: DATA_MODEL (60) + DATA_TEST (21) = 81 rows ─────────
+    # Used only for survey-based analyses (section_scores, weakest_questions).
     try:
         df_survey = _load_survey_df()
     except Exception:
@@ -986,11 +1057,11 @@ def analytics():
         "avg_rating_passers": round(float(passers[COL_TOTAL_RATING].mean()), 2) if COL_TOTAL_RATING in df.columns and len(passers) else None,
         "avg_rating_failers": round(float(failers[COL_TOTAL_RATING].mean()), 2) if COL_TOTAL_RATING in df.columns and len(failers) else None,
         "passing_score":      70,
-        "year_breakdown":     year_breakdown,   # ← new: per-year pass/fail counts
-        "data_sources": {
-            "system_rows": int((df["_source"] == "system").sum()) if "_source" in df.columns else 0,
-            "test_rows":   int((df["_source"] == "test").sum())   if "_source" in df.columns else 0,
-        },
+        "year_breakdown":     year_breakdown,
+        "data_source":        "DATA_UPCOMING (333 rows, 2022-2025)",
+        # Survey subset info for transparency
+        "survey_rows":        len(df_survey) if not df_survey.empty else 0,
+        "survey_source":      "DATA_MODEL (60) + DATA_TEST (21) = 81 rows",
     }
 
     # ── pass rate by year ─────────────────────────────────────────────────────
@@ -1024,8 +1095,10 @@ def analytics():
             cur["MATH_delta"] = round(cur["MATH_avg"] - prev["MATH_avg"], 2)
             cur["ESAS_delta"] = round(cur["ESAS_avg"] - prev["ESAS_avg"], 2)
 
-    # ── strand / review / duration (from df_survey which has those cols) ──────
-    df_strand = df_survey if (COL_STRAND in (df_survey.columns if not df_survey.empty else [])) else df
+    # ── strand / review / duration — sourced from df_survey (has those cols) ─
+    # df_survey (DATA_MODEL 60 + DATA_TEST 21 = 81 rows) has the survey columns
+    # that DATA_UPCOMING lacks. Fall back to df only if column happens to exist there.
+    df_strand = df_survey if (not df_survey.empty and COL_STRAND in df_survey.columns) else df
 
     pass_rate_by_strand = []
     if COL_STRAND in df_strand.columns and not df_strand.empty:
@@ -1040,7 +1113,7 @@ def analytics():
         pass_rate_by_strand.sort(key=lambda x: -x["pass_rate"])
 
     pass_rate_by_review = []
-    df_rev = df_survey if (COL_REVIEW in (df_survey.columns if not df_survey.empty else [])) else df
+    df_rev = df_survey if (not df_survey.empty and COL_REVIEW in df_survey.columns) else df
     if COL_REVIEW in df_rev.columns and not df_rev.empty:
         df_rev = df_rev.copy()
         df_rev["review_norm"] = (
@@ -1056,7 +1129,7 @@ def analytics():
         pass_rate_by_review.sort(key=lambda x: -x["pass_rate"])
 
     pass_rate_by_duration = []
-    df_dur = df_survey if (COL_DURATION in (df_survey.columns if not df_survey.empty else [])) else df
+    df_dur = df_survey if (not df_survey.empty and COL_DURATION in df_survey.columns) else df
     if COL_DURATION in df_dur.columns and not df_dur.empty:
         df_dur = df_dur.copy()
         dur_map = {
@@ -1104,7 +1177,7 @@ def analytics():
     except Exception:
         pass
 
-    # ── section scores (from survey df) ──────────────────────────────────────
+    # ── section scores (from survey df: DATA_MODEL 60 + DATA_TEST 21) ────────
     section_scores = []
     if not df_survey.empty:
         sv_passers = df_survey[df_survey["passed"] == 1]
@@ -1127,7 +1200,7 @@ def analytics():
                 "fail":  _section_score(sv_failers, valid_cols),
             })
 
-    # ── weakest questions (from survey df) ───────────────────────────────────
+    # ── weakest questions (from survey df: DATA_MODEL 60 + DATA_TEST 21) ─────
     weakest_questions = []
     if not df_survey.empty:
         all_survey_cols = [
@@ -1177,6 +1250,7 @@ def analytics():
 
 @app.get("/correlation")
 def correlation():
+    # Use DATA_UPCOMING (333 rows) for correlation — consistent with analytics
     try:
         df = _load_main_df()
     except Exception as e:
@@ -1588,13 +1662,11 @@ async def admin_trend_insights(db: Session = Depends(get_db)):
         "first_to_last": first_to_last,
     }
 
-    # Pull curriculum gap signals from the analytics pipeline (weakest survey items + weak sections).
-    # This makes the AI recommendation evidence-linked rather than generic.
+    # Pull curriculum gap signals from the analytics pipeline
     curriculum = {}
     try:
         analytics_payload = analytics()
         section_scores = analytics_payload.get("section_scores") or []
-        # Weakest sections = lowest average "pass" values on the dashboard.
         weak_sections = sorted(
             list(section_scores),
             key=lambda x: float(x.get("pass", 0.0)),
@@ -1615,7 +1687,7 @@ Numeric patterns (JSON):
 "year_stats": {stats},
 "key_patterns": {patterns},
 "curriculum_gaps": {curriculum},
-"note": "Dashboard uses first-attempt outcomes only; FAILED-RETAKE is treated as an outcome label, not a second attempt."
+"note": "Dashboard uses DATA_UPCOMING (333 rows, 2022-2025) as the institutional analytics source. Survey analysis uses DATA_MODEL (60 rows) + DATA_TEST (21 rows) = 81 rows. FAILED-RETAKE is treated as an outcome label, not a second attempt."
 }}
 
 Write a tight faculty-facing report in 4 short sentences (plain text only, no bullets, no headings):
@@ -1730,6 +1802,12 @@ def admin_performance_report(year: Optional[int] = None, days: int = 30, db: Ses
         "generated_at": datetime.utcnow().isoformat(),
         "year": year,
         "days": days,
+        "data_architecture": {
+            "analytics_source":   "DATA_UPCOMING (333 rows, 2022-2025)",
+            "survey_source":      "DATA_MODEL (60 rows) + DATA_TEST (21 rows) = 81 rows",
+            "model_train_source": "DATA_MODEL (60 rows) + DATA_SYSTEM 2022-2024 (250 rows) for Reg-A",
+            "held_out_test":      "DATA_TEST (21 rows, 2025 Apr+Aug)",
+        },
         "analytics": {},
         "model_info": {},
         "correlation": {},
@@ -1818,6 +1896,12 @@ def defense_test_2025():
 
     return {
         "test_year": 2025,
+        "test_size": 21,  # DATA_TEST is 21 rows (2025 Apr+Aug)
+        "train_size": {
+            "classification": 60,       # DATA_MODEL only
+            "regression_a": 310,         # DATA_MODEL 60 + DATA_SYSTEM 2022-2024 250
+            "regression_b": 60,          # DATA_MODEL only
+        },
         "classification": {
             "accuracy": clf_accuracy,
             "precision": clf_precision,
@@ -1934,13 +2018,12 @@ def defense_test_2025_records():
 @app.get("/defense/test-2025-predict")
 def defense_test_2025_predict(idx: int):
     """
-    Predicts for a single DATA_TEST row using the trained models.
+    Predicts for a single DATA_TEST row (21 rows, 2025 Apr+Aug) using the trained models.
     Returns:
       - actual/predicted outcomes
       - raw_answers (short key -> Likert int 1-4)
       - name (if name column exists)
     """
-    # Survey question column → short key mapping (matches ExamineeDetailPanel keys)
     _SURVEY_COL_TO_KEY = {
         "1.  I have a strong foundation in mathematics required for Electrical Engineering.": "KN1",
         "2.  I understand fundamental concepts in circuit analysis, including DC and AC circuits.": "KN2",
@@ -2019,10 +2102,9 @@ def defense_test_2025_predict(idx: int):
 
     _NAME_COLS = ["Name", "NAME", "Full Name", "FULL NAME", "Respondent", "RESPONDENT", "Student Name", "STUDENT NAME"]
 
-    # ── encoded DF for ML features ───────────────────────────────────────────
     df = _load_encoded_test_df()
     if idx < 0 or idx >= len(df):
-        return {"error": "idx out of range"}
+        return {"error": f"idx out of range. DATA_TEST has {len(df)} rows (0–{len(df)-1})."}
 
     row = df.iloc[idx]
 
@@ -2035,7 +2117,6 @@ def defense_test_2025_predict(idx: int):
         except Exception:
             actual_rating = None
 
-    # ── model prediction ────────────────────────────────────────────────────
     X_all   = np.array([[ _get_float(row, f) for f in FEATURES_ALL   ]], dtype=float)
     X_basic = np.array([[ _get_float(row, f) for f in FEATURES_BASIC ]], dtype=float)
     X_nosub = np.array([[ _get_float(row, f) for f in FEATURES_NOSUB ]], dtype=float)
@@ -2047,7 +2128,6 @@ def defense_test_2025_predict(idx: int):
     pred_rating_a = round(float(np.clip(regressor_a.predict(X_basic)[0], 0, 100)), 2)
     pred_rating_b = round(float(np.clip(regressor_b.predict(X_nosub)[0], 0, 100)), 2)
 
-    # ── raw answers (original 1–4 values) + name ───────────────────────────
     raw_answers = {}
     name = None
     try:
@@ -2097,11 +2177,18 @@ def defense_test_2025_predict(idx: int):
 @app.get("/health")
 def health():
     return {
-        "status":         "ok",
-        "models_loaded":  3,
-        "features_all":   len(FEATURES_ALL),
-        "features_nosub": len(FEATURES_NOSUB),
-        "features_basic": len(FEATURES_BASIC),
-        "passing_score":  PASSING_SCORE,
-        "database":       "connected" if get_database_url() else "not_configured",
+        "status":                    "ok",
+        "models_loaded":             3,
+        "features_all":              len(FEATURES_ALL),
+        "features_nosub":            len(FEATURES_NOSUB),
+        "features_basic":            len(FEATURES_BASIC),
+        "passing_score":             PASSING_SCORE,
+        "database":                  "connected" if get_database_url() else "not_configured",
+        "data_architecture": {
+            "analytics_source":      f"{FILE_UPCOMING} (333 rows, 2022-2025)",
+            "survey_source":         f"{FILE_MODEL} (60) + {FILE_TEST} (21) = 81 rows",
+            "test_file":             f"{FILE_TEST} (21 rows, 2025 Apr+Aug)",
+            "test_size":             bundle.get("dataset_size_test", 21),
+            "reg_a_train_size":      bundle.get("dataset_size_reg_a_train", 310),
+        },
     }
