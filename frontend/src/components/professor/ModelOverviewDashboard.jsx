@@ -4,8 +4,7 @@ import {
   LineChart, Line, ScatterChart, Scatter,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, ReferenceLine, RadarChart,
-  Radar, PolarGrid, PolarAngleAxis, ComposedChart,
-  Area, LabelList,
+  Radar, PolarGrid, PolarAngleAxis,
 } from "recharts";
 import { pct, num, FilterPanel, InsightBox } from "./ProfessorShared";
 
@@ -500,7 +499,7 @@ Data: ${JSON.stringify(data, null, 2)}`
     })();
 
     return () => controller.abort();
-  }, [cacheKey]);
+  }, [cacheKey, prompt, data]);
 
   if (!loading && !insight) return null;
 
@@ -535,10 +534,11 @@ function ExamPeriodSection({ periodData, selectedYear }) {
       const monthMatch = label.match(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|april|august|january|february|march|june|july|september|october|november|december)\b/i);
       if (!yearMatch) return;
       const year = yearMatch[1];
-      const rawMonth = monthMatch ? monthMatch[1].toLowerCase() : "unknown";
-      const month = rawMonth.startsWith("apr") ? "April" :
-                    rawMonth.startsWith("aug") || rawMonth.startsWith("sep") ? "August" :
-                    rawMonth.charAt(0).toUpperCase() + rawMonth.slice(1);
+      // Replace the month mapping with this:
+      const month = monthMatch
+        ? monthMatch[1].charAt(0).toUpperCase() + monthMatch[1].slice(1, 3).toLowerCase()
+        : "Unknown";
+      // e.g. "April" → "Apr", "August" → "Aug", "September" → "Sep"
       const key = `${year}-${month}`;
       if (!map[key]) map[key] = { year, month, label: key, pass_rate: d.pass_rate, passers: d.passers, total: d.total };
     });
