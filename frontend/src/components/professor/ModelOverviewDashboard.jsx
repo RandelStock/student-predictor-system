@@ -1330,13 +1330,9 @@ export default function ModelOverviewDashboard({
             <ExamPeriodSection periodData={periodData.length ? periodData : passByPeriod} selectedYear={selectedYear} />
           </Card>
 
-          {/* ── FIX 2: Subject Score Trends ── */}
+          {/* ── FIX 2: Subject Score Trends (GWA only) ── */}
           <Divider label="Subject Score Trends" icon="📐" />
           <div className="g2" style={{ marginBottom: 20 }}>
-            <Card icon="📐" title="Subject Averages by Year" sub="EE, MATH, ESAS — DATA_UPCOMING" fullWidth>
-              <SubjectTrendsSection subjectTrend={subjectTrend} selectedYear={selectedYear} kpi={kpi} />
-            </Card>
-
             <Card icon="🎓" title="GWA: Passers vs Failers" sub="DATA_UPCOMING — lower is better (PH grading)"
               note="GWA gap of 0.23 between passers and failers is consistent across all years (Pearson r = −0.439 with Total Rating)."
               insight="Every 0.1 improvement in GWA corresponds to roughly a 2-point increase in predicted board rating.">
@@ -1437,109 +1433,7 @@ export default function ModelOverviewDashboard({
             <PredictedActualSection scatterData={scatter} modelInfo={modelInfo} />
           </SecCard>
 
-          {/* ── FIX 4: Survey Analysis ── */}
-          <SecCard num="3" icon="📋" title="Survey Analysis"
-            subtitle="DATA_MODEL (60 rows with full survey) — 10 sections, 73 Likert items">
-            <DsTag label="DATA_MODEL — 60 rows with survey answers" />
-
-            <div className="g2" style={{ marginBottom: 16 }}>
-              <Card inner icon="🕸️" title="Survey Section: Passers vs Failers" sub="Avg Likert score per section (lower = more agreement)" blueTint
-                note="Scores closer to 1.0 = Strongly Agree. Faculty and Dept Culture show the widest gap between passers and failers."
-                insight="Passers score lower (more agreement) on Faculty and Facilities — these are key institutional differentiators.">
-                <SurveySectionViz sectionScores={sectionScores} />
-              </Card>
-
-              <Card inner icon="📊" title="Section Avg: Passers vs Failers" sub="Side-by-side per survey section" blueTint
-                note="Faculty (1.47 vs 2.18) and Dept Review (1.95 vs 2.24) have the largest pass/fail gaps."
-                insight="Stronger faculty ratings from passers suggest instructor quality is a measurable predictor.">
-                {radarData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={Math.max(radarData.length * 36 + 60, 200)}>
-                    <BarChart
-                      data={radarData}
-                      layout="vertical"
-                      margin={{ top: 0, right: 24, left: 90, bottom: 0 }}
-                      barCategoryGap="20%"
-                    >
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(245,197,24,.1)" horizontal={false} />
-                      <XAxis type="number" domain={[1, 3]} tick={{ fill: IIEE.dimText, fontSize: 10 }} axisLine={false} tickLine={false} tickCount={5} />
-                      <YAxis type="category" dataKey="section" tick={{ fill: IIEE.muted, fontSize: 10 }} axisLine={false} tickLine={false} width={85} />
-                      <Tooltip content={<Tip fmt={(v) => `${Number(v).toFixed(2)} avg`} />} />
-                      <Legend iconType="circle" iconSize={9}
-                        formatter={(v) => <span style={{ color: IIEE.muted, fontSize: 11 }}>{v}</span>} />
-                      <Bar dataKey="Passers" fill={IIEE.passGreen} radius={[0,4,4,0]} barSize={9} />
-                      <Bar dataKey="Failers" fill={IIEE.failRed}   radius={[0,4,4,0]} barSize={9} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div style={{ padding: 24, textAlign: "center", color: IIEE.dimText, fontSize: 12 }}>
-                    No section data. Ensure <code>sectionScores</code> prop is populated.
-                  </div>
-                )}
-              </Card>
-            </div>
-
-            {/* Review attendance */}
-            <div className="g2" style={{ marginBottom: 16 }}>
-              <Card inner icon="🏫" title="Pass Rate by Review Attendance" sub="Reviewed vs Not Reviewed" blueTint
-                note="Students who attended formal review: 82.1% pass rate. Without review: 14.3%."
-                insight="Review attendance is the single strongest non-subject predictor in DATA_MODEL.">
-                <ResponsiveContainer width="100%" height={180}>
-                  <BarChart
-                    data={[
-                      { label: "With Review (n=39)", pass_rate: 82.1 },
-                      { label: "No Review (n=21)",   pass_rate: 14.3 },
-                    ]}
-                    layout="vertical" margin={{ top: 4, right: 24, left: 8, bottom: 4 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(245,197,24,.1)" horizontal={false} />
-                    <XAxis type="number" domain={[0, 100]} tick={{ fill: IIEE.dimText, fontSize: 11 }} unit="%" axisLine={false} tickLine={false} />
-                    <YAxis type="category" dataKey="label" tick={{ fill: IIEE.muted, fontSize: 11 }} axisLine={false} tickLine={false} width={140} />
-                    <Tooltip content={<Tip fmt={(v) => `${v?.toFixed(1)}%`} />} />
-                    <ReferenceLine x={70} stroke={IIEE.gold} strokeDasharray="4 3" />
-                    <Bar dataKey="pass_rate" name="Pass Rate" radius={[0,6,6,0]}>
-                      <Cell fill={IIEE.passGreen} />
-                      <Cell fill={IIEE.failRed} />
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </Card>
-
-              <Card inner icon="⏱️" title="Pass Rate by Review Duration" sub="Longer review = better results" blueTint
-                note="3 months: 50.0% | 6 months: 74.1% — a 24-point improvement."
-                insight="6-month review crosses the 70% passing threshold; 3-month does not.">
-                <ResponsiveContainer width="100%" height={180}>
-                  <BarChart data={durData} layout="vertical" margin={{ top: 4, right: 24, left: 8, bottom: 4 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(245,197,24,.1)" horizontal={false} />
-                    <XAxis type="number" domain={[0, 100]} tick={{ fill: IIEE.dimText, fontSize: 11 }} unit="%" axisLine={false} tickLine={false} />
-                    <YAxis type="category" dataKey="label" tick={{ fill: IIEE.muted, fontSize: 11 }} axisLine={false} tickLine={false} width={100} />
-                    <Tooltip content={<Tip fmt={(v) => `${v?.toFixed(1)}%`} />} />
-                    <ReferenceLine x={70} stroke={IIEE.gold} strokeDasharray="4 3" />
-                    <Bar dataKey="pass_rate" name="Pass Rate" radius={[0,6,6,0]}>
-                      {durData.map((e, i) => <Cell key={i} fill={barColor(e.pass_rate)} />)}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </Card>
-            </div>
-
-            {/* SHS Strand */}
-            <Card inner icon="🎓" title="Pass Rate by SHS Strand" sub="STEM vs other tracks — DATA_MODEL (60 rows)" blueTint
-              note="STEM: 63.4% (n=41), GAS: 55.6% (n=9), TVL: 37.5% (n=8). HUMMS: 100% but n=1 (not significant)."
-              insight="STEM-track students dominate the sample and outperform other strands — but TVL/GAS need targeted support.">
-              <ResponsiveContainer width="100%" height={180}>
-                <BarChart data={strandData} margin={{ top: 8, right: 16, left: -8, bottom: 4 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(245,197,24,.12)" />
-                  <XAxis dataKey="name" tick={{ fill: IIEE.dimText, fontSize: 11 }} axisLine={false} tickLine={false} />
-                  <YAxis domain={[0, 100]} tick={{ fill: IIEE.dimText, fontSize: 11 }} axisLine={false} tickLine={false} unit="%" />
-                  <Tooltip content={<Tip fmt={(v) => `${v?.toFixed(1)}%`} />} />
-                  <ReferenceLine y={70} stroke={IIEE.gold} strokeDasharray="4 3"
-                    label={{ value: "70%", fill: IIEE.gold, fontSize: 10, position: "insideTopRight" }} />
-                  <Bar dataKey="passRate" name="Pass Rate" radius={[6,6,0,0]}>
-                    {strandData.map((e, i) => <Cell key={i} fill={barColor(e.passRate)} />)}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </Card>
-          </SecCard>
+          {/* Survey Analysis section removed as requested */}
 
           {/* Section 4 — Curriculum Gap */}
           <SecCard num="4" icon="🏫" title="Curriculum Gap Analysis & Recommendations"

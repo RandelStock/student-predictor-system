@@ -171,15 +171,33 @@ export default function LandingPage({ onEnter }) {
     <div style={{
       minHeight: "100vh",
       background: T.navy,
-      fontFamily: "'DM Sans', system-ui, sans-serif",
+      fontFamily: "'Inter', system-ui, sans-serif",
       color: T.white,
       overflowX: "hidden",
     }}>
 
       {/* ── GLOBAL CSS ─────────────────────────────────────────────────── */}
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800&family=Inter:wght@400;500;600&display=swap');
         *, *::before, *::after { box-sizing: border-box; }
+
+        :root { --lp-base-font-size: 16px; }
+        html { font-size: var(--lp-base-font-size); }
+
+        body, p, li, input, select, textarea, button {
+          font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif !important;
+          font-weight: 400;
+        }
+        h1, h2, h3, h4, h5, h6, .lp-heading {
+          font-family: 'Montserrat', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif !important;
+          font-weight: 800;
+          letter-spacing: -0.02em;
+        }
+
+        @media (max-width: 480px) {
+          p, li, label, small { font-size: 12.5px !important; line-height: 1.7; }
+          .lp-btn-gold, .lp-btn-outline, .lp-btn-gold-nav, .lp-btn-outline-nav { font-size: 14px !important; }
+        }
 
         @keyframes pulseGold   { 0%,100%{opacity:.50} 50%{opacity:1} }
         @keyframes fadeUp      { from{opacity:0;transform:translateY(22px)} to{opacity:1;transform:translateY(0)} }
@@ -235,7 +253,7 @@ export default function LandingPage({ onEnter }) {
         /* ── Buttons ── */
         .lp-btn-gold {
           background:#F5C518; border:none; color:#07102B;
-          font-family:'Syne',sans-serif; font-weight:800;
+          font-family:'Montserrat',sans-serif; font-weight:800;
           cursor:pointer; transition:all .22s; border-radius:12px;
         }
         .lp-btn-gold:hover {
@@ -247,7 +265,7 @@ export default function LandingPage({ onEnter }) {
           background:transparent;
           border:1px solid rgba(245,197,24,.18);
           color:#94A3B8;
-          font-family:'Syne',sans-serif; font-weight:600;
+          font-family:'Montserrat',sans-serif; font-weight:600;
           cursor:pointer; transition:all .22s; border-radius:12px;
         }
         .lp-btn-outline:hover {
@@ -257,7 +275,7 @@ export default function LandingPage({ onEnter }) {
         }
         .lp-btn-gold-nav {
           background:#F5C518; border:1px solid #F5C518;
-          color:#07102B; font-family:'Syne',sans-serif;
+          color:#07102B; font-family:'Montserrat',sans-serif;
           font-weight:800; cursor:pointer; transition:all .2s; border-radius:10px;
         }
         .lp-btn-gold-nav:hover {
@@ -268,7 +286,7 @@ export default function LandingPage({ onEnter }) {
         .lp-btn-outline-nav {
           background:transparent;
           border:1px solid rgba(245,197,24,.18);
-          color:#94A3B8; font-family:'Syne',sans-serif;
+          color:#94A3B8; font-family:'Montserrat',sans-serif;
           font-weight:600; cursor:pointer; transition:all .2s; border-radius:10px;
         }
         .lp-btn-outline-nav:hover {
@@ -302,7 +320,7 @@ export default function LandingPage({ onEnter }) {
           background:rgba(245,197,24,.09);
           border:1px solid rgba(245,197,24,.18);
           border-radius:20px; cursor:pointer; text-align:center;
-          font-family:'Syne',sans-serif;
+          font-family:'Montserrat',sans-serif;
           transition:transform .25s,box-shadow .25s,border-color .25s,background .25s;
         }
         .lp-role-student:hover {
@@ -315,7 +333,7 @@ export default function LandingPage({ onEnter }) {
           background:rgba(255,255,255,.02);
           border:1px solid rgba(255,255,255,.08);
           border-radius:20px; cursor:pointer; text-align:center;
-          font-family:'Syne',sans-serif;
+          font-family:'Montserrat',sans-serif;
           transition:transform .25s,box-shadow .25s,border-color .25s,background .25s;
         }
         .lp-role-faculty:hover {
@@ -329,7 +347,7 @@ export default function LandingPage({ onEnter }) {
         .lp-contact-action-btn {
           display:inline-flex; align-items:center; justify-content:center; gap:8px;
           background:#F5C518; border:none; color:#07102B;
-          font-family:'Syne',sans-serif; font-weight:800;
+          font-family:'Montserrat',sans-serif; font-weight:800;
           cursor:pointer; transition:all .22s; border-radius:999px;
           padding:11px 28px; font-size:13px;
         }
