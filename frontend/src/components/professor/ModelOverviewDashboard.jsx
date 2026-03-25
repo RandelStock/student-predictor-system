@@ -1,7 +1,6 @@
 import { useMemo, useState, useEffect } from "react";
 import {
-  BarChart, Bar, PieChart, Pie, Cell,
-  LineChart, Line, ScatterChart, Scatter,
+  BarChart, Bar, PieChart, Pie, Cell, ScatterChart, Scatter,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, ReferenceLine,
 } from "recharts";
@@ -30,13 +29,15 @@ const IIEE = {
 
 /* ─── Styles ──────────────────────────────────────────────────── */
 const styles = `
-  @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800;900&family=DM+Sans:wght@400;500;600&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800&family=Inter:wght@400;500;600&display=swap');
   .iiee-combined * { box-sizing: border-box; }
   .iiee-combined {
-    font-family: 'DM Sans', sans-serif;
+    font-family: 'Inter', sans-serif;
     background: ${IIEE.navy};
     min-height: 100vh;
     color: ${IIEE.white};
+    font-size: 14px;
+    line-height: 1.6;
   }
   .comb-hero {
     background: linear-gradient(135deg, ${IIEE.navyMid} 0%, #1a1060 55%, rgba(245,197,24,0.06) 100%);
@@ -53,19 +54,19 @@ const styles = `
   .comb-hero-badges { display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap; }
   .comb-badge {
     display:inline-flex; align-items:center; gap:5px;
-    border-radius:4px; padding:3px 10px; font-size:10px;
+    border-radius:4px; padding:3px 10px; font-size:11px;
     font-weight:700; letter-spacing:0.12em; text-transform:uppercase;
   }
   .comb-badge.gold { background:${IIEE.goldGlow}; border:1px solid ${IIEE.goldBorder}; color:${IIEE.gold}; }
   .comb-badge.blue { background:rgba(56,189,248,0.12); border:1px solid rgba(56,189,248,0.3); color:${IIEE.blue}; }
   .comb-hero-title {
-    font-family:'Barlow Condensed',sans-serif;
-    font-size:32px; font-weight:900; text-transform:uppercase;
+    font-family:'Montserrat',sans-serif;
+    font-size:32px; font-weight:700; text-transform:uppercase;
     letter-spacing:0.04em; color:${IIEE.white}; margin:0 0 4px; line-height:1;
   }
   .comb-hero-title .ag { color:${IIEE.gold}; }
   .comb-hero-title .ab { color:${IIEE.blue}; }
-  .comb-hero-sub { font-size:12px; color:${IIEE.muted}; margin:0; }
+  .comb-hero-sub { font-size:14px; color:${IIEE.muted}; margin:0; }
 
   .comb-body { padding:24px 28px 48px; }
 
@@ -94,8 +95,8 @@ const styles = `
     background:linear-gradient(90deg, transparent 0%, ${IIEE.goldBorder} 100%);
   }
   .comb-divider-label {
-    font-family:'Barlow Condensed',sans-serif;
-    font-size:11px; font-weight:700; letter-spacing:0.16em;
+    font-family:'Montserrat',sans-serif;
+    font-size:12px; font-weight:700; letter-spacing:0.16em;
     text-transform:uppercase; color:${IIEE.gold};
     white-space:nowrap; display:flex; align-items:center; gap:6px;
   }
@@ -121,15 +122,15 @@ const styles = `
   }
   .metric-icon { font-size:18px; margin-bottom:10px; display:block; }
   .metric-label {
-    font-size:10px; font-weight:600; letter-spacing:0.1em;
+    font-size:12px; font-weight:600; letter-spacing:0.1em;
     text-transform:uppercase; color:${IIEE.muted}; margin-bottom:6px;
   }
   .metric-value {
-    font-family:'Barlow Condensed',sans-serif;
-    font-size:34px; font-weight:900; line-height:1;
+    font-family:'Montserrat',sans-serif;
+    font-size:34px; font-weight:700; line-height:1;
     color:var(--ac,${IIEE.gold});
   }
-  .metric-sub { font-size:10px; color:${IIEE.dimText}; margin-top:4px; }
+  .metric-sub { font-size:12px; color:${IIEE.dimText}; margin-top:4px; }
 
   .chart-card {
     background:${IIEE.cardBg}; border:1px solid ${IIEE.cardBorder};
@@ -150,11 +151,11 @@ const styles = `
   }
   .chart-icon.blue { background:rgba(56,189,248,0.1); border:1px solid rgba(56,189,248,0.25); }
   .chart-title {
-    font-family:'Barlow Condensed',sans-serif;
-    font-size:14px; font-weight:800; text-transform:uppercase;
+    font-family:'Montserrat',sans-serif;
+    font-size:16px; font-weight:700; text-transform:uppercase;
     letter-spacing:0.05em; color:${IIEE.white}; margin:0 0 1px;
   }
-  .chart-sub { font-size:11px; color:${IIEE.dimText}; margin:0; }
+  .chart-sub { font-size:12px; color:${IIEE.dimText}; margin:0; }
   .chart-note {
     margin-top:10px; padding:8px 12px;
     background:rgba(245,197,24,0.04); border-left:2px solid ${IIEE.goldBorder};
@@ -184,14 +185,14 @@ const styles = `
     flex-shrink:0;
   }
   .sec-num {
-    font-family:'Barlow Condensed',sans-serif; font-size:10px; font-weight:900;
+    font-family:'Montserrat',sans-serif; font-size:11px; font-weight:700;
     color:${IIEE.gold}; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:2px;
   }
   .sec-title {
-    font-family:'Barlow Condensed',sans-serif; font-size:17px; font-weight:800;
+    font-family:'Montserrat',sans-serif; font-size:18px; font-weight:700;
     text-transform:uppercase; letter-spacing:0.05em; color:${IIEE.white}; margin:0 0 2px;
   }
-  .sec-subtitle { font-size:11px; color:${IIEE.dimText}; margin:0; }
+  .sec-subtitle { font-size:12px; color:${IIEE.dimText}; margin:0; }
   .sec-body { padding:18px 20px; }
 
   .model-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; }
@@ -212,7 +213,7 @@ const styles = `
 
   .ds-tag {
     display:inline-flex; align-items:center; gap:4px;
-    font-size:10px; font-weight:600; letter-spacing:0.08em;
+    font-size:11px; font-weight:600; letter-spacing:0.08em;
     text-transform:uppercase; background:rgba(56,189,248,0.1);
     border:1px solid rgba(56,189,248,0.2); border-radius:4px;
     padding:2px 8px; color:${IIEE.blue}; margin-bottom:12px;
@@ -223,7 +224,7 @@ const styles = `
     border:1px solid rgba(245,197,24,0.25); border-radius:14px; padding:16px 18px;
   }
   .reco-title {
-    font-family:'Barlow Condensed',sans-serif; font-size:14px; font-weight:800;
+    font-family:'Montserrat',sans-serif; font-size:16px; font-weight:700;
     text-transform:uppercase; letter-spacing:0.06em; color:${IIEE.gold}; margin:0 0 10px;
   }
   .reco-list { list-style:none; padding:0; margin:0; }
@@ -237,7 +238,7 @@ const styles = `
 
   .tab-btn {
     padding:8px 14px; border-radius:8px; font-size:12px; font-weight:700;
-    cursor:pointer; transition:all .18s; font-family:'DM Sans',sans-serif;
+    cursor:pointer; transition:all .18s; font-family:'Inter',sans-serif;
   }
 
   /* AI Insight Box */
@@ -257,11 +258,11 @@ const styles = `
   }
   .ai-insight-header {
     display: flex; align-items: center; gap: 6px;
-    font-size: 10px; font-weight: 700; letter-spacing: 0.12em;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.12em;
     text-transform: uppercase; color: ${IIEE.blue}; margin-bottom: 8px;
   }
   .ai-insight-text {
-    font-size: 12.5px; color: ${IIEE.white}; line-height: 1.7;
+    font-size: 13px; color: ${IIEE.white}; line-height: 1.7;
   }
   .ai-loading {
     display: flex; align-items: center; gap: 8px;
@@ -288,27 +289,27 @@ const styles = `
   }
   .period-pill:hover { border-color: ${IIEE.gold}; transform: translateY(-2px); }
   .period-pill-label {
-    font-family: 'Barlow Condensed', sans-serif;
-    font-size: 13px; font-weight: 800; text-transform: uppercase;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 13px; font-weight: 700; text-transform: uppercase;
     letter-spacing: 0.06em; color: ${IIEE.muted}; margin-bottom: 6px;
   }
   .period-pill-rate {
-    font-family: 'Barlow Condensed', sans-serif;
-    font-size: 28px; font-weight: 900; line-height: 1;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 28px; font-weight: 700; line-height: 1;
   }
-  .period-pill-sub { font-size: 10px; color: ${IIEE.dimText}; margin-top: 3px; }
+  .period-pill-sub { font-size: 12px; color: ${IIEE.dimText}; margin-top: 3px; }
 
   /* Subject table */
   .subject-table { width: 100%; border-collapse: collapse; }
   .subject-table th {
-    font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
+    font-size: 12px; font-weight: 700; letter-spacing: 0.1em;
     text-transform: uppercase; color: ${IIEE.dimText};
     padding: 8px 10px; border-bottom: 1px solid rgba(245,197,24,0.12);
     text-align: left;
   }
   .subject-table td {
     padding: 10px 10px; border-bottom: 1px solid rgba(255,255,255,0.04);
-    font-size: 13px;
+    font-size: 14px;
   }
   .subject-table tr:last-child td { border-bottom: none; }
   .subject-table tr:hover td { background: rgba(245,197,24,0.03); }
@@ -322,7 +323,7 @@ const styles = `
     margin-bottom: 4px;
   }
   .survey-section-name { font-size: 12px; color: ${IIEE.muted}; font-weight: 600; }
-  .survey-section-vals { font-size: 11px; color: ${IIEE.dimText}; }
+  .survey-section-vals { font-size: 12px; color: ${IIEE.dimText}; }
   .survey-track {
     height: 8px; background: rgba(255,255,255,0.05);
     border-radius: 99px; overflow: visible;
@@ -342,7 +343,7 @@ const styles = `
   }
   .survey-legend {
     display: flex; gap: 14px; margin-bottom: 14px;
-    font-size: 11px;
+    font-size: 12px;
   }
   .survey-legend-item { display: flex; align-items: center; gap: 5px; color: ${IIEE.muted}; }
   .survey-legend-dot { width: 8px; height: 8px; border-radius: 50%; }
@@ -520,137 +521,6 @@ Data: ${JSON.stringify(data, null, 2)}`
   );
 }
 
-/* ─── FIX 1: Exam Period Visualization ────────────────────────── */
-function ExamPeriodSection({ periodData, selectedYear }) {
-  // Parse and group period data robustly
-  const grouped = useMemo(() => {
-    if (!periodData?.length) return [];
-    const map = {};
-    periodData.forEach((d) => {
-      const label = (d.label || "").trim();
-      // Try to extract year and month from label like "2022-Apr", "2023-Aug", "2025 April"
-      const yearMatch = label.match(/\b(20\d{2})\b/);
-      const monthMatch = label.match(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|april|august|january|february|march|june|july|september|october|november|december)\b/i);
-      if (!yearMatch) return;
-      const year = yearMatch[1];
-      // Replace the month mapping with this:
-      const month = monthMatch
-        ? monthMatch[1].charAt(0).toUpperCase() + monthMatch[1].slice(1, 3).toLowerCase()
-        : "Unknown";
-      // e.g. "April" → "Apr", "August" → "Aug", "September" → "Sep"
-      const key = `${year}-${month}`;
-      if (!map[key]) map[key] = { year, month, label: key, pass_rate: d.pass_rate, passers: d.passers, total: d.total };
-    });
-    return Object.values(map).sort((a, b) => {
-      if (a.year !== b.year) return a.year.localeCompare(b.year);
-      return a.month === "April" ? -1 : 1;
-    });
-  }, [periodData]);
-
-  // For the chart: group by year, show April and August side-by-side
-  const chartData = useMemo(() => {
-    const yearMap = {};
-    grouped.forEach((d) => {
-      if (!yearMap[d.year]) yearMap[d.year] = { year: d.year };
-      yearMap[d.year][d.month] = Number(d.pass_rate ?? 0);
-      yearMap[d.year][`${d.month}_n`] = d.total ?? 0;
-    });
-    return Object.values(yearMap).sort((a, b) => a.year.localeCompare(b.year));
-  }, [grouped]);
-
-  const filtered = useMemo(() => {
-    if (!selectedYear) return chartData;
-    return chartData.filter((d) => String(d.year) === String(selectedYear));
-  }, [chartData, selectedYear]);
-
-  const displayData = filtered.length ? filtered : chartData;
-
-  // Build AI prompt
-  const aiPrompt = `Analyze the PRC REE exam period pass rates (April vs August sittings). 
-Focus on: which period consistently performs better, any alarming drops, and recommendations for when students should ideally sit for exams.`;
-  const aiCacheKey = `exam-period-${selectedYear || "all"}-${JSON.stringify(displayData).slice(0, 80)}`;
-
-  if (!displayData.length) {
-    return (
-      <div style={{ padding: 24, textAlign: "center", color: IIEE.dimText, fontSize: 12 }}>
-        No exam period data available. Ensure <code>passByPeriod</code> prop is populated with labels like "2022-Apr" or "2023-August".
-      </div>
-    );
-  }
-
-  return (
-    <div>
-      {/* Summary pills */}
-      <div className="period-grid" style={{ marginBottom: 16 }}>
-        {grouped
-          .filter((d) => !selectedYear || String(d.year) === String(selectedYear))
-          .map((d, i) => (
-            <div key={i} className="period-pill">
-              <div className="period-pill-label">{d.year} · {d.month}</div>
-              <div className="period-pill-rate" style={{ color: barColor(d.pass_rate) }}>
-                {Number(d.pass_rate ?? 0).toFixed(1)}%
-              </div>
-              <div className="period-pill-sub">
-                {d.passers != null ? `${d.passers} passers` : ""}
-                {d.total != null ? ` / ${d.total} total` : ""}
-              </div>
-            </div>
-          ))}
-      </div>
-
-      {/* Grouped bar chart: April vs August per year */}
-      <ResponsiveContainer width="100%" height={260}>
-        <BarChart data={displayData} margin={{ top: 12, right: 24, left: -4, bottom: 4 }} barCategoryGap="30%">
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(245,197,24,.10)" />
-          <XAxis
-            dataKey="year"
-            tick={{ fill: IIEE.dimText, fontSize: 12 }}
-            axisLine={false} tickLine={false}
-          />
-          <YAxis
-            domain={[0, 100]}
-            tick={{ fill: IIEE.dimText, fontSize: 11 }}
-            axisLine={false} tickLine={false} unit="%"
-          />
-          <Tooltip
-            content={<Tip fmt={(v) => `${Number(v).toFixed(1)}%`} />}
-          />
-          <ReferenceLine y={70} stroke={IIEE.gold} strokeDasharray="5 3"
-            label={{ value: "70% threshold", position: "insideTopRight", fill: IIEE.gold, fontSize: 10 }} />
-          <Legend
-            iconType="circle" iconSize={9}
-            formatter={(v) => <span style={{ color: IIEE.muted, fontSize: 12 }}>{v}</span>}
-          />
-          <Bar dataKey="April"  name="April Sitting"  fill={IIEE.blue}      radius={[6,6,0,0]} maxBarSize={48} />
-          <Bar dataKey="August" name="August Sitting" fill={IIEE.orange}    radius={[6,6,0,0]} maxBarSize={48} />
-        </BarChart>
-      </ResponsiveContainer>
-
-      {/* Line overlay for trend */}
-      {displayData.length > 1 && (
-        <div style={{ marginTop: 16 }}>
-          <div style={{ fontSize: 11, color: IIEE.dimText, textTransform: "uppercase", letterSpacing: ".08em", marginBottom: 8 }}>
-            Period Trend Line
-          </div>
-          <ResponsiveContainer width="100%" height={120}>
-            <LineChart data={displayData} margin={{ top: 4, right: 24, left: -4, bottom: 4 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(245,197,24,.08)" />
-              <XAxis dataKey="year" tick={{ fill: IIEE.dimText, fontSize: 10 }} axisLine={false} tickLine={false} />
-              <YAxis domain={[0, 100]} tick={{ fill: IIEE.dimText, fontSize: 10 }} axisLine={false} tickLine={false} unit="%" />
-              <Tooltip content={<Tip fmt={(v) => `${Number(v).toFixed(1)}%`} />} />
-              <ReferenceLine y={70} stroke={IIEE.gold} strokeDasharray="4 3" />
-              <Line type="monotone" dataKey="April"  stroke={IIEE.blue}   strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6, fill: IIEE.gold }} />
-              <Line type="monotone" dataKey="August" stroke={IIEE.orange} strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6, fill: IIEE.gold }} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      )}
-
-      <AIInsight prompt={aiPrompt} data={displayData} cacheKey={aiCacheKey} />
-    </div>
-  );
-}
-
 /* ─── FIX 3: Predicted vs Actual (uses test2025 data) ────────── */
 function PredictedActualSection({ scatterData: rawScatter, modelInfo }) {
   // Build safe scatter data — works whether from scatterData prop OR test2025 evaluation
@@ -714,7 +584,7 @@ function PredictedActualSection({ scatterData: rawScatter, modelInfo }) {
           <div key={i} style={{ background: IIEE.cardBg, border: `1px solid ${s.color}30`, borderRadius: 10, padding: "12px 14px" }}>
             <div style={{ fontSize: 16, marginBottom: 4 }}>{s.icon}</div>
             <div style={{ fontSize: 10, color: IIEE.dimText, textTransform: "uppercase", letterSpacing: ".08em", marginBottom: 4 }}>{s.label}</div>
-            <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 22, fontWeight: 900, color: s.color }}>{s.value}</div>
+            <div style={{ fontFamily: "'Montserrat',sans-serif", fontSize: 22, fontWeight: 700, color: s.color }}>{s.value}</div>
           </div>
         ))}
       </div>
@@ -834,18 +704,7 @@ export default function ModelOverviewDashboard({
     }),
   [displayRows]);
 
-  /* Period data — respect period and year filters */
-  const periodData = useMemo(() => {
-    const base = passByPeriod ?? [];
-    if (dashFilters?.period) {
-      return base.filter((d) => d.label === dashFilters.period);
-    }
-    if (dashFilters?.year) {
-      return base.filter((d) => String(d.year) === String(dashFilters.year));
-    }
-    return base;
-  }, [passByPeriod, dashFilters]);
-
+  
   const scatter = useMemo(() => scatterData ?? [], [scatterData]);
 
   const regTrend = useMemo(() => {
@@ -1022,7 +881,7 @@ export default function ModelOverviewDashboard({
                 ].map((p, i) => (
                   <div key={i} style={{ flex: 1, background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.08)", borderRadius: 12, padding: "14px 10px", textAlign: "center" }}>
                     <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: ".08em", textTransform: "uppercase", color: IIEE.dimText, marginBottom: 6 }}>{p.label}</div>
-                    <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 32, fontWeight: 900, lineHeight: 1, color: p.color }}>{p.value}</div>
+                    <div style={{ fontFamily: "'Montserrat',sans-serif", fontSize: 32, fontWeight: 700, lineHeight: 1, color: p.color }}>{p.value}</div>
                   </div>
                 ))}
               </div>

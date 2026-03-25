@@ -115,7 +115,7 @@ function Sidebar({ activeTab, onTabChange, onRefresh, onLogout, collapsed, setCo
               alignSelf: "flex-start",
             }}>
               <span style={{ fontSize: 11 }}>🔬</span>
-              <span style={{ fontSize: 10, fontWeight: 700, color: "#a78bfa", letterSpacing: "0.06em", fontFamily: "'DM Sans',sans-serif" }}>Faculty Portal</span>
+              <span style={{ fontSize: 11, fontWeight: 700, color: "#a78bfa", letterSpacing: "0.06em", fontFamily: "'Inter',sans-serif" }}>Faculty Portal</span>
             </div>
           )}
 
@@ -145,7 +145,7 @@ function Sidebar({ activeTab, onTabChange, onRefresh, onLogout, collapsed, setCo
 
           {/* SLSU IIEE label */}
           {!isCollapsed && (
-            <p style={{ margin: 0, fontSize: 9, color: T.dimText, textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: "'DM Sans',sans-serif" }}>
+            <p style={{ margin: 0, fontSize: 11, color: T.dimText, textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: "'Inter',sans-serif" }}>
               SLSU IIEE
             </p>
           )}
@@ -158,12 +158,12 @@ function Sidebar({ activeTab, onTabChange, onRefresh, onLogout, collapsed, setCo
               {!isCollapsed && (
                 <p style={{
                   margin: "10px 6px 4px",
-                  fontSize: 9,
+                  fontSize: 11,
                   fontWeight: 700,
                   color: T.dimText,
                   textTransform: "uppercase",
                   letterSpacing: "0.12em",
-                  fontFamily: "'DM Sans',sans-serif",
+                  fontFamily: "'Montserrat',sans-serif",
                 }}>
                   {group.label}
                 </p>
@@ -188,7 +188,7 @@ function Sidebar({ activeTab, onTabChange, onRefresh, onLogout, collapsed, setCo
                       background: active ? T.goldGlow : "transparent",
                       cursor: "pointer",
                       transition: "all 0.18s",
-                      fontFamily: "'DM Sans',sans-serif",
+                      fontFamily: "'Inter',sans-serif",
                     }}
                     onMouseEnter={e => {
                       if (!active) {
@@ -284,7 +284,7 @@ const actionBtnStyle = (collapsed) => ({
   background: "transparent",
   cursor: "pointer",
   transition: "all 0.18s",
-  fontFamily: "'DM Sans',sans-serif",
+  fontFamily: "'Inter',sans-serif",
 });
 
 // ─── Topbar (mobile hamburger + breadcrumb) ───────────────────────────────────
@@ -318,7 +318,7 @@ function Topbar({ activeTab, setMobileOpen }) {
       >☰</button>
 
       <div>
-        <p style={{ margin: 0, fontSize: 10, color: T.gold, textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 700 }}>
+        <p style={{ margin: 0, fontSize: 12, color: T.gold, textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 700, fontFamily: "'Montserrat',sans-serif" }}>
           {labelFor(activeTab)}
         </p>
       </div>
@@ -353,9 +353,9 @@ export default function ProfessorSidebarLayout({
   const sidebarWidth = isMobile ? 0 : (effectiveCollapsed ? 68 : 240);
 
   return (
-    <div style={{ minHeight: "100vh", background: T.navy, fontFamily: "'DM Sans',system-ui,sans-serif", color: T.white }}>
+    <div style={{ minHeight: "100vh", background: T.navy, fontFamily: "'Inter',system-ui,sans-serif", color: T.white }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800&family=Inter:wght@400;500;600&display=swap');
 
         @keyframes fadeUp  { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
         @keyframes spin    { to{transform:rotate(360deg)} }
@@ -372,16 +372,16 @@ export default function ProfessorSidebarLayout({
         ::-webkit-scrollbar-thumb:hover{background:rgba(245,197,24,0.4)}
 
         .recharts-cartesian-grid line { stroke: rgba(255,255,255,0.05) !important; }
-        .recharts-text { fill: #64748b !important; font-family:'DM Sans',sans-serif !important; font-size:11px !important; }
+        .recharts-text { fill: #64748b !important; font-family:'Inter',sans-serif !important; font-size:11px !important; }
         .recharts-legend-item-text { color:#94a3b8 !important; }
         .recharts-tooltip-wrapper { filter: drop-shadow(0 4px 16px rgba(0,0,0,0.5)); }
 
-        .att-table { width:100%; border-collapse:collapse; font-size:12px; font-family:'DM Sans',sans-serif; }
-        .att-table th { padding:10px 12px; border-bottom:1px solid rgba(245,197,24,0.1); text-align:left; color:${T.gold}; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; font-size:10px; }
+        .att-table { width:100%; border-collapse:collapse; font-size:12px; font-family:'Inter',sans-serif; }
+        .att-table th { padding:10px 12px; border-bottom:1px solid rgba(245,197,24,0.1); text-align:left; color:${T.gold}; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; font-size:11px; font-family:'Montserrat',sans-serif; }
         .att-table td { padding:10px 12px; border-bottom:1px solid rgba(255,255,255,0.05); color:${T.muted}; }
         .att-table tr:hover td { background:rgba(245,197,24,0.03); }
 
-        .filter-input { background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:7px 11px; color:${T.white}; font-size:12px; font-family:'DM Sans',sans-serif; outline:none; transition:border-color 0.2s; }
+        .filter-input { background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:7px 11px; color:${T.white}; font-size:12px; font-family:'Inter',sans-serif; outline:none; transition:border-color 0.2s; }
         .filter-input:focus { border-color:rgba(245,197,24,0.45); }
 
         .dash-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:14px; }
@@ -399,7 +399,7 @@ export default function ProfessorSidebarLayout({
           .dash-grid { grid-template-columns:1fr !important; }
         }
 
-        .tab-btn { background:transparent; border:none; cursor:pointer; font-family:'DM Sans',sans-serif; transition:all 0.2s; }
+        .tab-btn { background:transparent; border:none; cursor:pointer; font-family:'Inter',sans-serif; transition:all 0.2s; }
         .gold-line { width:32px; height:3px; background:${T.gold}; border-radius:2px; }
         .hud-card { transition: border-color 0.18s, box-shadow 0.18s; }
         .hud-card:hover { border-color: rgba(245,197,24,0.25) !important; box-shadow: 0 0 0 1px rgba(245,197,24,0.1), 0 8px 24px rgba(0,0,0,0.35) !important; }
