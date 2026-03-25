@@ -3,8 +3,7 @@ import {
   BarChart, Bar, PieChart, Pie, Cell,
   LineChart, Line, ScatterChart, Scatter,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend,
-  ResponsiveContainer, ReferenceLine, RadarChart,
-  Radar, PolarGrid, PolarAngleAxis,
+  ResponsiveContainer, ReferenceLine,
 } from "recharts";
 import { pct, num, FilterPanel, InsightBox } from "./ProfessorShared";
 
