@@ -59,6 +59,7 @@ export default function ProfessorPage({ onLogout }) {
   const [selectedTestIdx, setSelectedTestIdx] = useState(0);
   const [test2025Run, setTest2025Run]         = useState(null);
   const [test2025RunLoading, setTest2025RunLoading] = useState(false);
+  const [dashboardData, setDashboardData] = useState(null);
 
   const [dashFilters, setDashFilters] = useState({ year: "", month: "", review: "", subject: "" });
 
@@ -66,19 +67,22 @@ export default function ProfessorPage({ onLogout }) {
   const fetchAnalytics = useCallback(async () => {
     setLoading(true);
     try {
-      const [analyticsRes, modelRes, corrRes] = await Promise.all([
+      const [analyticsRes, modelRes, corrRes, dashRes] = await Promise.all([
         fetch(`${API_BASE_URL}/analytics`),
         fetch(`${API_BASE_URL}/model-info`),
         fetch(`${API_BASE_URL}/correlation`),
+        fetch(`${API_BASE_URL}/dashboard`),
       ]);
       if (!analyticsRes.ok || !modelRes.ok) throw new Error("Server error");
       const analytics = await analyticsRes.json();
       const model     = await modelRes.json();
       const corr      = corrRes.ok ? await corrRes.json() : null;
+      const dash      = dashRes.ok ? await dashRes.json() : {};
       const mock = buildMockData();
       setData({ ...mock, ...analytics });
       setModelInfo(model);
       setCorrelation(corr && !corr.error ? corr : null);
+      setDashboardData(dash);                                     // ← ADD THIS
     } catch {
       setData(buildMockData());
     } finally {
@@ -280,14 +284,7 @@ export default function ProfessorPage({ onLogout }) {
 
   const localInsights = useMemo(() => generateInsights(data, dashFilters), [data, dashFilters]);
 
-  const scatterData = useMemo(() => {
-    if (!test2025Records?.length) return [];
-    return test2025Records.slice(0, 50).map((r) => ({
-      actual: r.prc_total_rating ?? r.actual ?? 0,
-      predicted: r.predicted_rating_a ?? r.predicted ?? 0,
-      passed: r.label === "PASS" || r.label === "PASSED",
-    }));
-  }, [test2025Records]);
+  const scatterData = useMemo(() => dashboardData?.scatterData ?? [], [dashboardData]);
 
   const pieData = useMemo(() => [
     { name: "Passers", value: Number(ov.total_passers || 0), color: c.pass },
@@ -344,6 +341,8 @@ export default function ProfessorPage({ onLogout }) {
               filteredSubjectTrends={filteredSubjectTrends}
               correlation={correlation}
               scatterData={scatterData}
+              passByPeriod={dashboardData?.passByPeriod ?? []}    // ← ADD
+              subjectByYear={dashboardData?.subjectByYear ?? []}  // ← ADD
             />
           )}
 
