@@ -32,6 +32,7 @@
   - **DB driver:** psycopg2-binary
   - **Env config:** python-dotenv
   - **AI service:** Groq SDK
+- **Multipart:** python-multipart
 
   ## Frontend
 
@@ -54,6 +55,8 @@
     - Loads trained model bundle (`ree_survey_model.pkl`)
     - Exposes prediction, recommendation, analytics, admin, and defense endpoints
     - Persists prediction attempts to DB (if `DATABASE_URL` is configured)
+  - Uses `FACULTY_CODE` to gate professor registration
+  - Institutional analytics source of truth: `DATA_UPCOMING.xlsx` (333 rows, 2022–2025)
 
   - **Database (`backend/database.py`)**
     - Tables:
@@ -89,6 +92,7 @@
   - `DATABASE_URL` — enables DB persistence
   - `GROQ_API_KEY` — enables AI recommendations and trend insights
   - `EE_PREDICTOR_SECRET_KEY` — JWT signing key (falls back to default if not set)
+- `FACULTY_CODE` — invite code required to register a professor account (default: `IIEE-SLSU-2025`)
 
   ---
 
@@ -99,6 +103,7 @@
   3. Frontend stores token in `localStorage`
   4. Protected endpoints require `Authorization: Bearer <token>`
   5. Backend resolves current user via JWT (`get_current_user`)
+6. Professor registration requires a valid faculty invite code (`FACULTY_CODE`)
 
   ---
 
@@ -213,17 +218,22 @@
 
   ## 10) Machine Learning Flow
 
-  Implemented in `backend/train_model.py`:
+Implemented in `backend/train_model.py` (updated data architecture and training strategy):
 
   - **Classification**
     - RandomForestClassifier
-    - predicts pass/fail
+  - train: `DATA_MODEL.xlsx` (60 rows, with survey)
+  - test: `DATA_TEST.xlsx` (21 rows, 2025 held-out, with survey)
+  - predicts pass/fail (uses `ALL_FEATURES`)
   - **Regression A**
     - RandomForestRegressor
-    - uses subject scores + GWA basic set
+  - train: `DATA_MODEL.xlsx` (60 with survey) + `DATA_SYSTEM.xlsx` slice 2022–2024 (~250 rows, no survey) = ~310 rows
+  - test: `DATA_TEST.xlsx` (21)
+  - uses BASIC feature set: `EE`, `MATH`, `ESAS`, `GWA`
   - **Regression B**
     - RandomForestRegressor
-    - excludes subject score features (GWA + survey profile)
+  - train: `DATA_MODEL.xlsx` (60), test: `DATA_TEST.xlsx` (21)
+  - excludes subject score features (GWA + survey profile only; `NO_SUBJECT_FEATURES`)
 
   Model bundle exports:
 
@@ -233,6 +243,13 @@
   - evaluation metrics
 
   Runtime inference (`/predict`) reconstructs those feature vectors in `build_feature_vector()`.
+
+### Data Files and Roles
+
+- `DATA_MODEL.xlsx` — 60 rows, 98 columns (2022–2025). With survey. Primary training source.
+- `DATA_SYSTEM.xlsx` — 333 rows, 8 columns (2022–2025). No survey. Used only for Regression A training (2022–2024 slice) to avoid leakage.
+- `DATA_TEST.xlsx` — 21 rows (2025 Apr+Aug). With survey. Held-out evaluation set.
+- `DATA_UPCOMING.xlsx` — 333 rows (2022–2025). No survey. Single source of truth for institutional analytics in the dashboard.
 
   ---
 
@@ -299,7 +316,7 @@
   ## Professor user guide
 
   1. Open app and choose Faculty/Professor
-  2. Register or log in
+2. Register (requires `FACULTY_CODE`) or log in
   3. Use dashboard tabs to view:
     - overview/performance/features/curriculum
     - classification/regression/correlation
@@ -343,6 +360,7 @@
     - AI recommendation and AI trend summary endpoints return fallback text
 
   - Frontend uses a fixed production API URL unless changed in `apiBase.js`.
+- Institutional analytics in the professor dashboard use `DATA_UPCOMING.xlsx` (333 rows, 2022–2025) as the single source of truth.
 
   ---
 
@@ -373,10 +391,5 @@
 
   ---
 
-  ## 16) Recommended Next Documentation Enhancements
-
-  - Add sequence diagrams (login, prediction, recommendation cache, analytics load)
-  - Add API request/response samples for each endpoint
-  - Add role-permission matrix (student vs professor access)
-  - Add production deployment section (Render + Netlify + DB)
+*** End of File
 

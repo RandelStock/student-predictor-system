@@ -607,7 +607,6 @@
     <a href="#s13" class="nav-link"><span class="nav-num">13</span>Data Flow</a>
     <a href="#s14" class="nav-link"><span class="nav-num">14</span>Operational Notes</a>
     <a href="#s15" class="nav-link"><span class="nav-num">15</span>Quick Run</a>
-    <a href="#s16" class="nav-link"><span class="nav-num">16</span>Next Steps</a>
   </nav>
 </aside>
 
@@ -687,6 +686,7 @@
           <div class="tech-row"><span class="tech-label">DB Driver</span><span class="tech-value">psycopg2-binary</span></div>
           <div class="tech-row"><span class="tech-label">Config</span><span class="tech-value">python-dotenv</span></div>
           <div class="tech-row"><span class="tech-label">AI Service</span><span class="tech-value">Groq SDK</span></div>
+          <div class="tech-row"><span class="tech-label">Multipart</span><span class="tech-value">python-multipart</span></div>
         </div>
         <div class="tech-panel">
           <div class="tech-panel-label">Frontend</div>
@@ -714,7 +714,7 @@
         <div class="card">
           <div class="card-icon green">⚙️</div>
           <h4>Backend <code>backend/</code></h4>
-          <p>Loads trained model bundle <code>ree_survey_model.pkl</code>. Exposes prediction, recommendation, analytics, admin, and defense endpoints.</p>
+          <p>Loads trained model bundle <code>ree_survey_model.pkl</code>. Exposes prediction, recommendation, analytics, admin, and defense endpoints. Uses <code>FACULTY_CODE</code> to gate professor registration. Institutional analytics source: <code>DATA_UPCOMING.xlsx</code> (333 rows, 2022–2025).</p>
         </div>
         <div class="card">
           <div class="card-icon orange">🗄️</div>
@@ -760,6 +760,7 @@
         <div class="db-field"><span class="db-field-name">DATABASE_URL</span><span class="db-field-desc">Enables DB persistence of predictions and history</span></div>
         <div class="db-field"><span class="db-field-name">GROQ_API_KEY</span><span class="db-field-desc">Enables AI recommendations and trend insights</span></div>
         <div class="db-field"><span class="db-field-name">EE_PREDICTOR_SECRET_KEY</span><span class="db-field-desc">JWT signing key (falls back to default if not set)</span></div>
+        <div class="db-field"><span class="db-field-name">FACULTY_CODE</span><span class="db-field-desc">Invite code required for professor registration (default: IIEE-SLSU-2025)</span></div>
       </div>
     </section>
 
@@ -940,17 +941,17 @@
         <div class="card">
           <div class="card-icon green">🌲</div>
           <h4>Classification</h4>
-          <p>RandomForestClassifier — predicts Pass / Fail.</p>
+          <p>RandomForestClassifier — predicts Pass / Fail. Train on <code>DATA_MODEL.xlsx</code> (60, with survey). Test on <code>DATA_TEST.xlsx</code> (21, 2025 held-out).</p>
         </div>
         <div class="card">
           <div class="card-icon blue">📐</div>
           <h4>Regression A</h4>
-          <p>RandomForestRegressor using subject scores + GWA basic feature set.</p>
+          <p>RandomForestRegressor using basic features (<code>EE</code>, <code>MATH</code>, <code>ESAS</code>, <code>GWA</code>). Train on <code>DATA_MODEL</code> (60) + <code>DATA_SYSTEM</code> 2022–2024 slice (~250) = ~310. Test on <code>DATA_TEST</code> (21).</p>
         </div>
         <div class="card">
           <div class="card-icon orange">📐</div>
           <h4>Regression B</h4>
-          <p>RandomForestRegressor excluding subject scores — GWA + survey profile only.</p>
+          <p>RandomForestRegressor excluding subject scores — GWA + survey only. Train on <code>DATA_MODEL</code> (60), test on <code>DATA_TEST</code> (21).</p>
         </div>
       </div>
 
@@ -964,6 +965,14 @@
 
       <h3>Runtime Inference</h3>
       <p>The <code>/predict</code> endpoint calls <code>build_feature_vector()</code> to reconstruct feature vectors from the incoming request before passing them through each model.</p>
+
+      <h3>Data Files and Roles</h3>
+      <ul class="styled">
+        <li><code>DATA_MODEL.xlsx</code> — 60 rows, 98 cols (2022–2025). With survey. Primary training source.</li>
+        <li><code>DATA_SYSTEM.xlsx</code> — 333 rows, 8 cols (2022–2025). No survey. Used only for Regression A (2022–2024 slice) to avoid leakage.</li>
+        <li><code>DATA_TEST.xlsx</code> — 21 rows (2025 Apr+Aug). With survey. Held-out evaluation set.</li>
+        <li><code>DATA_UPCOMING.xlsx</code> — 333 rows (2022–2025). No survey. Single source of truth for professor dashboard analytics.</li>
+      </ul>
     </section>
 
     <!-- §11 FRONTEND MODULES -->
@@ -1025,7 +1034,7 @@
       <h3>Professor / Faculty</h3>
       <div class="flow">
         <div class="flow-step"><div class="flow-num">1</div><div class="flow-content"><div class="flow-title">Open App → Choose Faculty/Professor</div></div></div>
-        <div class="flow-step"><div class="flow-num">2</div><div class="flow-content"><div class="flow-title">Register or Log In</div></div></div>
+        <div class="flow-step"><div class="flow-num">2</div><div class="flow-content"><div class="flow-title">Register (Access Code) or Log In</div><div class="flow-desc">Professor registration requires a valid <code>FACULTY_CODE</code>.</div></div></div>
         <div class="flow-step"><div class="flow-num">3</div><div class="flow-content"><div class="flow-title">Use Dashboard Tabs</div><div class="flow-desc">Overview / Performance / Features / Curriculum → Classification / Regression / Correlation → Trends &amp; Monitoring → Model Overview</div></div></div>
         <div class="flow-step"><div class="flow-num">4</div><div class="flow-content"><div class="flow-title">Apply Filters</div><div class="flow-desc">Year, month, review type, subject</div></div></div>
         <div class="flow-step"><div class="flow-num">5</div><div class="flow-content"><div class="flow-title">Export Report</div><div class="flow-desc">Download performance report when needed</div></div></div>
@@ -1099,20 +1108,6 @@ npm start</code></pre>
       <h3>Train Model</h3>
       <pre data-label="bash"><code>cd backend
 python train_model.py</code></pre>
-    </section>
-
-    <!-- §16 NEXT STEPS -->
-    <section class="section" id="s16">
-      <div class="section-header">
-        <span class="section-num">16</span>
-        <h2>Recommended Next Documentation Enhancements</h2>
-      </div>
-      <ul class="styled">
-        <li>Add sequence diagrams — login, prediction, recommendation cache, analytics load</li>
-        <li>Add API request/response samples for each endpoint</li>
-        <li>Add role-permission matrix (student vs professor access)</li>
-        <li>Add production deployment section (Render + Netlify + DB)</li>
-      </ul>
     </section>
 
   </div>
