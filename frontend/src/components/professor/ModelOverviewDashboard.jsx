@@ -1009,12 +1009,6 @@ export default function ModelOverviewDashboard({
             </Card>
           </div>
 
-          {/* ── FIX 1: Exam Period Analysis ── */}
-          <Divider label="Exam Period Analysis (Apr vs Aug)" icon="📆" />
-          <Card icon="📆" title="Pass Rate by Exam Period" sub="April vs August sittings per year — auto-parsed from period labels" fullWidth>
-            <ExamPeriodSection periodData={periodData.length ? periodData : passByPeriod} selectedYear={selectedYear} />
-          </Card>
-
           {/* ── FIX 2: Subject Score Trends (GWA only) ── */}
           <Divider label="Subject Score Trends" icon="📐" />
           <div className="g2" style={{ marginBottom: 20 }}>
