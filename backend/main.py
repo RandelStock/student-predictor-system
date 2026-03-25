@@ -2169,6 +2169,183 @@ def defense_test_2025_predict(idx: int):
         "raw_answers": raw_answers,
     }
 
+# ══════════════════════════════════════════════════════════════════════════════
+# HELPERS FOR /dashboard
+# ══════════════════════════════════════════════════════════════════════════════
+
+def _to_int_year(series):
+    parsed = pd.to_datetime(series, errors="coerce")
+    if parsed.notna().sum() > len(series) * 0.5:
+        return parsed.dt.year
+    return pd.to_numeric(
+        series.astype(str).str.extract(r"(\d{4})")[0], errors="coerce"
+    )
+
+def _encode_pass(series):
+    return series.astype(str).str.strip().str.upper().map(
+        lambda x: 1 if x == "PASSED" else 0
+    )
+
+def _get_month_col(df):
+    return next(
+        (c for c in ["MONTH", "Month", "month", "PERIOD", "Period",
+                     "Exam Period", "EXAM_PERIOD", "Schedule", "SCHEDULE"]
+         if c in df.columns),
+        None
+    )
+
+def _build_passByPeriod(df):
+    month_col = _get_month_col(df)
+    year_col  = next((c for c in ["YEAR", "Year", "year"] if c in df.columns), None)
+
+    if not month_col or not year_col:
+        date_col = next(
+            (c for c in ["DATE", "Date", "EXAM_DATE", "Exam Date"] if c in df.columns), None
+        )
+        if date_col:
+            df = df.copy()
+            parsed = pd.to_datetime(df[date_col], errors="coerce")
+            df["_year"]  = parsed.dt.year
+            df["_month"] = parsed.dt.strftime("%b")
+        else:
+            return []
+    else:
+        df = df.copy()
+        df["_year"]  = _to_int_year(df[year_col])
+        df["_month"] = (
+            df[month_col].astype(str).str.strip()
+            .apply(lambda x: x[:3].capitalize() if len(x) >= 3 else x)
+        )
+
+    df["_passed"] = _encode_pass(df[COL_PASSED])
+    result = []
+    for (year, month), grp in df.groupby(["_year", "_month"]):
+        total   = len(grp)
+        passers = int(grp["_passed"].sum())
+        result.append({
+            "label":     f"{int(year)}-{month}",
+            "year":      int(year),
+            "month":     month,
+            "pass_rate": round(passers / total * 100, 2) if total else 0,
+            "passers":   passers,
+            "failers":   total - passers,
+            "total":     total,
+        })
+    return sorted(result, key=lambda x: (x["year"], x["month"]))
+
+
+def _build_subjectByYear(df):
+    year_col = next((c for c in ["YEAR", "Year", "year"] if c in df.columns), None)
+    if not year_col:
+        return []
+    df = df.copy()
+    df["_year"]   = _to_int_year(df[year_col]).astype("Int64")
+    df["_passed"] = _encode_pass(df[COL_PASSED])
+    result = []
+    for year, grp in df.groupby("_year"):
+        total   = len(grp)
+        passers = int(grp["_passed"].sum())
+        row = {
+            "label":     str(int(year)),
+            "pass_rate": round(passers / total * 100, 2) if total else 0,
+            "passers":   passers,
+            "failers":   total - passers,
+            "total":     total,
+        }
+        for subj in SUBJECT_COLS:
+            if subj in grp.columns:
+                row[f"{subj}_avg"] = round(float(grp[subj].mean()), 2)
+        if COL_GWA in grp.columns:
+            row["GWA_avg"] = round(float(grp[COL_GWA].mean()), 4)
+        result.append(row)
+    return sorted(result, key=lambda x: x["label"])
+
+
+_DASH_LIKERT_MAP = {
+    "STRONGLY AGREE": 1, "AGREE": 2, "NEUTRAL": 3,
+    "DISAGREE": 4, "STRONGLY DISAGREE": 5,
+}
+
+def _likert_to_num(val):
+    if pd.isna(val):
+        return np.nan
+    if isinstance(val, (int, float)):
+        return float(val)
+    return _DASH_LIKERT_MAP.get(str(val).strip().upper(), np.nan)
+
+
+def _build_sectionScores(df):
+    df = df.copy()
+    df["_passed"] = _encode_pass(df[COL_PASSED])
+    sv_passers = df[df["_passed"] == 1]
+    sv_failers = df[df["_passed"] == 0]
+    result = []
+    for section_name, cols in SURVEY_SECTIONS.items():
+        valid_cols = [c for c in cols if c in df.columns]
+        if not valid_cols:
+            continue
+        pass_vals = sv_passers[valid_cols].apply(
+            lambda col: col.map(_likert_to_num)
+        ).values.flatten()
+        fail_vals = sv_failers[valid_cols].apply(
+            lambda col: col.map(_likert_to_num)
+        ).values.flatten()
+        pass_avg = float(np.nanmean(pass_vals)) if len(pass_vals) else 0
+        fail_avg = float(np.nanmean(fail_vals)) if len(fail_vals) else 0
+        if pass_avg > 0 or fail_avg > 0:
+            result.append({
+                "label":    section_name,
+                "pass_avg": round(pass_avg, 3),
+                "fail_avg": round(fail_avg, 3),
+                "items":    len(valid_cols),
+            })
+    return result
+
+
+def _build_scatterData(df_test_raw):
+    df = df_test_raw.copy()
+    df.columns = df.columns.str.strip()
+    for col in FEATURES_BASIC:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0)
+    X = df.reindex(columns=FEATURES_BASIC, fill_value=0)
+    try:
+        predicted = regressor_a.predict(X)
+    except Exception as e:
+        print(f"[dashboard] scatter prediction error: {e}")
+        return []
+    actual = pd.to_numeric(df[COL_TOTAL_RATING], errors="coerce").fillna(0).values
+    return [
+        {
+            "actual":    round(float(actual[i]),    2),
+            "predicted": round(float(predicted[i]), 2),
+            "passed":    bool(actual[i] >= 70.0),
+        }
+        for i in range(len(df))
+    ]
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# ENDPOINT: GET /dashboard
+# ══════════════════════════════════════════════════════════════════════════════
+
+@app.get("/dashboard")
+def dashboard():
+    try:
+        df_main   = _load_main_df()
+        df_survey = _load_survey_df()
+        df_test_raw = pd.read_excel(FILE_TEST)
+        df_test_raw.columns = df_test_raw.columns.str.strip()
+    except Exception as e:
+        return {"error": f"Could not load data: {e}"}
+
+    return {
+        "passByPeriod":  _build_passByPeriod(df_main),
+        "subjectByYear": _build_subjectByYear(df_main),
+        "sectionScores": _build_sectionScores(df_survey),
+        "scatterData":   _build_scatterData(df_test_raw),
+    }
+
 
 # ══════════════════════════════════════════════════════════════════════════════
 # ENDPOINT: GET /health
