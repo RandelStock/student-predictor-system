@@ -61,7 +61,7 @@ export default function ProfessorPage({ onLogout }) {
   const [test2025RunLoading, setTest2025RunLoading] = useState(false);
   const [dashboardData, setDashboardData] = useState(null);
 
-  const [dashFilters, setDashFilters] = useState({ year: "", month: "", review: "", subject: "" });
+  const [dashFilters, setDashFilters] = useState({ year: "", period: "", review: "", subject: "" });
 
   // ── Fetch logic (unchanged) ───────────────────────────────────────────────
   const fetchAnalytics = useCallback(async () => {
@@ -241,7 +241,11 @@ export default function ProfessorPage({ onLogout }) {
   const passByReview  = useMemo(() => data?.pass_rate_by_review   ?? [],    [data]);
   const passByDur     = useMemo(() => data?.pass_rate_by_duration ?? [],    [data]);
   const featureImp    = useMemo(() => data?.feature_importance    ?? [],    [data]);
-  const sectionScores = useMemo(() => data?.section_scores        ?? [],    [data]);
+  const sectionScores = useMemo(() => {
+    const a = data?.section_scores ?? [];
+    const b = dashboardData?.sectionScores ?? [];
+    return (a && a.length) ? a : b;
+  }, [data, dashboardData]);
   const weakestQ      = useMemo(() => data?.weakest_questions     ?? [],    [data]);
   const subjectTrends = useMemo(() => data?.subject_trends_by_year ?? [],   [data]);
 
@@ -286,6 +290,26 @@ export default function ProfessorPage({ onLogout }) {
 
   const scatterData = useMemo(() => dashboardData?.scatterData ?? [], [dashboardData]);
 
+  const availablePeriods = useMemo(() => {
+    const raw = dashboardData?.passByPeriod ?? [];
+    const seen = new Set();
+    const result = [];
+    raw.forEach((d) => {
+      const key = d.label;
+      if (seen.has(key)) return;
+      seen.add(key);
+      result.push({
+        value: key,
+        label: `${d.month} ${d.year}`,
+        year: String(d.year),
+        month: d.month,
+      });
+    });
+    return result.sort((a, b) =>
+      a.year !== b.year ? a.year.localeCompare(b.year) : a.month.localeCompare(b.month)
+    );
+  }, [dashboardData]);
+
   const pieData = useMemo(() => [
     { name: "Passers", value: Number(ov.total_passers || 0), color: c.pass },
     { name: "Failers", value: Number(ov.total_failers || 0), color: c.fail },
@@ -326,6 +350,7 @@ export default function ProfessorPage({ onLogout }) {
           {activeTab === "model_overview" && (
             <ModelOverviewDashboard
               {...sharedProps}
+              availablePeriods={availablePeriods}
               ov={ov}
               pieData={pieData}
               reviewPieData={reviewPieData}

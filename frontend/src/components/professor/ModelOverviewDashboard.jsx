@@ -1058,7 +1058,7 @@ function SurveySectionViz({ sectionScores }) {
    MAIN COMPONENT
 ═══════════════════════════════════════════════════════════════ */
 export default function ModelOverviewDashboard({
-  dashFilters, setDashFilters, availableYears, localInsights,
+  dashFilters, setDashFilters, availableYears, availablePeriods, localInsights,
   ov, pieData: propPieData, passByYear, passByPeriod, subjectByYear,
   passByStrand, passByDur, reviewPieData: propReviewPieData,
   sectionScores, weakestQ,
@@ -1111,22 +1111,31 @@ export default function ModelOverviewDashboard({
     }),
   [displayRows]);
 
-  /* FIX 2: Subject trend — safe mapping with multiple field name fallbacks */
-  const subjectTrend = useMemo(() =>
-    (subjectByYear ?? displayRows).map((d) => ({
+  const subjectTrend = useMemo(() => {
+    const rows = subjectByYear ?? [];
+    const toNum = (v) => {
+      const n = Number(v);
+      return Number.isFinite(n) ? n : null;
+    };
+    return rows.map((d) => ({
       year: String(d.label || d.year || ""),
-      EE:   Number(d.EE_avg   ?? d.EE_Avg   ?? d.EE   ?? 0) || null,
-      MATH: Number(d.MATH_avg ?? d.MATH_Avg ?? d.MATH ?? 0) || null,
-      ESAS: Number(d.ESAS_avg ?? d.ESAS_Avg ?? d.ESAS ?? 0) || null,
-    })),
-  [subjectByYear, displayRows]);
+      EE:   toNum(d.EE_avg   ?? d.EE_Avg   ?? d.EE),
+      MATH: toNum(d.MATH_avg ?? d.MATH_Avg ?? d.MATH),
+      ESAS: toNum(d.ESAS_avg ?? d.ESAS_Avg ?? d.ESAS),
+    }));
+  }, [subjectByYear]);
 
-  /* Period data */
+  /* Period data — respect period and year filters */
   const periodData = useMemo(() => {
     const base = passByPeriod ?? [];
-    if (!selectedYear) return base;
-    return base.filter((d) => (d.label ?? "").includes(String(selectedYear)));
-  }, [passByPeriod, selectedYear]);
+    if (dashFilters?.period) {
+      return base.filter((d) => d.label === dashFilters.period);
+    }
+    if (dashFilters?.year) {
+      return base.filter((d) => String(d.year) === String(dashFilters.year));
+    }
+    return base;
+  }, [passByPeriod, dashFilters]);
 
   /* Survey radar */
   const radarData = useMemo(() =>
@@ -1209,7 +1218,12 @@ export default function ModelOverviewDashboard({
 
         {/* Sticky filter */}
         <div className="comb-filter-strip">
-          <FilterPanel filters={dashFilters} onChange={setDashFilters} availableYears={availableYears} />
+          <FilterPanel
+            filters={dashFilters}
+            onChange={setDashFilters}
+            availableYears={availableYears}
+            availablePeriods={availablePeriods ?? []}
+          />
           {selectedYear && (
             <div className="comb-year-pill">
               <span style={{ fontWeight: 700 }}>📅 Viewing:</span>

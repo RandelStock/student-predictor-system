@@ -2276,30 +2276,87 @@ def _likert_to_num(val):
 
 def _build_sectionScores(df):
     df = df.copy()
-    df["_passed"] = _encode_pass(df[COL_PASSED])
-    sv_passers = df[df["_passed"] == 1]
-    sv_failers = df[df["_passed"] == 0]
+    df["_passed"] = _encode_pass(df[COL_PASSED]) if COL_PASSED in df.columns else 0
+    sv_passers = df[df["_passed"] == 1] if "_passed" in df.columns else df.iloc[0:0]
+    sv_failers = df[df["_passed"] == 0] if "_passed" in df.columns else df.iloc[0:0]
+
+    def _norm(s: str) -> str:
+        return (
+            str(s)
+            .strip()
+            .lower()
+            .replace("—", "-")
+            .replace("–", "-")
+            .replace("  ", " ")
+        )
+
+    # Build normalized column map for tolerant matching
+    col_norm_map = {c: _norm(c) for c in df.columns}
+    norm_to_orig = {v: k for k, v in col_norm_map.items()}
+
+    # Primary: exact/tolerant match using SURVEY_SECTIONS strings
     result = []
+    any_found = False
     for section_name, cols in SURVEY_SECTIONS.items():
-        valid_cols = [c for c in cols if c in df.columns]
-        if not valid_cols:
+        norm_targets = {_norm(c) for c in cols}
+        valid_cols = [norm_to_orig[n] for n in norm_targets if n in norm_to_orig]
+        if valid_cols:
+            any_found = True
+            pass_vals = sv_passers[valid_cols].apply(lambda col: col.map(_likert_to_num)).values.flatten()
+            fail_vals = sv_failers[valid_cols].apply(lambda col: col.map(_likert_to_num)).values.flatten()
+            pass_avg = float(np.nanmean(pass_vals)) if len(pass_vals) else 0
+            fail_avg = float(np.nanmean(fail_vals)) if len(fail_vals) else 0
+            if pass_avg > 0 or fail_avg > 0:
+                result.append({
+                    "label":    section_name,
+                    "pass_avg": round(pass_avg, 3),
+                    "fail_avg": round(fail_avg, 3),
+                    "items":    len(valid_cols),
+                })
+
+    if any_found and result:
+        return result
+
+    # Fallback: prefix-based grouping (e.g., KN1.., PS1.., etc.)
+    prefix_map = {
+        "Knowledge":       ("kn",),
+        "Problem Solving": ("ps",),
+        "Motivation":      ("mt",),
+        "Mental Health":   ("mh",),
+        "Support":         ("ss",),
+        "Curriculum":      ("cu",),
+        "Faculty":         ("fq", "faculty"),
+        "Dept Review":     ("dr",),
+        "Facilities":      ("fa",),
+        "Inst. Culture":   ("ic",),
+    }
+
+    sec_cols = {sec: [] for sec in prefix_map.keys()}
+    for orig, norm in col_norm_map.items():
+        # find a prefix match like 'kn1', 'ps12', or names that start with the long label codes
+        for sec, prefixes in prefix_map.items():
+            for p in prefixes:
+                if norm.startswith(p) or norm.split()[0].startswith(p):
+                    sec_cols[sec].append(orig)
+                    break
+
+    result_fb = []
+    for sec, cols in sec_cols.items():
+        if not cols:
             continue
-        pass_vals = sv_passers[valid_cols].apply(
-            lambda col: col.map(_likert_to_num)
-        ).values.flatten()
-        fail_vals = sv_failers[valid_cols].apply(
-            lambda col: col.map(_likert_to_num)
-        ).values.flatten()
+        pass_vals = sv_passers[cols].apply(lambda col: col.map(_likert_to_num)).values.flatten()
+        fail_vals = sv_failers[cols].apply(lambda col: col.map(_likert_to_num)).values.flatten()
         pass_avg = float(np.nanmean(pass_vals)) if len(pass_vals) else 0
         fail_avg = float(np.nanmean(fail_vals)) if len(fail_vals) else 0
         if pass_avg > 0 or fail_avg > 0:
-            result.append({
-                "label":    section_name,
+            result_fb.append({
+                "label":    sec,
                 "pass_avg": round(pass_avg, 3),
                 "fail_avg": round(fail_avg, 3),
-                "items":    len(valid_cols),
+                "items":    len(cols),
             })
-    return result
+
+    return result_fb
 
 
 def _build_scatterData(df_test_raw):
@@ -2340,7 +2397,7 @@ def dashboard():
         return {"error": f"Could not load data: {e}"}
 
     return {
-        "passByPeriod":  _build_passByPeriod(df_main),
+        "passByPeriod":  _build_passByPeriod(df_survey),
         "subjectByYear": _build_subjectByYear(df_main),
         "sectionScores": _build_sectionScores(df_survey),
         "scatterData":   _build_scatterData(df_test_raw),

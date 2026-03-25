@@ -269,8 +269,7 @@ export function DashboardGuide({ title = "How to Read This Dashboard", items = [
 }
 
 // ── FilterPanel ───────────────────────────────────────────────────────────────
-export function FilterPanel({ filters = {}, onChange = () => {}, availableYears = [] }) {
-
+export function FilterPanel({ filters = {}, onChange = () => {}, availableYears = [], availablePeriods = [] }) {
   const inputStyle = {
     background: "rgba(255,255,255,0.05)",
     border: "1px solid rgba(255,255,255,0.1)",
@@ -292,63 +291,87 @@ export function FilterPanel({ filters = {}, onChange = () => {}, availableYears 
   };
 
   return (
-    <div
-      style={{
-        background: "rgba(255,255,255,0.025)",
-        border: "1px solid rgba(255,255,255,0.07)",
-        borderRadius: 16,
-        padding: "18px 20px",
-        marginBottom: 20,
-        display: "flex",
-        flexWrap: "wrap",
-        gap: 16,
-        alignItems: "flex-end",
-      }}
-    >
+    <div style={{
+      background: "rgba(255,255,255,0.025)",
+      border: "1px solid rgba(255,255,255,0.07)",
+      borderRadius: 16,
+      padding: "18px 20px",
+      marginBottom: 20,
+      display: "flex",
+      flexWrap: "wrap",
+      gap: 16,
+      alignItems: "flex-end",
+    }}>
+
+      {/* ── Year dropdown ── */}
       <div>
         <label style={labelStyle}>📅 Year</label>
         <select
           style={{
             ...inputStyle,
             background: "rgba(15,26,46,0.75)",
-            color: "#f1f5f9",
             borderColor: "rgba(56,189,248,0.35)",
             appearance: "none",
+            minWidth: 110,
           }}
           value={filters.year || ""}
-          onChange={(e) => onChange({ ...filters, year: e.target.value })}
+          onChange={(e) => onChange({ ...filters, year: e.target.value, period: "" })}
         >
-          <option value="" style={{ background: "#0f1a2e", color: "#f1f5f9" }}>All Years</option>
+          <option value="" style={{ background: "#0f1a2e" }}>All Years</option>
           {availableYears.map((y) => (
-            <option key={y} value={y} style={{ background: "#0f1a2e", color: "#f1f5f9" }}>
-              {y}
-            </option>
+            <option key={y} value={y} style={{ background: "#0f1a2e" }}>{y}</option>
           ))}
         </select>
       </div>
 
-      <div>
-        <label style={labelStyle}>🗓 Month</label>
-        <select
-          style={{
-            ...inputStyle,
-            background: "rgba(15,26,46,0.75)",
-            color: "#f1f5f9",
-            borderColor: "rgba(56,189,248,0.35)",
-            appearance: "none",
-          }}
-          value={filters.month || ""}
-          onChange={(e) => onChange({ ...filters, month: e.target.value })}
-        >
-          <option value="" style={{ background: "#0f1a2e", color: "#f1f5f9" }}>All Months</option>
-          {MONTH_NAMES.map((m, i) => (
-            <option key={i} value={i + 1} style={{ background: "#0f1a2e", color: "#f1f5f9" }}>
-              {m}
-            </option>
-          ))}
-        </select>
-      </div>
+      {/* ── Exam Period pills ── */}
+      {availablePeriods.length > 0 && (
+        <div>
+          <label style={labelStyle}>📆 Exam Period</label>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", maxWidth: 640 }}>
+            {/* All button */}
+            <button
+              onClick={() => onChange({ ...filters, period: "", year: "" })}
+              style={{
+                ...inputStyle,
+                background: !filters.period ? "rgba(245,197,24,0.18)" : "rgba(255,255,255,0.04)",
+                borderColor: !filters.period ? T.gold : "rgba(255,255,255,0.1)",
+                color: !filters.period ? T.gold : "#94a3b8",
+                padding: "7px 14px",
+                fontWeight: !filters.period ? 700 : 400,
+              }}
+            >
+              All
+            </button>
 
+            {/* One pill per unique period */}
+            {availablePeriods.map((p) => {
+              const active = filters.period === p.value;
+              const isApril = p.month?.toLowerCase().startsWith("apr");
+              const accent  = isApril ? "#38BDF8" : "#FB923C";
+              return (
+                <button
+                  key={p.value}
+                  onClick={() => onChange({ ...filters, period: p.value, year: p.year })}
+                  style={{
+                    ...inputStyle,
+                    background: active ? `${accent}22` : "rgba(255,255,255,0.04)",
+                    borderColor: active ? accent : "rgba(255,255,255,0.1)",
+                    color: active ? accent : "#94a3b8",
+                    padding: "7px 14px",
+                    fontWeight: active ? 700 : 400,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {p.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ── Review filter ── */}
       <div>
         <label style={labelStyle}>📖 Attended Formal Review?</label>
         <div style={{ display: "flex", gap: 6 }}>
@@ -358,11 +381,13 @@ export function FilterPanel({ filters = {}, onChange = () => {}, availableYears 
               onClick={() => onChange({ ...filters, review: v === "All" ? "" : v })}
               style={{
                 ...inputStyle,
-                background: filters.review === v || (!filters.review && v === "All") ? `${c.blue}25` : "rgba(255,255,255,0.04)",
-                borderColor:
-                  filters.review === v || (!filters.review && v === "All") ? c.blue : "rgba(255,255,255,0.1)",
-                color: filters.review === v || (!filters.review && v === "All") ? c.blue : "#94a3b8",
-                padding: "8px 14px",
+                background: (filters.review === v || (!filters.review && v === "All"))
+                  ? "rgba(56,189,248,0.18)" : "rgba(255,255,255,0.04)",
+                borderColor: (filters.review === v || (!filters.review && v === "All"))
+                  ? "rgba(56,189,248,0.5)" : "rgba(255,255,255,0.1)",
+                color: (filters.review === v || (!filters.review && v === "All"))
+                  ? "#38BDF8" : "#94a3b8",
+                padding: "7px 14px",
                 fontWeight: 600,
               }}
             >
@@ -372,14 +397,10 @@ export function FilterPanel({ filters = {}, onChange = () => {}, availableYears 
         </div>
       </div>
 
+      {/* ── Reset ── */}
       <button
-        onClick={() => onChange({ year: "", month: "", review: "", subject: "" })}
-        style={{
-          ...inputStyle,
-          padding: "8px 16px",
-          color: "#64748b",
-          marginTop: "auto",
-        }}
+        onClick={() => onChange({ year: "", period: "", review: "", subject: "" })}
+        style={{ ...inputStyle, padding: "8px 16px", color: "#64748b", marginTop: "auto" }}
       >
         ↺ Reset
       </button>
