@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+
 // Shared helpers/components for `ProfessorPage` (extracted to keep file size manageable).
 
 export const c = {
@@ -266,6 +268,59 @@ export function DashboardGuide({ title = "How to Read This Dashboard", items = [
         ))}
       </div>
     </div>
+  );
+}
+
+// ── Persistent toggle hook (localStorage) ──────────────────────────────────────
+export function usePersistentToggle(key, initialValue = true) {
+  const [open, setOpen] = useState(() => {
+    if (typeof window === "undefined") return initialValue;
+    const saved = localStorage.getItem(key);
+    if (saved === null) return initialValue;
+    return saved === "true";
+  });
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    localStorage.setItem(key, open ? "true" : "false");
+  }, [key, open]);
+
+  return [open, setOpen];
+}
+
+// ── CollapsibleGuide ───────────────────────────────────────────────────────────
+export function CollapsibleGuide({
+  storageKey,
+  title = "Data Analysis Guide",
+  summary = "More detailed analytics advice",
+  items = [],
+  defaultOpen = true,
+}) {
+  const [open, setOpen] = usePersistentToggle(storageKey, defaultOpen);
+
+  return (
+    <aside style={{ position: "sticky", top: 96, alignSelf: "start", background: "rgba(15, 28, 77, 0.85)", border: "1px solid rgba(245,197,24,0.2)", borderRadius: 14, padding: "14px 16px", lineHeight: 1.5 }}>
+      <button
+        onClick={() => setOpen((p) => !p)}
+        style={{ border: "none", background: "none", color: "#f8fafc", fontWeight: 700, cursor: "pointer", marginBottom: 8, display: "flex", justifyContent: "space-between", width: "100%", fontFamily: "'Inter',sans-serif" }}
+      >
+        {open ? "▾ " : "▸ "}{title}
+        <span style={{ color: "#cbd5e1", fontWeight: 400 }}>{open ? "Hide" : "Show"}</span>
+      </button>
+
+      <div style={{ maxHeight: open ? 420 : 0, overflow: "hidden", transition: "max-height 260ms ease, opacity 260ms ease", opacity: open ? 1 : 0 }}>
+        <p style={{ color: "#cbd5e1", fontSize: "clamp(11px, 1.2vw, 12px)", marginBottom: 10 }}>
+          {summary}
+        </p>
+        <ul style={{ margin: 0, paddingLeft: 18, color: "#cbd5e1", fontSize: "clamp(11px, 1.2vw, 12px)", lineHeight: 1.6 }}>
+          {items.map((item, idx) => (
+            <li key={idx}>
+              <strong>{item.title}</strong> {item.text}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </aside>
   );
 }
 

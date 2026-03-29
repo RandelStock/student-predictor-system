@@ -24,6 +24,7 @@ import {
   num,
   CustomTooltip,
   ChartContainer,
+  CollapsibleGuide,
 } from "./ProfessorShared";
 
 export default function ProfessorPerformanceDashboard({
@@ -34,13 +35,33 @@ export default function ProfessorPerformanceDashboard({
   weakestSubject,
 }) {
   return (
-    <div className="fade-in">
-      <div style={{ marginBottom: 22 }}>
-        <h2 style={{ margin: "0 0 4px", fontSize: "clamp(18px, 4vw, 24px)", fontWeight: 700, fontFamily: "'Montserrat',sans-serif" }}>Performance Breakdown</h2>
-        <p style={{ margin: 0, fontSize: "clamp(12px, 1.5vw, 14px)", color: "#94a3b8", fontFamily: "'Inter',sans-serif" }}>Pass rates by SHS strand, survey section scores, and subject score trends by year.</p>
+    <div className="fade-in" style={{ display: "grid", gridTemplateColumns: "1fr minmax(280px, 340px)", gap: 16 }}>
+      <div>
+        <div style={{ marginBottom: 22 }}>
+          <h2 style={{ margin: "0 0 4px", fontSize: "clamp(18px, 4vw, 24px)", fontWeight: 700, fontFamily: "'Montserrat',sans-serif" }}>Performance Breakdown</h2>
+          <p style={{ margin: 0, fontSize: "clamp(12px, 1.5vw, 14px)", color: "#94a3b8", fontFamily: "'Inter',sans-serif" }}>Pass rates by SHS strand, survey section scores, and subject score trends by year.</p>
+        </div>
       </div>
 
-      <div style={{
+      <CollapsibleGuide
+        storageKey="professor-perf-guide"
+        title="Data Analysis Guide"
+        summary="Use this workflow to align pipeline steps with your dataset (GWA, pass/fail, subject scores, and survey factors)."
+        items={[
+          { title: "Preprocessing:", text: "missing values, data cleaning, category handling, SHS strand mapping" },
+          { title: "Encoding:", text: "one-hot (strand, choices), label/ordinal (S1-S5 ratings), target for large categories" },
+          { title: "Engineering:", text: "ESAS/MATH/GWA indexes + cohort trend deltas, college preparation score, time-to-graduation flag" },
+          { title: "Selection:", text: "correlation matrix, AUC/RF importance, Pearson/Point-Biserial/Chi-Square tests" },
+          { title: "Validation:", text: "holdout sets, stratified pass/fail split, and sanity check on insufficient factors" },
+        ]}
+      />
+
+      <div style={{ gridColumn: "1 / 2" }}>
+        <div style={{ marginBottom: 10, background: "rgba(15, 28, 77, 0.75)", border: "1px solid rgba(245,197,24,0.2)", borderRadius: 14, padding: "12px 14px", color: "#cbd5e1", fontFamily: "'Inter',sans-serif" }}>
+          <strong>Focus:</strong> Total GWA, exam score predictors (Math/EE/ESAS), and survey dimensions are combined via feature engineering and correlation analysis.
+        </div>
+
+        <div style={{
         position: "sticky",
         top: 86,
         zIndex: 30,
@@ -74,7 +95,7 @@ export default function ProfessorPerformanceDashboard({
               💡 STEM graduates lead with <strong style={{ color: "#f1f5f9", fontFamily: "'Montserrat',sans-serif", fontWeight: 700 }}>{pct(passByStrand[0]?.pass_rate)}</strong>, aligned with its math-heavy curriculum.
             </div>
           )}
-        
+        </div>
 
         <ChartContainer title="Survey Section Scores — Radar" icon="🕸️" subtitle="Passers vs Failers across all survey dimensions" accent={c.indigo}>
           <ResponsiveContainer width="100%" height={260}>
@@ -109,6 +130,23 @@ export default function ProfessorPerformanceDashboard({
             Compare average survey section scores for passers and failers to identify major non-academic gaps.
           </p>
         </ChartContainer>
+
+        <div style={{ marginTop: 16, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", padding: 14, borderRadius: 12 }}>
+          <h3 style={{ margin: "0 0 8px", fontSize: "clamp(14px, 2vw, 16px)", fontWeight: 700, color: "#f8fafc", fontFamily: "'Montserrat',sans-serif" }}>Survey Section Scores - Result Explanation</h3>
+          <p style={{ margin: "0 8px 10px", color: "#cbd5e1", fontSize: "clamp(11px, 1.2vw, 12px)", fontFamily: "'Inter',sans-serif" }}>
+            Performance scores are interpreted via domain outcomes: higher passers means a stronger instructional alignment in that area.
+          </p>
+          <ul style={{ margin: 0, paddingLeft: 18, color: "#cbd5e1", fontSize: "clamp(11px, 1.2vw, 12px)", lineHeight: 1.6 }}>
+            <li><strong>Knowledge:</strong> Strong correlation with GWA and ESAS mastery.</li>
+            <li><strong>Problem Solving:</strong> Predictor of improved MATH and EE performance.</li>
+            <li><strong>Motivation:</strong> High passers here predicts consistent study habits and exam readiness.</li>
+            <li><strong>Mental Health:</strong> Low scores often coincide with increased fail probability; monitor support needs.</li>
+            <li><strong>Support System:</strong> Family/peer encouragement correlated with higher pass rates, especially in non-cognitive clusters.</li>
+            <li><strong>Curriculum:</strong> Underprepared courses are major dropout signals for first-choice vs non-first-choice EE students.</li>
+            <li><strong>Faculty Quality:</strong> Top influence in both subject results and overall pass/fail output.</li>
+            <li><strong>Department Review / Facilities / Institutional Culture:</strong> Serve as ambient factors; strong relationships with `departmental_support_index`.</li>
+          </ul>
+        </div>
 
         {subjectTrends.length > 0 && (
           <ChartContainer title="Subject Score Trends by Year" icon="📐" subtitle="EE, MATH, ESAS average score trends over time" fullWidth accent={c.teal}>

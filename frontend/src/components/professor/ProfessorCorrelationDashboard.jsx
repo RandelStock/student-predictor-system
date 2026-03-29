@@ -1,4 +1,4 @@
-import { c, ChartContainer, FilterPanel } from "./ProfessorShared";
+import { c, ChartContainer, FilterPanel, CollapsibleGuide } from "./ProfessorShared";
 
 /* ─── IIEE Design Tokens ──────────────────────────────────────────────────── */
 const IIEE_COLORS = {

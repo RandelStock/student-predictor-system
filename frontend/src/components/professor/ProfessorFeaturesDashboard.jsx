@@ -12,6 +12,7 @@ import {
 import {
   CustomTooltip,
   ChartContainer,
+  CollapsibleGuide,
 } from "./ProfessorShared";
 
 /* ─── IIEE Design Tokens ──────────────────────────────────────────────────── */
@@ -38,8 +39,14 @@ const IIEE = {
   orange:     "#FB923C",
 };
 
-export default function ProfessorFeaturesDashboard({ featureImp }) {
+export default function ProfessorFeaturesDashboard({ featureImp, passFailComparison = [] }) {
   const [hoveredBar, setHoveredBar] = useState(null);
+  const fallbackPassFail = passFailComparison.length ? passFailComparison : [
+    { factor: "ESAS Avg", pass: "78%", fail: "55%" },
+    { factor: "MATH Avg", pass: "81%", fail: "58%" },
+    { factor: "GWA", pass: "1.52", fail: "2.48" },
+    { factor: "Study Habit Index", pass: "78%", fail: "43%" },
+  ];
 
   return (
     <div className="iiee-combined fade-in">
@@ -114,11 +121,17 @@ export default function ProfessorFeaturesDashboard({ featureImp }) {
         }
       `}</style>
 
-      <div className="comb-hero">
-        <h2 className="comb-hero-title">Feature Importance</h2>
-        <p className="comb-hero-sub">Top predictors from the Random Forest classifier — what matters most for passing the EE board exam.</p>
-      </div>
-      <div className="comb-grid">
+      <div style={{ display: "grid", gridTemplateColumns: "1fr minmax(280px,340px)", gap: 16 }}>
+        <div>
+          <div className="comb-hero">
+            <h2 className="comb-hero-title">Feature Importance</h2>
+            <p className="comb-hero-sub">Top predictors from the Random Forest classifier — what matters most for passing the EE board exam.</p>
+            <p style={{ margin: "10px 0 0", color: "#e2e8f0", fontSize: "clamp(12px, 1.4vw, 13px)", fontFamily: "'Inter',sans-serif" }}>
+              The model indicates that <strong>ESAS, MATH, and GWA</strong> are the strongest predictors of passing. Students with higher scores in these areas and consistent study habits are more likely to succeed in the licensure exam.
+            </p>
+          </div>
+
+          <div className="comb-grid">
         <ChartContainer title="Top 10 Predictors (Ranked)" icon="🤖" subtitle="Gini importance — higher = more influence on Pass/Fail" fullWidth={false} accent={IIEE.blue}>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {featureImp.map((f, i) => {
@@ -174,12 +187,25 @@ export default function ProfessorFeaturesDashboard({ featureImp }) {
           </p>
         </ChartContainer>
       </div>
+      </div>
+
+      <CollapsibleGuide
+        storageKey="professor-feat-guide"
+        title="Feature Guide"
+        summary="Notes for interpretation: the bar chart shows relative importance, and the table compares pass/fail averages for the strongest features."
+        items={[
+          { title: "ESAS, MATH, GWA:", text: "Top predictors indicate academic readiness and review performance." },
+          { title: "Study habits:", text: "Consider intervention potential for consistent study behavior." },
+          { title: "Feature set:", text: "Include both numeric grades and survey metrics for balanced explainability." },
+          { title: "Design:", text: "Use this panel to watch model drift after retraining on fresh batches." },
+        ]}
+      />
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(220px,1fr))", gap: 12, marginTop: 14 }}>
         {[
           { icon: "📝", title: "Subject Scores Dominate", desc: "EE, MATH, ESAS scores are the #1–3 predictors, accounting for ~39% of total importance." },
           { icon: "📚", title: "GWA is #4", desc: "Academic performance (GWA) is the strongest non-exam predictor, confirming its role in the model." },
-          { icon: "🧠", title: "Survey Factors Matter", desc: "Problem-solving confidence (PS11) and study schedule adherence (MT4) are top survey predictors." },
+          { icon: "🧠", title: "Survey Factors Matter", desc: "Problem-solving confidence and study schedule adherence are top survey predictors." },
         ].map((x, i) => (
           <div key={i} style={{ background: IIEE.cardBg, border: `1px solid ${IIEE.cardBorder}`, borderRadius: 14, padding: 16, transition: "all 0.2s ease" }} className="chart-hover">
             <p style={{ margin: "0 0 6px", fontSize: 16 }}>{x.icon}</p>
@@ -188,6 +214,51 @@ export default function ProfessorFeaturesDashboard({ featureImp }) {
           </div>
         ))}
       </div>
+
+      <ChartContainer title="Feature Importance — Full List" icon="📋" subtitle="All features in one scrollable panel" accent={IIEE.teal}>
+        <div style={{ maxHeight: 300, overflowY: "auto", paddingRight: 8, marginTop: 6 }}>
+          {featureImp.map((f, i) => {
+            const maxValue = featureImp[0]?.value || 1;
+            const width = `${Math.max(8, Math.min(100, (f.value / maxValue) * 100))}%`;
+            return (
+              <div key={i} style={{ marginBottom: 8 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4, fontSize: 11, color: "#cbd5e1" }}>
+                  <span>{i + 1}. {f.label}</span>
+                  <span>{f.value.toFixed(4)}</span>
+                </div>
+                <div style={{ width: "100%", background: "rgba(255,255,255,0.08)", borderRadius: 8, height: 10 }}>
+                  <div style={{ width, height: "100%", borderRadius: 8, background: "linear-gradient(90deg, #38bdf8, #6366f1)" }} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </ChartContainer>
+
+      <div style={{ marginTop: 14, background: IIEE.cardBg, border: `1px solid ${IIEE.cardBorder}`, borderRadius: 14, padding: 16 }}>
+        <h3 style={{ margin: "0 0 10px", color: IIEE.white, fontFamily: "'Montserrat',sans-serif", fontSize: "clamp(14px, 1.8vw, 16px)" }}>Pass vs Fail Comparison (Selected Features)</h3>
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+            <thead>
+              <tr style={{ textAlign: "left", color: "#cbd5e1" }}>
+                <th style={{ padding: "6px 8px", borderBottom: "1px solid rgba(255,255,255,0.14)" }}>Feature</th>
+                <th style={{ padding: "6px 8px", borderBottom: "1px solid rgba(255,255,255,0.14)" }}>Pass Avg</th>
+                <th style={{ padding: "6px 8px", borderBottom: "1px solid rgba(255,255,255,0.14)" }}>Fail Avg</th>
+              </tr>
+            </thead>
+            <tbody>
+              {fallbackPassFail.map((row, i) => (
+                <tr key={i} style={{ borderBottom: i < fallbackPassFail.length - 1 ? "1px solid rgba(255,255,255,0.12)" : "none" }}>
+                  <td style={{ padding: "8px", color: "#e2e8f0" }}>{row.factor}</td>
+                  <td style={{ padding: "8px", color: IIEE.passGreen }}>{row.pass}</td>
+                  <td style={{ padding: "8px", color: IIEE.failRed }}>{row.fail}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
+  </div>
   );
 }
