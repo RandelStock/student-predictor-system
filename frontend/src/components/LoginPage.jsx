@@ -37,6 +37,11 @@ export default function LoginPage({ role, onSuccess, onBack }) {
   const [showCode, setShowCode]     = useState(false);
   const [isRegister, setIsRegister] = useState(false);
 
+  // Faculty login security: two-step process
+  const [facultyCodeVerified, setFacultyCodeVerified] = useState(false);
+  const [facultyCodeInput, setFacultyCodeInput] = useState("");
+  const [facultyCodeLoading, setFacultyCodeLoading] = useState(false);
+
   const isProfessor  = role === "professor";
   const accentColor  = isProfessor ? T.purple    : T.blue;
   const accentGlow   = isProfessor ? T.purpleDim : "rgba(56,189,248,0.15)";
@@ -48,6 +53,30 @@ export default function LoginPage({ role, onSuccess, onBack }) {
     ? "0 8px 28px rgba(124,58,237,0.35)"
     : "0 8px 28px rgba(14,165,233,0.35)";
 
+  // Faculty code verification (two-step login)
+  const handleFacultyCodeVerify = async (e) => {
+    e?.preventDefault();
+    setError("");
+
+    if (!facultyCodeInput.trim()) {
+      setError("Please enter the faculty access code.");
+      return;
+    }
+
+    if (facultyCodeInput.trim() !== "smbrjl") {
+      setError("Invalid faculty access code. Please contact your administrator.");
+      return;
+    }
+
+    setFacultyCodeLoading(true);
+    // Simulate brief verification delay
+    setTimeout(() => {
+      setFacultyCodeVerified(true);
+      setFacultyCodeLoading(false);
+      setError("");
+    }, 500);
+  };
+
   const handleSubmit = async (e) => {
     e?.preventDefault();
     setError("");
@@ -57,6 +86,13 @@ export default function LoginPage({ role, onSuccess, onBack }) {
         setError("Please fill in name, email, and password.");
         return;
       }
+
+      // SLSU email validation for account creation
+      if (!email.toLowerCase().endsWith("@slsu.edu.ph")) {
+        setError("Account creation is restricted to SLSU institutional emails (@slsu.edu.ph).");
+        return;
+      }
+
       if (isProfessor && !inviteCode.trim()) {
         setError("Faculty access code is required to register.");
         return;
@@ -323,9 +359,11 @@ export default function LoginPage({ role, onSuccess, onBack }) {
                 fontFamily:"'Montserrat',sans-serif",
                 lineHeight:1.1,
               }}>
-                {isRegister
-                  ? isProfessor ? "Faculty Registration" : "Student Register"
-                  : isProfessor ? "Faculty Login" : "Student Login"}
+                {isProfessor && !isRegister && !facultyCodeVerified
+                  ? "Faculty Access Verification"
+                  : isRegister
+                    ? isProfessor ? "Faculty Registration" : "Student Register"
+                    : isProfessor ? "Faculty Login" : "Student Login"}
               </h2>
             </div>
           </div>
@@ -339,13 +377,15 @@ export default function LoginPage({ role, onSuccess, onBack }) {
             borderLeft:`2px solid ${T.border}`,
             paddingLeft:10,
           }}>
-            {isRegister
-              ? isProfessor
-                ? "Faculty registration requires a valid institutional email and the department access code."
-                : "Create your account to access the EE board exam readiness survey."
-              : isProfessor
-                ? "Access the institutional analytics and insights dashboard."
-                : "Take the EE board exam readiness predictor survey."}
+            {isProfessor && !isRegister && !facultyCodeVerified
+              ? "Enter your faculty access code to proceed with login."
+              : isRegister
+                ? isProfessor
+                  ? "Faculty registration requires a valid institutional email and the department access code."
+                  : "Create your account to access the EE board exam readiness survey."
+                : isProfessor
+                  ? "Access the institutional analytics and insights dashboard."
+                  : "Take the EE board exam readiness predictor survey."}
           </p>
 
           {/* Faculty-only access warning */}
@@ -367,86 +407,23 @@ export default function LoginPage({ role, onSuccess, onBack }) {
           )}
 
           {/* ── Form fields ─────────────────────────────────────────────── */}
-          <form onSubmit={handleSubmit} style={{ display:"flex", flexDirection:"column", gap:14 }}>
-
-            {/* Full Name — register only */}
-            {isRegister && (
+          {/* Faculty two-step login: Code verification first */}
+          {isProfessor && !isRegister && !facultyCodeVerified ? (
+            <form onSubmit={handleFacultyCodeVerify} style={{ display:"flex", flexDirection:"column", gap:14 }}>
               <div>
                 <label style={{
                   display:"block", fontSize:"clamp(9px, 1.2vw, 10px)", fontWeight:700,
                   color:T.dimText, textTransform:"uppercase",
                   letterSpacing:"0.1em", marginBottom:6,
                   fontFamily:"'Inter',sans-serif",
-                }}>Full Name</label>
-                <input
-                  className="lp-input"
-                  type="text"
-                  placeholder="e.g. Juan Dela Cruz"
-                  value={name}
-                  onChange={e => { setName(e.target.value); setError(""); }}
-                  autoComplete="name"
-                />
-              </div>
-            )}
-
-            {/* Email */}
-            <div>
-              <label style={{
-                display:"block", fontSize:"clamp(9px, 1.2vw, 10px)", fontWeight:700,
-                color:T.dimText, textTransform:"uppercase",
-                letterSpacing:"0.1em", marginBottom:6,
-                fontFamily:"'Inter',sans-serif",
-              }}>Email</label>
-              <input
-                className="lp-input"
-                type="email"
-                placeholder={isProfessor ? "professor@slsu.edu.ph" : "student@slsu.edu.ph"}
-                value={email}
-                onChange={e => { setEmail(e.target.value); setError(""); }}
-                autoComplete="email"
-              />
-            </div>
-
-            {/* Password */}
-            <div>
-              <label style={{
-                display:"block", fontSize:10, fontWeight:700,
-                color:T.dimText, textTransform:"uppercase",
-                letterSpacing:"0.1em", marginBottom:6,
-                fontFamily:"'DM Sans',sans-serif",
-              }}>Password</label>
-              <div style={{ position:"relative" }}>
-                <input
-                  className="lp-input"
-                  type={showPass ? "text" : "password"}
-                  placeholder={isRegister ? "Create a password" : "Enter your password"}
-                  value={password}
-                  onChange={e => { setPassword(e.target.value); setError(""); }}
-                  autoComplete={isRegister ? "new-password" : "current-password"}
-                  style={{ paddingRight:44 }}
-                />
-                <button type="button" className="lp-eye-btn" onClick={() => setShowPass(p => !p)}>
-                  {showPass ? "🙈" : "👁️"}
-                </button>
-              </div>
-            </div>
-
-            {/* Faculty Access Code — professor register only */}
-            {isProfessor && isRegister && (
-              <div>
-                <label style={{
-                  display:"block", fontSize:10, fontWeight:700,
-                  color:accentColor, textTransform:"uppercase",
-                  letterSpacing:"0.1em", marginBottom:6,
-                  fontFamily:"'DM Sans',sans-serif",
                 }}>🔑 Faculty Access Code</label>
                 <div style={{ position:"relative" }}>
                   <input
                     className="lp-input lp-code-input"
                     type={showCode ? "text" : "password"}
-                    placeholder="Enter access code"
-                    value={inviteCode}
-                    onChange={e => { setInviteCode(e.target.value); setError(""); }}
+                    placeholder="Enter faculty access code"
+                    value={facultyCodeInput}
+                    onChange={e => { setFacultyCodeInput(e.target.value); setError(""); }}
                     autoComplete="off"
                     style={{ paddingRight:44 }}
                   />
@@ -454,52 +431,202 @@ export default function LoginPage({ role, onSuccess, onBack }) {
                     {showCode ? "🙈" : "👁️"}
                   </button>
                 </div>
-                <p style={{ margin:"5px 0 0", fontSize:11, color:T.dimText, fontFamily:"'DM Sans',sans-serif" }}>
-                  Contact your department administrator for this code.
+                <p style={{ margin:"5px 0 0", fontSize:11, color:T.dimText, fontFamily:"'Inter',sans-serif" }}>
+                  Enter the department access code to proceed with login.
                 </p>
               </div>
-            )}
 
-            {/* Error message */}
-            {error && (
-              <div style={{
-                background:"rgba(239,68,68,0.08)",
-                border:"1px solid rgba(239,68,68,0.25)",
-                borderRadius:10, padding:"10px 12px",
-                fontSize:12, color:"#fca5a5",
-                fontFamily:"'DM Sans',sans-serif",
-                display:"flex", alignItems:"flex-start", gap:7,
-              }}>
-                <span style={{ flexShrink:0 }}>⚠️</span>
-                <span>{error}</span>
+              {/* Error message */}
+              {error && (
+                <div style={{
+                  background:"rgba(239,68,68,0.08)",
+                  border:"1px solid rgba(239,68,68,0.25)",
+                  borderRadius:10, padding:"10px 12px",
+                  fontSize:12, color:"#fca5a5",
+                  fontFamily:"'Inter',sans-serif",
+                  display:"flex", alignItems:"flex-start", gap:7,
+                }}>
+                  <span style={{ flexShrink:0 }}>⚠️</span>
+                  <span>{error}</span>
+                </div>
+              )}
+
+              {/* Verify button */}
+              <button
+                className="lp-btn"
+                type="submit"
+                disabled={facultyCodeLoading}
+                style={{
+                  background:  facultyCodeLoading ? "rgba(255,255,255,0.05)" : gradientBtn,
+                  color:       facultyCodeLoading ? T.dimText : T.white,
+                  marginTop:   4,
+                  boxShadow:   facultyCodeLoading ? "none" : shadowBtn,
+                }}
+              >
+                {facultyCodeLoading ? (
+                  <span style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+                    <svg style={{ animation:"lp-spin 0.8s linear infinite", width:14, height:14 }} viewBox="0 0 24 24" fill="none">
+                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" opacity=".25"/>
+                      <path d="M4 12a8 8 0 018-8" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/>
+                    </svg>
+                    Verifying…
+                  </span>
+                ) : "Verify Code →"}
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleSubmit} style={{ display:"flex", flexDirection:"column", gap:14 }}>
+
+              {/* Full Name — register only */}
+              {isRegister && (
+                <div>
+                  <label style={{
+                    display:"block", fontSize:"clamp(9px, 1.2vw, 10px)", fontWeight:700,
+                    color:T.dimText, textTransform:"uppercase",
+                    letterSpacing:"0.1em", marginBottom:6,
+                    fontFamily:"'Inter',sans-serif",
+                  }}>Full Name</label>
+                  <input
+                    className="lp-input"
+                    type="text"
+                    placeholder="e.g. Juan Dela Cruz"
+                    value={name}
+                    onChange={e => { setName(e.target.value); setError(""); }}
+                    autoComplete="name"
+                  />
+                </div>
+              )}
+
+              {/* Email */}
+              <div>
+                <label style={{
+                  display:"block", fontSize:"clamp(9px, 1.2vw, 10px)", fontWeight:700,
+                  color:T.dimText, textTransform:"uppercase",
+                  letterSpacing:"0.1em", marginBottom:6,
+                  fontFamily:"'Inter',sans-serif",
+                }}>Email</label>
+                <input
+                  className="lp-input"
+                  type="email"
+                  placeholder={isProfessor ? "professor@slsu.edu.ph" : "student@slsu.edu.ph"}
+                  value={email}
+                  onChange={e => { setEmail(e.target.value); setError(""); }}
+                  autoComplete="email"
+                />
               </div>
-            )}
 
-            {/* Submit button */}
-            <button
-              className="lp-btn"
-              type="submit"
-              disabled={loading}
-              style={{
-                background:  loading ? "rgba(255,255,255,0.05)" : gradientBtn,
-                color:       loading ? T.dimText : T.white,
-                marginTop:   4,
-                boxShadow:   loading ? "none" : shadowBtn,
-              }}
-            >
-              {loading ? (
-                <span style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
-                  <svg style={{ animation:"lp-spin 0.8s linear infinite", width:14, height:14 }} viewBox="0 0 24 24" fill="none">
-                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" opacity=".25"/>
-                    <path d="M4 12a8 8 0 018-8" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/>
-                  </svg>
-                  {isRegister ? "Creating account…" : "Signing in…"}
-                </span>
-              ) : isRegister
-                ? `Register as ${isProfessor ? "Faculty" : "Student"} →`
-                : `Sign In as ${isProfessor ? "Faculty" : "Student"} →`}
-            </button>
-          </form>
+              {/* Password */}
+              <div>
+                <label style={{
+                  display:"block", fontSize:"clamp(9px, 1.2vw, 10px)", fontWeight:700,
+                  color:T.dimText, textTransform:"uppercase",
+                  letterSpacing:"0.1em", marginBottom:6,
+                  fontFamily:"'Inter',sans-serif",
+                }}>Password</label>
+                <div style={{ position:"relative" }}>
+                  <input
+                    className="lp-input"
+                    type={showPass ? "text" : "password"}
+                    placeholder={isRegister ? "Create a password" : "Enter your password"}
+                    value={password}
+                    onChange={e => { setPassword(e.target.value); setError(""); }}
+                    autoComplete={isRegister ? "new-password" : "current-password"}
+                    style={{ paddingRight:44 }}
+                  />
+                  <button type="button" className="lp-eye-btn" onClick={() => setShowPass(p => !p)}>
+                    {showPass ? "🙈" : "👁️"}
+                  </button>
+                </div>
+              </div>
+
+              {/* Faculty Access Code — professor register only */}
+              {isProfessor && isRegister && (
+                <div>
+                  <label style={{
+                    display:"block", fontSize:"clamp(9px, 1.2vw, 10px)", fontWeight:700,
+                    color:accentColor, textTransform:"uppercase",
+                    letterSpacing:"0.1em", marginBottom:6,
+                    fontFamily:"'Inter',sans-serif",
+                  }}>🔑 Faculty Access Code</label>
+                  <div style={{ position:"relative" }}>
+                    <input
+                      className="lp-input lp-code-input"
+                      type={showCode ? "text" : "password"}
+                      placeholder="Enter access code"
+                      value={inviteCode}
+                      onChange={e => { setInviteCode(e.target.value); setError(""); }}
+                      autoComplete="off"
+                      style={{ paddingRight:44 }}
+                    />
+                    <button type="button" className="lp-eye-btn" onClick={() => setShowCode(p => !p)}>
+                      {showCode ? "🙈" : "👁️"}
+                    </button>
+                  </div>
+                  <p style={{ margin:"5px 0 0", fontSize:11, color:T.dimText, fontFamily:"'Inter',sans-serif" }}>
+                    Contact your department administrator for this code.
+                  </p>
+                </div>
+              )}
+
+              {/* Error message */}
+              {error && (
+                <div style={{
+                  background:"rgba(239,68,68,0.08)",
+                  border:"1px solid rgba(239,68,68,0.25)",
+                  borderRadius:10, padding:"10px 12px",
+                  fontSize:12, color:"#fca5a5",
+                  fontFamily:"'Inter',sans-serif",
+                  display:"flex", alignItems:"flex-start", gap:7,
+                }}>
+                  <span style={{ flexShrink:0 }}>⚠️</span>
+                  <span>{error}</span>
+                </div>
+              )}
+
+              {/* Submit button */}
+              <button
+                className="lp-btn"
+                type="submit"
+                disabled={loading}
+                style={{
+                  background:  loading ? "rgba(255,255,255,0.05)" : gradientBtn,
+                  color:       loading ? T.dimText : T.white,
+                  marginTop:   4,
+                  boxShadow:   loading ? "none" : shadowBtn,
+                }}
+              >
+                {loading ? (
+                  <span style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+                    <svg style={{ animation:"lp-spin 0.8s linear infinite", width:14, height:14 }} viewBox="0 0 24 24" fill="none">
+                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" opacity=".25"/>
+                      <path d="M4 12a8 8 0 018-8" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/>
+                    </svg>
+                    {isRegister ? "Creating account…" : "Signing in…"}
+                  </span>
+                ) : isRegister
+                  ? `Register as ${isProfessor ? "Faculty" : "Student"} →`
+                  : `Sign In as ${isProfessor ? "Faculty" : "Student"} →`}
+              </button>
+            </form>
+          )}
+
+          {/* Back to code verification for faculty login */}
+          {isProfessor && !isRegister && facultyCodeVerified && (
+            <div style={{
+              marginTop:  14,
+              paddingTop: 12,
+              borderTop:  `1px solid ${T.borderSub}`,
+              textAlign:  "center",
+            }}>
+              <button
+                type="button"
+                className="lp-toggle"
+                onClick={() => { setFacultyCodeVerified(false); setFacultyCodeInput(""); setError(""); }}
+              >
+                ← Back to code verification
+              </button>
+            </div>
+          )}
 
           {/* Toggle login ↔ register */}
           <div style={{
@@ -508,7 +635,7 @@ export default function LoginPage({ role, onSuccess, onBack }) {
             borderTop:  `1px solid ${T.borderSub}`,
             fontSize:   11,
             color:      T.dimText,
-            fontFamily: "'DM Sans',sans-serif",
+            fontFamily: "'Inter',sans-serif",
             textAlign:  "center",
           }}>
             {isRegister ? (
@@ -517,7 +644,7 @@ export default function LoginPage({ role, onSuccess, onBack }) {
                 <button
                   type="button"
                   className="lp-toggle"
-                  onClick={() => { setIsRegister(false); setError(""); setInviteCode(""); }}
+                  onClick={() => { setIsRegister(false); setError(""); setInviteCode(""); setFacultyCodeVerified(false); setFacultyCodeInput(""); }}
                 >
                   Sign in instead
                 </button>
@@ -528,7 +655,7 @@ export default function LoginPage({ role, onSuccess, onBack }) {
                 <button
                   type="button"
                   className="lp-toggle"
-                  onClick={() => { setIsRegister(true); setError(""); }}
+                  onClick={() => { setIsRegister(true); setError(""); setFacultyCodeVerified(false); setFacultyCodeInput(""); }}
                 >
                   Create an account
                 </button>
