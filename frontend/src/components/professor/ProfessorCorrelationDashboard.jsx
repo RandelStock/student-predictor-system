@@ -2,13 +2,13 @@ import { c, ChartContainer, FilterPanel, CollapsibleGuide } from "./ProfessorSha
 
 /* ─── IIEE Design Tokens ──────────────────────────────────────────────────── */
 const IIEE_COLORS = {
-  primary: '#1e3a8a', // Navy blue
-  secondary: '#fbbf24', // Gold
-  accent: '#06b6d4', // Cyan
-  background: '#0f172a', // Dark navy
-  surface: '#1e293b', // Slate
-  text: '#f8fafc', // Light gray
-  muted: '#64748b', // Muted slate
+  primary: '#1e3a8a',
+  secondary: '#fbbf24',
+  accent: '#06b6d4',
+  background: '#0f172a',
+  surface: '#1e293b',
+  text: '#f8fafc',
+  muted: '#64748b',
 };
 
 /* ─── Styles ──────────────────────────────────────────────────────────────── */
@@ -46,41 +46,146 @@ const styles = `
   }
 `;
 
+/* ─── Guide content for the CollapsibleGuide ─────────────────────────────── */
+const GUIDE_SECTIONS = [
+  {
+    title: "What is a Correlation Matrix?",
+    content:
+      "A correlation matrix shows Pearson correlation coefficients (r) between pairs of academic variables. Each cell tells you how strongly two variables move together — whether higher values in one tend to come with higher or lower values in another.",
+  },
+  {
+    title: "How to Read the Values",
+    content:
+      "Values range from -1.00 to +1.00. A value near +1 means a strong positive relationship (both go up together). Near -1 means a strong negative relationship (one goes up as the other goes down). Near 0 means little to no linear relationship. The diagonal always shows 1.00 — each variable perfectly correlates with itself.",
+  },
+  {
+    title: "Color Coding",
+    content:
+      "🟢 Green cells (|r| ≥ 0.70) indicate strong correlations worth investigating further. 🟡 Amber cells (0.40 ≤ |r| < 0.70) indicate moderate correlations. ⬜ Muted/gray cells indicate weak or negligible correlations. Diagonal cells are always muted since they are self-correlations.",
+  },
+  {
+    title: "Correlation ≠ Causation",
+    content:
+      "A high correlation between two variables does not mean one causes the other. A third hidden variable may be influencing both. Use correlations as a starting point for deeper investigation — not as definitive proof of cause and effect.",
+  },
+  {
+    title: "Using This for Interventions",
+    content:
+      "Variables with strong correlations to exam outcomes (pass/fail, PRC rating) are your highest-leverage targets. If a survey factor like 'Departmental Review Quality' strongly correlates with passing, investing in that area is likely to move outcomes. Cross-reference with the Feature Importance tab to confirm.",
+  },
+];
+
 export default function ProfessorCorrelationDashboard({ correlation }) {
   return (
     <div className="correlation-dashboard fade-in">
       <style>{styles}</style>
+
+      {/* ── Page Header ── */}
       <div style={{ marginBottom: 22 }}>
-        <h2 style={{ margin: "0 0 4px", fontSize: "clamp(18px, 4vw, 24px)", fontWeight: 700, fontFamily: "'Montserrat',sans-serif", color: IIEE_COLORS.secondary }}>Correlation Matrix</h2>
-        <p style={{ margin: 0, fontSize: "clamp(12px, 1.5vw, 14px)", color: "#cbd5e1", fontFamily: "'Inter',sans-serif" }}>Pearson correlations between key academic variables and exam outcome.</p>
+        <h2 style={{
+          margin: "0 0 4px",
+          fontSize: "clamp(18px, 4vw, 24px)",
+          fontWeight: 700,
+          fontFamily: "'Montserrat', sans-serif",
+          color: IIEE_COLORS.secondary,
+        }}>
+          Correlation Matrix
+        </h2>
+        <p style={{
+          margin: 0,
+          fontSize: "clamp(12px, 1.5vw, 14px)",
+          color: "#cbd5e1",
+          fontFamily: "'Inter', sans-serif",
+        }}>
+          Pearson correlations between key academic variables and exam outcome.
+        </p>
       </div>
 
+      {/* ── How-to Guide (collapsible) ── */}
+      <CollapsibleGuide
+        title="How to Read This Chart"
+        sections={GUIDE_SECTIONS}
+      />
+
+      {/* ── Sticky Filter Panel ── */}
       <div className="sticky-filter">
         <FilterPanel />
       </div>
-      <ChartContainer title="Correlation Matrix" icon="🧮" subtitle="Pearson correlations between key academic variables and exam outcome" fullWidth accent={IIEE_COLORS.secondary}>
+
+      {/* ── Main Chart Card ── */}
+      <ChartContainer
+        title="Correlation Matrix"
+        icon="🧮"
+        subtitle="Pearson correlations between key academic variables and exam outcome"
+        fullWidth
+        accent={IIEE_COLORS.secondary}
+      >
         {correlation ? (
           <>
+            {/* Table */}
             <div style={{ overflowX: "auto" }}>
-              <table style={{ borderCollapse: "collapse", width: "100%", fontSize: 12, fontFamily: "'DM Sans',sans-serif", color: IIEE_COLORS.text }}>
+              <table style={{
+                borderCollapse: "collapse",
+                width: "100%",
+                fontSize: 12,
+                fontFamily: "'DM Sans', sans-serif",
+                color: IIEE_COLORS.text,
+              }}>
                 <thead>
                   <tr>
-                    <th style={{ padding: "8px 10px", borderBottom: "1px solid rgba(148,163,184,0.15)", textAlign: "left", color: IIEE_COLORS.muted, fontWeight: 700, fontSize: 11 }}>Variable</th>
+                    <th style={{
+                      padding: "8px 10px",
+                      borderBottom: "1px solid rgba(148,163,184,0.15)",
+                      textAlign: "left",
+                      color: IIEE_COLORS.muted,
+                      fontWeight: 700,
+                      fontSize: 11,
+                    }}>
+                      Variable
+                    </th>
                     {(correlation.columns ?? []).map((col) => (
-                      <th key={col} style={{ padding: "8px 10px", borderBottom: "1px solid rgba(148,163,184,0.15)", textAlign: "right", color: IIEE_COLORS.muted, fontWeight: 700, fontSize: 11 }}>{col}</th>
+                      <th key={col} style={{
+                        padding: "8px 10px",
+                        borderBottom: "1px solid rgba(148,163,184,0.15)",
+                        textAlign: "right",
+                        color: IIEE_COLORS.muted,
+                        fontWeight: 700,
+                        fontSize: 11,
+                      }}>
+                        {col}
+                      </th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {(correlation.matrix ?? []).map((row) => (
                     <tr key={row.row}>
-                      <td style={{ padding: "8px 10px", borderBottom: "1px solid rgba(30,41,59,0.5)", fontWeight: 700, color: IIEE_COLORS.text }}>{row.row}</td>
+                      <td style={{
+                        padding: "8px 10px",
+                        borderBottom: "1px solid rgba(30,41,59,0.5)",
+                        fontWeight: 700,
+                        color: IIEE_COLORS.text,
+                      }}>
+                        {row.row}
+                      </td>
                       {(correlation.columns ?? []).map((col) => {
                         const val = row[col];
                         const absVal = Math.abs(val);
                         const isDiag = col === row.row;
-                        const color = isDiag ? IIEE_COLORS.muted : absVal >= 0.7 ? c.pass : absVal >= 0.4 ? c.amber : IIEE_COLORS.muted;
-                        const bg = isDiag ? "transparent" : absVal >= 0.7 ? `${c.pass}12` : absVal >= 0.4 ? `${c.amber}12` : "transparent";
+                        const color = isDiag
+                          ? IIEE_COLORS.muted
+                          : absVal >= 0.7
+                          ? c.pass
+                          : absVal >= 0.4
+                          ? c.amber
+                          : IIEE_COLORS.muted;
+                        const bg = isDiag
+                          ? "transparent"
+                          : absVal >= 0.7
+                          ? `${c.pass}12`
+                          : absVal >= 0.4
+                          ? `${c.amber}12`
+                          : "transparent";
                         return (
                           <td
                             key={col}
@@ -103,11 +208,32 @@ export default function ProfessorCorrelationDashboard({ correlation }) {
                 </tbody>
               </table>
             </div>
+
+            {/* Description */}
             <div className="chart-description">
-              This correlation matrix displays Pearson correlation coefficients between various academic variables and exam outcomes. Correlation measures the strength and direction of linear relationships between variables. Values range from -1 (perfect negative correlation) to +1 (perfect positive correlation), with 0 indicating no linear relationship. Strong correlations (|r| &ge; 0.7) are highlighted in green, moderate correlations (0.4 &le; |r| &lt; 0.7) in amber, and weak correlations in muted gray. The diagonal shows perfect self-correlations of 1.00. This analysis helps identify which factors most strongly predict academic success and informs targeted interventions.
+              This correlation matrix displays Pearson correlation coefficients between various academic variables
+              and exam outcomes. Values range from -1 (perfect negative correlation) to +1 (perfect positive
+              correlation), with 0 indicating no linear relationship. Strong correlations (|r|&nbsp;&ge;&nbsp;0.7)
+              are highlighted in green, moderate correlations (0.4&nbsp;&le;&nbsp;|r|&nbsp;&lt;&nbsp;0.7) in amber,
+              and weak correlations in muted gray. The diagonal shows perfect self-correlations of 1.00.
             </div>
-            <div style={{ marginTop: 14, background: "rgba(255,255,255,0.025)", borderRadius: 10, padding: "12px 14px", fontSize: 12, color: IIEE_COLORS.muted, lineHeight: 1.6 }}>
-              📊 <strong style={{ color: IIEE_COLORS.text }}>How Correlation Works:</strong> Pearson correlation quantifies how changes in one variable predict changes in another. For example, a correlation of 0.8 between study hours and exam scores suggests that students who study more tend to score higher. This relationship is made possible through statistical analysis of paired observations across the dataset, calculating covariance divided by the product of standard deviations. While correlation shows association, it doesn't prove causation — other factors may influence the observed relationships. Use these insights to guide further investigation and policy decisions.
+
+            {/* Explainer box */}
+            <div style={{
+              marginTop: 14,
+              background: "rgba(255,255,255,0.025)",
+              borderRadius: 10,
+              padding: "12px 14px",
+              fontSize: 12,
+              color: IIEE_COLORS.muted,
+              lineHeight: 1.6,
+            }}>
+              📊 <strong style={{ color: IIEE_COLORS.text }}>How Correlation Works:</strong>{" "}
+              Pearson correlation quantifies how changes in one variable predict changes in another.
+              For example, a correlation of 0.8 between study hours and exam scores suggests that
+              students who study more tend to score higher. While correlation shows association, it
+              doesn't prove causation — other factors may influence the observed relationships.
+              Use these insights to guide further investigation and policy decisions.
             </div>
           </>
         ) : (
