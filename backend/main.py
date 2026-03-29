@@ -134,6 +134,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "https://ee-predictor.netlify.app",
+        "https://slsureeboardexampredictor.com/",
         "http://localhost:3000",  # keep for local dev
     ],
     allow_credentials=True,
