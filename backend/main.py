@@ -133,9 +133,9 @@ app = FastAPI(title="EE Licensure Predictor API")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "https://ee-predictor.netlify.app",
-        "https://slsureeboardexampredictor.com/",
-        "http://localhost:3000",  # keep for local dev
+        "https://ee-predictor.netlify.app",        # Old Netlify frontend (if still needed)
+        "https://slsureeboardexampredictor.com",   # Custom domain frontend (production)
+        "http://localhost:3000",                   # Local development
     ],
     allow_credentials=True,
     allow_methods=["*"],
