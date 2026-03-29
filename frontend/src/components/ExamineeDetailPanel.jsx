@@ -202,11 +202,11 @@ export default function ExamineeDetailPanel({ records, selectedIdx, onSelect, ru
   }));
 
   return (
-    <div style={{ fontFamily:"'DM Sans',sans-serif", color:"#f1f5f9" }}>
+    <div className="edp-root" style={{ fontFamily:"'Inter',sans-serif", color:"#f1f5f9", fontSize:"14px", lineHeight:1.45 }}>
 
       {/* ── Selector row ── */}
-      <div style={{ display:"flex", gap:"12px", alignItems:"center", flexWrap:"wrap", marginBottom:"14px" }}>
-        <label style={{ fontSize:"12px", color:"#94a3b8", fontWeight:700, flexShrink:0 }}>Examinee</label>
+      <div className="edp-selector-row" style={{ display:"flex", gap:"12px", alignItems:"center", flexWrap:"wrap", marginBottom:"14px" }}>
+        <label style={{ fontSize:"12px", color:"#94a3b8", fontWeight:700, flexShrink:0, fontFamily:"'Inter',sans-serif" }}>Examinee</label>
         <select
           value={selectedIdx}
           onChange={e => onSelect(Number(e.target.value))}
@@ -248,10 +248,10 @@ export default function ExamineeDetailPanel({ records, selectedIdx, onSelect, ru
               🎓
             </div>
             <div style={{ flex:1 }}>
-              <p style={{ margin:"0 0 2px", fontSize:"14px", fontWeight:800, color:"#f1f5f9" }}>
+              <p className="edp-heading" style={{ margin:"0 0 2px", fontSize:"14px", color:"#f1f5f9" }}>
                 {name ?? `Examinee #${selectedIdx+1}`}
               </p>
-              <p style={{ margin:0, fontSize:"11px", color:"#475569" }}>
+              <p className="edp-subheading" style={{ margin:0, fontSize:"11px", color:"#475569" }}>
                 2025 DATA_TEST · Row {selectedIdx+1} of {records.length}
               </p>
             </div>
@@ -266,9 +266,9 @@ export default function ExamineeDetailPanel({ records, selectedIdx, onSelect, ru
                   border:`1px solid ${x.val==="PASSED"?"rgba(52,211,153,0.2)":"rgba(248,113,113,0.2)"}`,
                   borderRadius:"10px", padding:"8px 12px", textAlign:"center", minWidth:"90px",
                 }}>
-                  <p style={{ margin:"0 0 1px", fontSize:"9px", color:"#475569", textTransform:"uppercase", letterSpacing:"0.08em" }}>{x.lbl}</p>
-                  <p style={{ margin:"0 0 2px", fontSize:"15px", fontWeight:900, color:x.val==="PASSED"?C.pass:C.fail }}>{x.val??"—"}</p>
-                  <p style={{ margin:0, fontSize:"9px", color:"#64748b" }}>{x.sub}</p>
+                  <p className="edp-subheading" style={{ margin:"0 0 1px", fontSize:"9px", color:"#475569", textTransform:"uppercase", letterSpacing:"0.08em" }}>{x.lbl}</p>
+                  <p className="edp-heading" style={{ margin:"0 0 2px", fontSize:"15px", fontWeight:900, color:x.val==="PASSED"?C.pass:C.fail }}>{x.val??"—"}</p>
+                  <p className="edp-subheading" style={{ margin:0, fontSize:"9px", color:"#64748b" }}>{x.sub}</p>
                 </div>
               ))}
             </div>
@@ -282,8 +282,8 @@ export default function ExamineeDetailPanel({ records, selectedIdx, onSelect, ru
             ].map(x => (
               <div key={x.lbl} style={{ background:`${x.color}08`, border:`1px solid ${x.color}20`, borderRadius:"10px", padding:"12px 14px" }}>
                 <p style={{ margin:"0 0 1px", fontSize:"9px", color:"#475569", textTransform:"uppercase", letterSpacing:"0.08em" }}>{x.lbl}</p>
-                <p style={{ margin:"0 0 3px", fontSize:"22px", fontWeight:900, color:x.color, fontFamily:"'Syne',sans-serif" }}>{num(x.val,2)}</p>
-                <p style={{ margin:0, fontSize:"10px", color:"#475569" }}>{x.sub}</p>
+              <p style={{ margin:"0 0 3px", fontSize:"22px", fontWeight:900, color:x.color, fontFamily:"'Montserrat',sans-serif" }}>{num(x.val,2)}</p>
+                  <p style={{ margin:0, fontSize:"10px", color:"#475569", fontFamily:"'Inter',sans-serif" }}>{x.sub}</p>
                 <div style={{ height:"3px", background:"rgba(255,255,255,0.05)", borderRadius:99, marginTop:"6px", overflow:"hidden" }}>
                   <div style={{ height:"100%", width:`${Math.min(x.val??0,100)}%`, background:x.color, borderRadius:99 }} />
                 </div>
@@ -294,7 +294,7 @@ export default function ExamineeDetailPanel({ records, selectedIdx, onSelect, ru
           {/* ── Section score overview strip ── */}
           {Object.keys(answers).length > 0 && (
             <div style={{ background:"rgba(255,255,255,0.02)", border:"1px solid rgba(255,255,255,0.06)", borderRadius:"12px", padding:"12px 14px" }}>
-              <p style={{ margin:"0 0 10px", fontSize:"10px", fontWeight:700, color:"#475569", textTransform:"uppercase", letterSpacing:"0.08em" }}>
+              <p className="edp-subheading" style={{ margin:"0 0 10px", fontSize:"10px", fontWeight:700, color:"#475569", textTransform:"uppercase", letterSpacing:"0.08em" }}>
                 Survey Section Overview
               </p>
               <div style={{ display:"flex", flexDirection:"column", gap:"6px" }}>
@@ -354,7 +354,7 @@ export default function ExamineeDetailPanel({ records, selectedIdx, onSelect, ru
 
           {Object.keys(answers).length === 0 && (
             <div style={{ background:"rgba(251,191,36,0.06)", border:"1px solid rgba(251,191,36,0.2)", borderRadius:"10px", padding:"10px 14px" }}>
-              <p style={{ margin:0, fontSize:"11px", color:"#fcd34d" }}>
+              <p style={{ margin:0, fontSize:"11px", color:"#fcd34d", fontFamily:"'Inter',sans-serif" }}>
                 ⚠️ Survey answers not available for this examinee. Ensure your backend returns <code>raw_answers</code> from <code>/defense/test-2025-predict</code>.
               </p>
             </div>
@@ -364,13 +364,33 @@ export default function ExamineeDetailPanel({ records, selectedIdx, onSelect, ru
       )}
 
       {!runLoading && runData?.error && (
-        <p style={{ margin:0, fontSize:"11px", color:C.fail }}>{runData.error}</p>
+        <p style={{ margin:0, fontSize:"11px", color:C.fail, fontFamily:"'Inter',sans-serif" }}>{runData.error}</p>
       )}
       {!runLoading && !runData && (
-        <p style={{ margin:0, fontSize:"11px", color:"#64748b" }}>Choose a row to view results.</p>
+        <p style={{ margin:0, fontSize:"11px", color:"#64748b", fontFamily:"'Inter',sans-serif" }}>Choose a row to view results.</p>
       )}
 
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .edp-root .edp-regression-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+        .edp-root .edp-score-strip { display:flex; flex-direction:column; gap:6px; }
+
+        .edp-root .edp-heading { font-family:'Montserrat',sans-serif; font-weight:800; }
+        .edp-root .edp-subheading { font-family:'Inter',sans-serif; font-weight:600; }
+
+        @media (max-width: 900px) {
+          .edp-root .edp-regression-grid { grid-template-columns:1fr; }
+          .edp-root .edp-selector-row select { min-width: 170px; width:100%; }
+        }
+        @media (max-width: 640px) {
+          .edp-root { font-size: 13px; }
+          .edp-root .edp-selector-row { flex-direction: column; align-items: stretch; }
+          .edp-root .edp-selector-row button, .edp-root .edp-selector-row select { width: 100%; }
+          .edp-root .edp-heading { font-size: clamp(16px, 4vw, 18px); }
+          .edp-root .edp-subheading { font-size: clamp(12px, 3.5vw, 14px); }
+        }
+      `}</style>
     </div>
   );
 }

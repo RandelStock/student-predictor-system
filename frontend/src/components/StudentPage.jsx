@@ -63,8 +63,8 @@ function StatChip({ label, value, color }) {
       background: `${color}10`, border: `1px solid ${color}25`,
       borderRadius: "12px", padding: "12px 14px",
     }}>
-      <p style={{ margin: "0 0 2px", fontSize: "9px", color: "#475569", textTransform: "uppercase", letterSpacing: "0.09em", fontFamily: "'DM Sans',sans-serif" }}>{label}</p>
-      <p style={{ margin: 0, fontSize: "22px", fontWeight: 800, color, fontFamily: "'Syne',sans-serif", lineHeight: 1 }}>{value}</p>
+      <p style={{ margin: "0 0 2px", fontSize: "clamp(8px, 1.2vw, 9px)", color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.09em", fontFamily: "'Inter',sans-serif" }}>{label}</p>
+      <p style={{ margin: 0, fontSize: "clamp(20px, 5vw, 22px)", fontWeight: 700, color, fontFamily: "'Montserrat',sans-serif", lineHeight: 1 }}>{value}</p>
     </div>
   );
 }
@@ -92,7 +92,7 @@ function HistoryRow({ entry, index, onView }) {
   return (
     <div style={{
       display: "flex", alignItems: "center", gap: "12px",
-      padding: "12px 16px",
+      padding: "clamp(10px, 2vw, 16px)",
       background: isRecent ? "rgba(56,189,248,0.04)" : "rgba(255,255,255,0.015)",
       border: `1px solid ${isRecent ? "rgba(56,189,248,0.15)" : "rgba(255,255,255,0.06)"}`,
       borderRadius: "12px",
@@ -275,7 +275,7 @@ export default function StudentPage({ onLogout }) {
       color: "#f8fafc",
     }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Inter:wght@300;400;500;700&display=swap&family=DM+Sans:wght@300;400;500;700&display=swap');
         @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
         @keyframes spin   { to{transform:rotate(360deg)} }
         .student-fade { animation: fadeUp 0.35s ease forwards; }
@@ -303,7 +303,7 @@ export default function StudentPage({ onLogout }) {
             ))}
           </div>
           <div style={{ borderLeft: "1px solid rgba(255,255,255,0.08)", paddingLeft: "14px" }}>
-            <p style={{ margin: 0, fontSize: "15px", fontWeight: 800, color: "#f1f5f9", letterSpacing: "0.01em", fontFamily: "'Syne',sans-serif" }}>EE Licensure Predictor</p>
+            <p style={{ margin: 0, fontSize: "15px", fontWeight: 800, color: "#f1f5f9", letterSpacing: "0.01em", fontFamily: "'Montserrat',sans-serif" }}>EE Licensure Predictor</p>
             <p style={{ margin: 0, fontSize: "10px", color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.07em", fontFamily: "'DM Sans',sans-serif" }}>Student Portal · SLSU IIEE</p>
           </div>
         </div>
@@ -361,7 +361,7 @@ export default function StudentPage({ onLogout }) {
                 <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#34d399", boxShadow: "0 0 8px #34d399" }} />
                 <span style={{ fontSize: "11px", fontWeight: 700, color: "#34d399", textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: "'DM Sans',sans-serif" }}>Student Dashboard</span>
               </div>
-              <h1 style={{ margin: "0 0 6px", fontSize: "31px", fontWeight: 800, color: "#f8fafc", fontFamily: "'Syne',sans-serif", letterSpacing: "-0.02em" }}>
+              <h1 style={{ margin: "0 0 6px", fontSize: "31px", fontWeight: 800, color: "#f8fafc", fontFamily: "'Montserrat',sans-serif", letterSpacing: "-0.02em" }}>
                 Your Readiness Overview
               </h1>
             <p style={{ margin: 0, fontSize: "14px", color: "#cbd5e1", fontFamily: "'DM Sans',sans-serif" }}>
@@ -393,7 +393,7 @@ export default function StudentPage({ onLogout }) {
                     <span style={{ fontSize: "20px" }}>{latestEntry.prediction === 1 ? "🎓" : "📋"}</span>
                     <div>
                       <p style={{ margin: "0 0 2px", fontSize: "10px", color: "#475569", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "'DM Sans',sans-serif" }}>Latest Prediction</p>
-                      <p style={{ margin: 0, fontSize: "22px", fontWeight: 800, color: latestEntry.prediction === 1 ? "#34d399" : "#f87171", fontFamily: "'Syne',sans-serif", lineHeight: 1 }}>
+                      <p style={{ margin: 0, fontSize: "22px", fontWeight: 800, color: latestEntry.prediction === 1 ? "#34d399" : "#f87171", fontFamily: "'Montserrat',sans-serif", lineHeight: 1 }}>
                         {latestEntry.prediction === 1 ? "PASSED" : "FAILED"}
                       </p>
                     </div>
@@ -427,7 +427,7 @@ export default function StudentPage({ onLogout }) {
                   ].map((item, i) => (
                     <div key={i} style={{ background: "rgba(0,0,0,0.2)", borderRadius: "10px", padding: "10px 12px", border: "1px solid rgba(255,255,255,0.05)" }}>
                       <p style={{ margin: "0 0 2px", fontSize: "9px", color: "#475569", textTransform: "uppercase", letterSpacing: "0.07em", fontFamily: "'DM Sans',sans-serif" }}>{item.label}</p>
-                      <p style={{ margin: 0, fontSize: "18px", fontWeight: 800, color: item.color, fontFamily: "'Syne',sans-serif" }}>{item.val}</p>
+                      <p style={{ margin: 0, fontSize: "18px", fontWeight: 800, color: item.color, fontFamily: "'Montserrat',sans-serif" }}>{item.val}</p>
                     </div>
                   ))}
                 </div>
@@ -444,7 +444,7 @@ export default function StudentPage({ onLogout }) {
                 borderRadius: "16px", padding: "40px 24px", textAlign: "center", marginBottom: "20px",
               }}>
                 <p style={{ fontSize: "36px", marginBottom: "12px" }}>📋</p>
-                <p style={{ margin: "0 0 6px", fontSize: "15px", fontWeight: 700, color: "#f1f5f9", fontFamily: "'Syne',sans-serif" }}>No predictions yet</p>
+                <p style={{ margin: "0 0 6px", fontSize: "15px", fontWeight: 700, color: "#f1f5f9", fontFamily: "'Montserrat',sans-serif" }}>No predictions yet</p>
                 <p style={{ margin: "0 0 20px", fontSize: "12px", color: "#475569", fontFamily: "'DM Sans',sans-serif" }}>Take your first EE board exam readiness prediction to get started.</p>
                 <button onClick={() => setView("predictor")} style={{
                   background: "linear-gradient(135deg, #0ea5e9, #6366f1)",
@@ -559,7 +559,7 @@ export default function StudentPage({ onLogout }) {
               <p style={{ margin: "0 0 4px", fontSize: "10px", color: "#475569", textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: "'DM Sans',sans-serif" }}>
                 New Prediction
               </p>
-              <h2 style={{ margin: 0, fontSize: "22px", fontWeight: 800, color: "#f1f5f9", fontFamily: "'Syne',sans-serif" }}>
+              <h2 style={{ margin: 0, fontSize: "22px", fontWeight: 800, color: "#f1f5f9", fontFamily: "'Montserrat',sans-serif" }}>
                 EE Board Exam Readiness Survey
               </h2>
             </div>
@@ -576,7 +576,7 @@ export default function StudentPage({ onLogout }) {
                   {viewingEntry ? `Result from ${formatDate(viewingEntry.date)}` : "Your Prediction Result"}
                   {displayedResult?.attempt_id ? ` · Attempt ${displayedResult.attempt_id.slice(0, 8)}` : ""}
                 </p>
-                <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 800, color: "#f1f5f9", fontFamily: "'Syne',sans-serif" }}>
+                <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 800, color: "#f1f5f9", fontFamily: "'Montserrat',sans-serif" }}>
                   {viewingEntry ? "Past Result Review" : "Your Result"}
                 </h2>
               </div>

@@ -340,7 +340,7 @@ function GWAInput({ value, error, onChange }) {
 function YesNoField({ name, label, value, onChange }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-xs font-medium text-slate-400 uppercase tracking-wide leading-tight">{label}</label>
+      <label className="text-xs font-medium text-slate-400 uppercase tracking-wide leading-tight" style={{ fontFamily: "'Inter', sans-serif", fontSize: "clamp(10px, 1.3vw, 11px)" }}>{label}</label>
       <div className="flex gap-2">
         {["Yes", "No"].map((opt) => (
           <label key={opt} className={`flex-1 text-center text-sm font-semibold py-2.5 rounded-xl border cursor-pointer transition select-none
@@ -711,11 +711,11 @@ export default function PredictorForm({ onResult }) {
         <div className="pt-2">
           {/* Institution badge */}
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-5">
-            <span className="inline-flex items-center gap-1.5 text-xs font-semibold tracking-widest uppercase text-blue-400 bg-blue-400/10 border border-blue-400/25 rounded-full px-3 py-1 self-start">
+            <span className="inline-flex items-center gap-1.5 text-xs font-semibold tracking-widest uppercase text-blue-400 bg-blue-400/10 border border-blue-400/25 rounded-full px-3 py-1 self-start" style={{ fontFamily: "'Inter', sans-serif" }}>
               <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
               AI-Powered Predictor
             </span>
-            <div className="flex items-center gap-2 text-xs text-slate-500 flex-wrap">
+            <div className="flex items-center gap-2 text-xs text-slate-500 flex-wrap" style={{ fontFamily: "'Inter', sans-serif" }}>
               <span className="text-slate-600">|</span>
               <span className="font-medium text-slate-400">College of Engineering</span>
               <span className="text-slate-600">·</span>
@@ -723,13 +723,13 @@ export default function PredictorForm({ onResult }) {
             </div>
           </div>
 
-          <h1 className="text-4xl sm:text-5xl font-extrabold leading-[1.1] tracking-tight text-white">
+          <h1 className="text-4xl sm:text-5xl font-extrabold leading-[1.1] tracking-tight text-white" style={{ fontFamily: "'Montserrat', sans-serif" }}>
             EE Licensure<br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">
               Exam Predictor
             </span>
           </h1>
-          <p className="mt-3 text-slate-400 text-sm sm:text-[15px] leading-relaxed max-w-lg">
+          <p className="mt-3 text-slate-400 text-sm sm:text-[15px] leading-relaxed max-w-lg" style={{ fontFamily: "'Inter', sans-serif", fontSize: "clamp(13px, 2vw, 15px)" }}>
             Complete the survey below to get an AI-based prediction of your board exam outcome.
           </p>
         </div>
@@ -738,7 +738,7 @@ export default function PredictorForm({ onResult }) {
         {!isDone && (
           <div className="flex flex-col gap-2">
             <StepIndicator steps={STEPS} current={step} />
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-500" style={{ fontFamily: "'Inter', sans-serif", fontSize: "clamp(11px, 1.5vw, 12px)" }}>
               Step {step + 1} of {STEPS.length} — {currentStep.title}
             </p>
           </div>
@@ -756,8 +756,8 @@ export default function PredictorForm({ onResult }) {
                   {currentStep.icon}
                 </div>
                 <div className="flex-1">
-                  <h2 className="text-base sm:text-lg font-bold text-white">{currentStep.title}</h2>
-                  <p className="text-xs sm:text-sm text-slate-400 mt-0.5">{currentStep.subtitle}</p>
+                  <h2 className="text-base sm:text-lg font-bold text-white" style={{ fontFamily: "'Montserrat', sans-serif", fontSize: "clamp(15px, 2.5vw, 18px)" }}>{currentStep.title}</h2>
+                  <p className="text-xs sm:text-sm text-slate-400 mt-0.5" style={{ fontFamily: "'Inter', sans-serif", fontSize: "clamp(13px, 1.8vw, 14px)" }}>{currentStep.subtitle}</p>
                 </div>
                 {currentStep.type === "likert" && unansweredCount > 0 && (
                   <div className="flex-shrink-0 flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/25 rounded-full px-2.5 py-1">
@@ -796,7 +796,7 @@ export default function PredictorForm({ onResult }) {
                   {/* Personal Information */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-xs font-medium text-slate-400 uppercase tracking-wide">Full Name</label>
+                      <label className="text-xs font-medium text-slate-400 uppercase tracking-wide" style={{ fontFamily: "'Inter', sans-serif", fontSize: "clamp(10px, 1.3vw, 11px)" }}>Full Name</label>
                       <input
                         className={`bg-slate-800/80 border rounded-xl px-3 py-3 text-slate-100 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 ${errors.name ? "border-red-500" : "border-slate-700"}`}
                         type="text" name="name" value={form.name} onChange={handleChange}
@@ -807,7 +807,7 @@ export default function PredictorForm({ onResult }) {
                       {errors.name && <p className="text-[11px] text-red-400">⚠ Full name is required.</p>}
                     </div>
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-xs font-medium text-slate-400 uppercase tracking-wide">Age</label>
+                      <label className="text-xs font-medium text-slate-400 uppercase tracking-wide" style={{ fontFamily: "'Inter', sans-serif", fontSize: "clamp(10px, 1.3vw, 11px)" }}>Age</label>
                       <input
                         className={`bg-slate-800/80 border rounded-xl px-3 py-3 text-slate-100 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 ${errors.age ? "border-red-500" : "border-slate-700"}`}
                         type="number" name="age" value={form.age} onChange={handleChange}
@@ -816,7 +816,7 @@ export default function PredictorForm({ onResult }) {
                       {errors.age && <p className="text-[11px] text-red-400">⚠ Age is required.</p>}
                     </div>
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-xs font-medium text-slate-400 uppercase tracking-wide">Sex</label>
+                      <label className="text-xs font-medium text-slate-400 uppercase tracking-wide" style={{ fontFamily: "'Inter', sans-serif", fontSize: "clamp(10px, 1.3vw, 11px)" }}>Sex</label>
                       <select
                         className="bg-slate-800/80 border border-slate-700 rounded-xl px-3 py-3 text-slate-100 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition cursor-pointer"
                         name="sex" value={form.sex} onChange={handleChange}
@@ -827,7 +827,7 @@ export default function PredictorForm({ onResult }) {
                       </select>
                     </div>
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-xs font-medium text-slate-400 uppercase tracking-wide">Year Taking Exam</label>
+                      <label className="text-xs font-medium text-slate-400 uppercase tracking-wide" style={{ fontFamily: "'Inter', sans-serif", fontSize: "clamp(10px, 1.3vw, 11px)" }}>Year Taking Exam</label>
                       <input
                         className={`bg-slate-800/80 border rounded-xl px-3 py-3 text-slate-100 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 ${errors.year_taking_exam ? "border-red-500" : "border-slate-700"}`}
                         type="number" name="year_taking_exam" value={form.year_taking_exam} onChange={handleChange}
@@ -847,7 +847,12 @@ export default function PredictorForm({ onResult }) {
                   <div className="grid grid-cols-2 gap-3">
                     <GWAInput value={form.GWA} error={errors.GWA} onChange={handleChange} />
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-xs font-medium text-slate-400 uppercase tracking-wide">SHS Strand</label>
+                <label style={{
+                  display:"block", fontSize:"clamp(9px, 1.2vw, 10px)", fontWeight:700,
+                  color:"#64748b", textTransform:"uppercase",
+                  letterSpacing:"0.1em", marginBottom:6,
+                  fontFamily:"'Inter',sans-serif",
+                }}>SHS Strand</label>
                       <select
                         className="bg-slate-800/80 border border-slate-700 rounded-xl px-3 py-3 text-slate-100 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition cursor-pointer"
                         name="Senior_High_School_Strand" value={form.Senior_High_School_Strand} onChange={handleChange}>

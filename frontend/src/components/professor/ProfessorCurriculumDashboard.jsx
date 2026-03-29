@@ -34,8 +34,8 @@ const styles = `
   .curriculum-dashboard {
     background: ${IIEE_COLORS.background};
     min-height: 100vh;
-    color: ${IIEE_COLORS.text};
-    font-family: 'DM Sans', sans-serif;
+    color: #cbd5e1;
+    font-family: 'Inter', sans-serif;
   }
   .sticky-filter {
     position: sticky;
@@ -44,20 +44,26 @@ const styles = `
     background: rgba(15, 26, 42, 0.95);
     border: 1px solid rgba(251, 191, 36, 0.18);
     border-radius: 14px;
-    padding: 14px 18px;
-    margin-bottom: 24px;
+    padding: clamp(10px, 2vw, 18px);
+    margin-bottom: clamp(12px, 3vw, 24px);
     backdrop-filter: blur(16px);
     box-shadow: 0 8px 32px rgba(0,0,0,0.4);
   }
   .chart-description {
     margin-top: 10px;
-    font-size: 12px;
-    color: ${IIEE_COLORS.muted};
+    font-size: clamp(11px, 1.5vw, 13px);
+    color: #cbd5e1;
     line-height: 1.5;
   }
   .scrollable-chart {
     max-height: 400px;
     overflow-y: auto;
+  }
+  @media (max-width: 768px) {
+    .sticky-filter {
+      padding: 12px;
+      margin-bottom: 16px;
+    }
   }
 `;
 
@@ -87,8 +93,8 @@ export default function ProfessorCurriculumDashboard({ weakestQ }) {
     <div className="curriculum-dashboard fade-in">
       <style>{styles}</style>
       <div style={{ marginBottom: 22 }}>
-        <h2 style={{ margin: "0 0 4px", fontSize: 22, fontWeight: 800, fontFamily: "'Syne',sans-serif", color: IIEE_COLORS.secondary }}>Curriculum Gap Analysis</h2>
-        <p style={{ margin: 0, fontSize: 13, color: IIEE_COLORS.muted }}>Survey items with the lowest scores — indicating institutional weaknesses.</p>
+        <h2 style={{ margin: "0 0 4px", fontSize: "clamp(18px, 4vw, 24px)", fontWeight: 700, fontFamily: "'Montserrat',sans-serif", color: IIEE_COLORS.secondary }}>Curriculum Gap Analysis</h2>
+        <p style={{ margin: 0, fontSize: "clamp(12px, 1.5vw, 14px)", color: "#cbd5e1", fontFamily: "'Inter',sans-serif" }}>Survey items with the lowest scores — indicating institutional weaknesses.</p>
       </div>
 
       <div className="sticky-filter">
@@ -98,8 +104,8 @@ export default function ProfessorCurriculumDashboard({ weakestQ }) {
       <div style={{ background: "rgba(251,191,36,0.06)", border: "1px solid rgba(251,191,36,0.2)", borderRadius: 14, padding: "14px 18px", display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 18 }}>
         <span style={{ fontSize: 20, flexShrink: 0 }}>⚠️</span>
         <div>
-          <p style={{ margin: "0 0 4px", fontSize: 14, fontWeight: 700, color: IIEE_COLORS.secondary, fontFamily: "'Syne',sans-serif" }}>Objective 4 — Curriculum Weakness Indicators</p>
-          <p style={{ margin: 0, fontSize: 12, color: "#92400e", lineHeight: 1.6 }}>
+          <p style={{ margin: "0 0 4px", fontSize: 14, fontWeight: 700, color: IIEE_COLORS.secondary, fontFamily: "'Montserrat',sans-serif" }}>Objective 4 — Curriculum Weakness Indicators</p>
+          <p style={{ margin: 0, fontSize: 12, color: "#92400e", lineHeight: 1.6, fontFamily: "'Inter',sans-serif" }}>
             Items sorted by average Likert score (1=Strongly Agree → 4=Strongly Disagree). Higher scores mean more disagreement — institutional gaps.
           </p>
         </div>
@@ -160,7 +166,7 @@ export default function ProfessorCurriculumDashboard({ weakestQ }) {
                   <div key={i} style={{ background: `${sev}0d`, border: `1px solid ${sev}25`, borderRadius: 10, padding: "10px 12px" }}>
                     <p style={{ margin: "0 0 2px", fontSize: 12, fontWeight: 700, color: IIEE_COLORS.text }}>{cat.label}</p>
                     <p style={{ margin: "0 0 4px", fontSize: 10, color: IIEE_COLORS.muted }}>{cat.count} weak item{cat.count > 1 ? "s" : ""}</p>
-                    <p style={{ margin: 0, fontSize: 18, fontWeight: 800, color: sev, fontFamily: "'Syne',sans-serif" }}>{num(cat.avg)}<span style={{ fontSize: 10, color: IIEE_COLORS.muted }}>/4</span></p>
+                    <p style={{ margin: 0, fontSize: 18, fontWeight: 800, color: sev, fontFamily: "'Montserrat',sans-serif" }}>{num(cat.avg)}<span style={{ fontSize: 10, color: IIEE_COLORS.muted }}>/4</span></p>
                   </div>
                 );
               })}

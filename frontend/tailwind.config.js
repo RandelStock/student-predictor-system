@@ -6,6 +6,10 @@ module.exports = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        'heading': ['Montserrat', 'sans-serif'],
+        'body': ['Inter', 'sans-serif'],
+      },
       animation: {
         'slide-in': 'slideIn 0.5s ease-out forwards',
       },

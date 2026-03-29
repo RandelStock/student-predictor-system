@@ -41,10 +41,10 @@ export default function ProfessorOverviewDashboard({
   return (
     <div className="fade-in">
       <div style={{ marginBottom: 22 }}>
-        <h2 style={{ margin: "0 0 4px", fontSize: 22, fontWeight: 800, fontFamily: "'Syne',sans-serif", color: "#f8fafc" }}>
+        <h2 style={{ margin: "0 0 4px", fontSize: 22, fontWeight: 800, fontFamily: "'Montserrat',sans-serif", color: "#f8fafc" }}>
           Institutional Overview
         </h2>
-        <p style={{ margin: 0, fontSize: 13, color: "#64748b" }}>
+        <p style={{ margin: 0, fontSize: 13, color: "#64748b", fontFamily: "'Inter',sans-serif" }}>
           Aggregate statistics across all EE board exam takers. First-attempt outcomes only.
         </p>
       </div>
@@ -177,7 +177,7 @@ export default function ProfessorOverviewDashboard({
             ].map((x, i) => (
               <div key={i} style={{ flex: 1, background: `${x.color}0d`, border: `1px solid ${x.color}25`, borderRadius: 14, padding: "16px", textAlign: "center" }}>
                 <p style={{ margin: "0 0 4px", fontSize: 10, color: "#475569", textTransform: "uppercase", letterSpacing: "0.07em" }}>{x.label}</p>
-                <p style={{ margin: 0, fontSize: 30, fontWeight: 800, color: x.color, fontFamily: "'Syne',sans-serif" }}>{num(x.value)}</p>
+                <p style={{ margin: 0, fontSize: 30, fontWeight: 800, color: x.color, fontFamily: "'Montserrat',sans-serif" }}>{num(x.value)}</p>
               </div>
             ))}
           </div>
@@ -223,7 +223,7 @@ export default function ProfessorOverviewDashboard({
                 ].map((m, i) => (
                   <div key={i} style={{ background: "rgba(255,255,255,0.025)", borderRadius: 8, padding: "8px 10px" }}>
                     <p style={{ margin: "0 0 2px", fontSize: 10, color: "#475569", textTransform: "uppercase" }}>{m.label}</p>
-                    <p style={{ margin: 0, fontSize: 16, fontWeight: 800, color: "#f1f5f9", fontFamily: "'Syne',sans-serif" }}>{num(m.v, m.d)}</p>
+                    <p style={{ margin: 0, fontSize: 16, fontWeight: 800, color: "#f1f5f9", fontFamily: "'Montserrat',sans-serif" }}>{num(m.v, m.d)}</p>
                   </div>
                 ))}
               </div>

@@ -120,7 +120,7 @@ export default function LoginPage({ role, onSuccess, onBack }) {
     <div style={{
       minHeight:      "100vh",
       background:     T.navy,
-      fontFamily:     "'DM Sans', system-ui, sans-serif",
+      fontFamily:     "'Inter', system-ui, sans-serif",
       display:        "flex",
       flexDirection:  "column",
       alignItems:     "center",
@@ -130,7 +130,7 @@ export default function LoginPage({ role, onSuccess, onBack }) {
       overflow:       "hidden",
     }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
 
         @keyframes lp-fadeUp   { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
         @keyframes lp-spin     { to{transform:rotate(360deg)} }
@@ -142,8 +142,8 @@ export default function LoginPage({ role, onSuccess, onBack }) {
           width:100%; background:rgba(255,255,255,0.04);
           border:1px solid rgba(255,255,255,0.1);
           border-radius:12px; padding:11px 14px;
-          color:${T.white}; font-size:14px;
-          font-family:'DM Sans',sans-serif;
+          color:${T.white}; font-size:clamp(13px, 1.5vw, 14px);
+          font-family:'Inter',sans-serif;
           outline:none; transition:border-color 0.2s, box-shadow 0.2s;
           box-sizing:border-box;
         }
@@ -167,8 +167,8 @@ export default function LoginPage({ role, onSuccess, onBack }) {
         .lp-btn {
           width:100%; padding:12px 16px;
           border-radius:12px; border:none;
-          font-family:'Syne',sans-serif; font-weight:700;
-          font-size:14px; cursor:pointer;
+          font-family:'Montserrat',sans-serif; font-weight:700;
+          font-size:clamp(13px, 1.5vw, 14px); cursor:pointer;
           transition:all 0.2s ease; letter-spacing:0.04em;
         }
         .lp-btn:hover:not(:disabled) { filter:brightness(1.12); transform:translateY(-1px); }
@@ -185,7 +185,7 @@ export default function LoginPage({ role, onSuccess, onBack }) {
         .lp-toggle {
           background:none; border:none;
           color:${accentColor}; cursor:pointer;
-          font-size:11px; font-family:'DM Sans',sans-serif;
+          font-size:clamp(10px, 1.2vw, 11px); font-family:'Inter',sans-serif;
           text-decoration:underline; text-underline-offset:2px; padding:0;
         }
         .lp-toggle:hover { opacity:0.8; }
@@ -195,8 +195,8 @@ export default function LoginPage({ role, onSuccess, onBack }) {
           background:rgba(255,255,255,0.04);
           border:1px solid ${T.borderSub};
           border-radius:10px; padding:7px 14px;
-          color:${T.muted}; font-size:12px;
-          font-family:'DM Sans',sans-serif;
+          color:${T.muted}; font-size:clamp(11px, 1.3vw, 12px);
+          font-family:'Inter',sans-serif;
           cursor:pointer; display:flex; align-items:center; gap:6px;
           transition:all 0.2s;
         }
@@ -265,11 +265,11 @@ export default function LoginPage({ role, onSuccess, onBack }) {
             ))}
           </div>
           <p style={{
-            margin:0, fontSize:9,
+            margin:0, fontSize:"clamp(8px, 1vw, 9px)",
             color:T.dimText,
             textTransform:"uppercase",
             letterSpacing:"0.14em",
-            fontFamily:"'DM Sans',sans-serif",
+            fontFamily:"'Inter',sans-serif",
           }}>
             Southern Luzon State University · IIEE
           </p>
@@ -309,18 +309,18 @@ export default function LoginPage({ role, onSuccess, onBack }) {
               }}>
                 <span style={{ width:5, height:5, borderRadius:"50%", background:accentColor, display:"inline-block" }} />
                 <span style={{
-                  fontSize:9, fontWeight:700, color:accentColor,
+                  fontSize:"clamp(8px, 1vw, 9px)", fontWeight:700, color:accentColor,
                   letterSpacing:"0.1em", textTransform:"uppercase",
-                  fontFamily:"'DM Sans',sans-serif",
+                  fontFamily:"'Inter',sans-serif",
                 }}>
                   {isProfessor ? "Faculty · IIEE" : "Student · SLSU EE"}
                 </span>
               </div>
               {/* Page title */}
               <h2 className="lp-page-title" style={{
-                margin:0, fontSize:21, fontWeight:800,
+                margin:0, fontSize:"clamp(19px, 4vw, 21px)", fontWeight:700,
                 color:T.white,
-                fontFamily:"'Syne',sans-serif",
+                fontFamily:"'Montserrat',sans-serif",
                 lineHeight:1.1,
               }}>
                 {isRegister
@@ -333,8 +333,8 @@ export default function LoginPage({ role, onSuccess, onBack }) {
           {/* Subtitle */}
           <p style={{
             margin:"0 0 18px",
-            fontSize:12, color:T.muted,
-            fontFamily:"'DM Sans',sans-serif",
+            fontSize:"clamp(11px, 1.5vw, 12px)", color:"#cbd5e1",
+            fontFamily:"'Inter',sans-serif",
             lineHeight:1.65,
             borderLeft:`2px solid ${T.border}`,
             paddingLeft:10,
@@ -359,7 +359,7 @@ export default function LoginPage({ role, onSuccess, onBack }) {
               display:      "flex", alignItems:"flex-start", gap:8,
             }}>
               <span style={{ fontSize:14, flexShrink:0, marginTop:1 }}>🔒</span>
-              <p style={{ margin:0, fontSize:12, color:"#c4b5fd", fontFamily:"'DM Sans',sans-serif", lineHeight:1.6 }}>
+              <p style={{ margin:0, fontSize:"clamp(11px, 1.5vw, 12px)", color:"#cbd5e1", fontFamily:"'Inter',sans-serif", lineHeight:1.6 }}>
                 Faculty access is restricted. You need the{" "}
                 <strong style={{ color:T.purple }}>department access code</strong> to register.
               </p>
@@ -373,10 +373,10 @@ export default function LoginPage({ role, onSuccess, onBack }) {
             {isRegister && (
               <div>
                 <label style={{
-                  display:"block", fontSize:10, fontWeight:700,
+                  display:"block", fontSize:"clamp(9px, 1.2vw, 10px)", fontWeight:700,
                   color:T.dimText, textTransform:"uppercase",
                   letterSpacing:"0.1em", marginBottom:6,
-                  fontFamily:"'DM Sans',sans-serif",
+                  fontFamily:"'Inter',sans-serif",
                 }}>Full Name</label>
                 <input
                   className="lp-input"
@@ -392,10 +392,10 @@ export default function LoginPage({ role, onSuccess, onBack }) {
             {/* Email */}
             <div>
               <label style={{
-                display:"block", fontSize:10, fontWeight:700,
+                display:"block", fontSize:"clamp(9px, 1.2vw, 10px)", fontWeight:700,
                 color:T.dimText, textTransform:"uppercase",
                 letterSpacing:"0.1em", marginBottom:6,
-                fontFamily:"'DM Sans',sans-serif",
+                fontFamily:"'Inter',sans-serif",
               }}>Email</label>
               <input
                 className="lp-input"

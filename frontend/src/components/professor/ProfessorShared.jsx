@@ -67,8 +67,8 @@ export function CustomTooltip({ active, payload, label, formatter }) {
         border: "1px solid rgba(56,189,248,0.2)",
         borderRadius: 10,
         padding: "10px 14px",
-        fontSize: 12,
-        fontFamily: "'DM Sans',sans-serif",
+        fontSize: "clamp(11px, 1.5vw, 12px)",
+        fontFamily: "'Inter',sans-serif",
         color: "#f1f5f9",
         boxShadow: "0 4px 24px rgba(0,0,0,0.5)",
       }}
@@ -136,7 +136,7 @@ export function MetricCard({ label, value, sub, color = c.blue, icon, trend, hin
           fontSize: 28,
           fontWeight: 800,
           color,
-          fontFamily: "'Syne',sans-serif",
+          fontFamily: "'Montserrat',sans-serif",
           lineHeight: 1,
         }}
       >
@@ -213,15 +213,15 @@ export function ChartContainer({
             <p
               style={{
                 margin: 0,
-                fontSize: 14,
+                fontSize: "clamp(13px, 2vw, 14px)",
                 fontWeight: 700,
                 color: "#f1f5f9",
-                fontFamily: "'Syne',sans-serif",
+                fontFamily: "'Montserrat',sans-serif",
               }}
             >
               {title}
             </p>
-            {subtitle && <p style={{ margin: "2px 0 0", fontSize: 11, color: "#475569" }}>{subtitle}</p>}
+            {subtitle && <p style={{ margin: "2px 0 0", fontSize: "clamp(10px, 1.5vw, 11px)", color: "#94a3b8", fontFamily: "'Inter',sans-serif" }}>{subtitle}</p>}
           </div>
         </div>
         {action}
@@ -248,19 +248,20 @@ export function DashboardGuide({ title = "How to Read This Dashboard", items = [
       <p
         style={{
           margin: "0 0 8px",
-          fontSize: 11,
+          fontSize: "clamp(10px, 1.5vw, 11px)",
           color: c.blue,
           textTransform: "uppercase",
           letterSpacing: "0.07em",
           fontWeight: 700,
+          fontFamily: "'Montserrat',sans-serif",
         }}
       >
         {title}
       </p>
       <div style={{ display: "grid", gap: 6 }}>
         {items.map((item, idx) => (
-          <p key={idx} style={{ margin: 0, fontSize: 12, color: "#cbd5e1", lineHeight: 1.55 }}>
-            <strong style={{ color: "#f1f5f9" }}>{item.label}:</strong> {item.text}
+          <p key={idx} style={{ margin: 0, fontSize: "clamp(11px, 1.5vw, 12px)", color: "#cbd5e1", lineHeight: 1.55, fontFamily: "'Inter',sans-serif" }}>
+            <strong style={{ color: "#f1f5f9", fontFamily: "'Montserrat',sans-serif", fontWeight: 700 }}>{item.label}:</strong> {item.text}
           </p>
         ))}
       </div>
@@ -274,18 +275,19 @@ export function FilterPanel({ filters = {}, onChange = () => {}, availableYears 
     background: "rgba(255,255,255,0.05)",
     border: "1px solid rgba(255,255,255,0.1)",
     borderRadius: 10,
-    padding: "8px 12px",
+    padding: "clamp(6px, 1.5vw, 12px)",
     color: "#f1f5f9",
-    fontSize: 12,
-    fontFamily: "'DM Sans',sans-serif",
+    fontSize: "clamp(11px, 1.5vw, 12px)",
+    fontFamily: "'Inter',sans-serif",
     outline: "none",
     cursor: "pointer",
     transition: "border-color 0.2s",
   };
   const labelStyle = {
-    fontSize: 11,
+    fontSize: "clamp(10px, 1.5vw, 11px)",
     color: T.gold,
-    fontFamily: "'DM Sans',sans-serif",
+    fontFamily: "'Montserrat',sans-serif",
+    fontWeight: 700,
     display: "block",
     marginBottom: 5,
   };
@@ -422,7 +424,7 @@ export function InsightBox({ insights = [] }) {
         marginBottom: 20,
       }}
     >
-      <p style={{ margin: "0 0 14px", fontSize: 13, fontWeight: 700, color: c.blue, fontFamily: "'Syne',sans-serif" }}>
+      <p style={{ margin: "0 0 14px", fontSize: 13, fontWeight: 700, color: c.blue, fontFamily: "'Montserrat',sans-serif" }}>
         ✨ AI-Generated Insights
       </p>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))", gap: 10 }}>

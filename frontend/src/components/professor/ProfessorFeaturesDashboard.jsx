@@ -46,11 +46,11 @@ export default function ProfessorFeaturesDashboard({ featureImp }) {
       <style>{`
         .iiee-combined * { box-sizing: border-box; }
         .iiee-combined {
-          font-family: 'DM Sans', sans-serif;
+          font-family: 'Inter', sans-serif;
           background: ${IIEE.navy};
           color: ${IIEE.white};
           min-height: 100vh;
-          padding: 20px;
+          padding: clamp(12px, 3vw, 24px);
         }
         .iiee-combined .fade-in {
           animation: fadeIn 0.6s ease-out;
@@ -63,8 +63,8 @@ export default function ProfessorFeaturesDashboard({ featureImp }) {
           background: linear-gradient(135deg, ${IIEE.navyMid} 0%, #1a1060 55%, rgba(245,197,24,0.06) 100%);
           border: 1px solid ${IIEE.goldBorder};
           border-radius: 16px;
-          padding: 24px;
-          margin-bottom: 24px;
+          padding: clamp(16px, 3vw, 24px);
+          margin-bottom: clamp(16px, 3vw, 24px);
           position: relative;
           overflow: hidden;
         }
@@ -79,27 +79,28 @@ export default function ProfessorFeaturesDashboard({ featureImp }) {
           pointer-events: none;
         }
         .comb-hero-title {
-          font-size: 28px;
-          font-weight: 800;
-          font-family: 'Syne', sans-serif;
+          font-size: clamp(20px, 4vw, 28px);
+          font-weight: 700;
+          font-family: 'Montserrat', sans-serif;
           margin: 0 0 8px;
           color: ${IIEE.white};
           position: relative;
           z-index: 1;
         }
         .comb-hero-sub {
-          font-size: 14px;
-          color: ${IIEE.muted};
+          font-size: clamp(12px, 1.5vw, 14px);
+          color: #cbd5e1;
           margin: 0;
           position: relative;
           z-index: 1;
-          line-height: 1.5;
+          line-height: 1.6;
+          font-family: 'Inter', sans-serif;
         }
         .comb-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-          gap: 20px;
-          margin-bottom: 20px;
+          grid-template-columns: repeat(auto-fit, minmax(clamp(280px, 40vw, 400px), 1fr));
+          gap: clamp(14px, 3vw, 20px);
+          margin-bottom: clamp(14px, 3vw, 20px);
         }
         .chart-hover {
           transition: all 0.2s ease;
@@ -107,6 +108,9 @@ export default function ProfessorFeaturesDashboard({ featureImp }) {
         .chart-hover:hover {
           transform: translateY(-2px);
           box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+        }
+        @media (max-width: 768px) {
+          .comb-grid { grid-template-columns: 1fr; }
         }
       `}</style>
 
@@ -123,16 +127,16 @@ export default function ProfessorFeaturesDashboard({ featureImp }) {
               return (
                 <div key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <span style={{ width: 22, height: 22, borderRadius: 7, background: `${color}20`, border: `1px solid ${color}40`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 800, color, flexShrink: 0 }}>{i + 1}</span>
-                  <span style={{ flex: "0 0 210px", fontSize: 11, color: IIEE.muted, lineHeight: 1.3 }}>{f.label}</span>
+                  <span style={{ flex: "0 0 210px", fontSize: "clamp(10px, 1.5vw, 12px)", color: "#cbd5e1", lineHeight: 1.3, fontFamily: "'Inter',sans-serif" }}>{f.label}</span>
                   <div style={{ flex: 1, height: 10, background: "rgba(255,255,255,0.05)", borderRadius: 99, overflow: "hidden" }}>
                     <div style={{ height: "100%", width: `${(f.value / maxV) * 100}%`, background: `linear-gradient(90deg, ${color}, ${color}88)`, borderRadius: 99, transition: "width 1s ease" }} />
                   </div>
-                  <span style={{ width: 54, fontSize: 11, fontWeight: 700, color, textAlign: "right", flexShrink: 0 }}>{f.value.toFixed(4)}</span>
+                  <span style={{ width: 54, fontSize: "clamp(10px, 1.5vw, 12px)", fontWeight: 700, color, textAlign: "right", flexShrink: 0, fontFamily: "'Montserrat',sans-serif" }}>{f.value.toFixed(4)}</span>
                 </div>
               );
             })}
           </div>
-          <p style={{ marginTop: 10, fontSize: 12, color: IIEE.dimText }}>
+          <p style={{ marginTop: 10, fontSize: "clamp(11px, 1.5vw, 13px)", color: "#cbd5e1", fontFamily: "'Inter',sans-serif" }}>
             Ranked list shows the most influential factors in the model's pass/fail predictions, with progress bars indicating relative importance.
           </p>
         </ChartContainer>
@@ -179,8 +183,8 @@ export default function ProfessorFeaturesDashboard({ featureImp }) {
         ].map((x, i) => (
           <div key={i} style={{ background: IIEE.cardBg, border: `1px solid ${IIEE.cardBorder}`, borderRadius: 14, padding: 16, transition: "all 0.2s ease" }} className="chart-hover">
             <p style={{ margin: "0 0 6px", fontSize: 16 }}>{x.icon}</p>
-            <p style={{ margin: "0 0 4px", fontSize: 13, fontWeight: 700, color: IIEE.white, fontFamily: "'Syne',sans-serif" }}>{x.title}</p>
-            <p style={{ margin: 0, fontSize: 12, color: IIEE.muted, lineHeight: 1.55 }}>{x.desc}</p>
+            <p style={{ margin: "0 0 4px", fontSize: 13, fontWeight: 700, color: IIEE.white, fontFamily: "'Montserrat',sans-serif" }}>{x.title}</p>
+            <p style={{ margin: 0, fontSize: 12, color: IIEE.muted, lineHeight: 1.55, fontFamily: "'Inter',sans-serif" }}>{x.desc}</p>
           </div>
         ))}
       </div>

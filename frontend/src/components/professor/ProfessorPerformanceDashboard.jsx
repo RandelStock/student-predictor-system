@@ -36,8 +36,8 @@ export default function ProfessorPerformanceDashboard({
   return (
     <div className="fade-in">
       <div style={{ marginBottom: 22 }}>
-        <h2 style={{ margin: "0 0 4px", fontSize: 22, fontWeight: 800, fontFamily: "'Syne',sans-serif" }}>Performance Breakdown</h2>
-        <p style={{ margin: 0, fontSize: 13, color: "#64748b" }}>Pass rates by SHS strand, survey section scores, and subject score trends by year.</p>
+        <h2 style={{ margin: "0 0 4px", fontSize: "clamp(18px, 4vw, 24px)", fontWeight: 700, fontFamily: "'Montserrat',sans-serif" }}>Performance Breakdown</h2>
+        <p style={{ margin: 0, fontSize: "clamp(12px, 1.5vw, 14px)", color: "#94a3b8", fontFamily: "'Inter',sans-serif" }}>Pass rates by SHS strand, survey section scores, and subject score trends by year.</p>
       </div>
 
       <div style={{
@@ -45,7 +45,7 @@ export default function ProfessorPerformanceDashboard({
         top: 86,
         zIndex: 30,
         background: "rgba(7, 16, 43, 0.95)",
-        padding: "10px 14px",
+        padding: "clamp(8px, 2vw, 14px)",
         borderRadius: 14,
         border: "1px solid rgba(255,255,255,0.12)",
         boxShadow: "0 12px 30px rgba(0,0,0,0.26)",
@@ -56,7 +56,7 @@ export default function ProfessorPerformanceDashboard({
             <BarChart data={passByStrand} layout="vertical" margin={{ top: 4, right: 30, left: 0, bottom: 4 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
               <XAxis type="number" domain={[0, 100]} tick={{ fill: "#64748b", fontSize: 11 }} unit="%" axisLine={false} tickLine={false} />
-              <YAxis type="category" dataKey="label" tick={{ fill: "#94a3b8", fontSize: 12 }} axisLine={false} tickLine={false} width={60} />
+              <YAxis type="category" dataKey="label" tick={{ fill: "#94a3b8", fontSize: "clamp(10px, 1.5vw, 12px)" }} axisLine={false} tickLine={false} width={60} />
               <Tooltip content={<CustomTooltip formatter={(v) => `${v.toFixed(1)}%`} />} />
               <ReferenceLine x={70} stroke={c.amber} strokeDasharray="4 3" />
               <Bar dataKey="pass_rate" name="Pass Rate" radius={[0, 6, 6, 0]}>
@@ -66,12 +66,12 @@ export default function ProfessorPerformanceDashboard({
               </Bar>
             </BarChart>
           </ResponsiveContainer>
-          <p style={{ marginTop: 10, fontSize: 12, color: "#94a3b8" }}>
+          <p style={{ marginTop: 10, fontSize: "clamp(11px, 1.5vw, 13px)", color: "#94a3b8", fontFamily: "'Inter',sans-serif", lineHeight: 1.6 }}>
             This chart compares SHS strands on pass rate, showing areas below the 70% threshold (reference line) for targeted improvement.
           </p>
           {passByStrand.length > 0 && (
-            <div style={{ marginTop: 10, background: "rgba(255,255,255,0.025)", borderRadius: 10, padding: "10px 12px", fontSize: 12, color: "#64748b", lineHeight: 1.6 }}>
-              💡 STEM graduates lead with <strong style={{ color: "#f1f5f9" }}>{pct(passByStrand[0]?.pass_rate)}</strong>, aligned with its math-heavy curriculum.
+            <div style={{ marginTop: 10, background: "rgba(255,255,255,0.025)", borderRadius: 10, padding: "clamp(8px, 1.5vw, 12px)", fontSize: "clamp(11px, 1.5vw, 13px)", color: "#cbd5e1", lineHeight: 1.6, fontFamily: "'Inter',sans-serif" }}>
+              💡 STEM graduates lead with <strong style={{ color: "#f1f5f9", fontFamily: "'Montserrat',sans-serif", fontWeight: 700 }}>{pct(passByStrand[0]?.pass_rate)}</strong>, aligned with its math-heavy curriculum.
             </div>
           )}
         
@@ -137,8 +137,8 @@ export default function ProfessorPerformanceDashboard({
                 return (
                   <div key={subj} style={{ background: `${col}0d`, border: `1px solid ${col}25`, borderRadius: 12, padding: "12px 14px" }}>
                     <p style={{ margin: "0 0 2px", fontSize: 10, color: "#475569", textTransform: "uppercase" }}>{subj} Trend</p>
-                    <p style={{ margin: 0, fontSize: 22, fontWeight: 800, color: col, fontFamily: "'Syne',sans-serif" }}>{last[`${subj}_avg`]}</p>
-                    <p style={{ margin: "2px 0 0", fontSize: 11, color: totalDelta >= 0 ? c.pass : c.fail }}>
+                    <p style={{ margin: 0, fontSize: 22, fontWeight: 800, color: col, fontFamily: "'Montserrat',sans-serif" }}>{last[`${subj}_avg`]}</p>
+                    <p style={{ margin: "2px 0 0", fontSize: 11, color: totalDelta >= 0 ? c.pass : c.fail, fontFamily: "'Inter',sans-serif" }}>
                       {totalDelta >= 0 ? "▲" : "▼"} {Math.abs(totalDelta).toFixed(1)} pts overall
                     </p>
                   </div>

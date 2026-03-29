@@ -33,8 +33,8 @@ const styles = `
   .regression-dashboard {
     background: ${IIEE_COLORS.background};
     min-height: 100vh;
-    color: ${IIEE_COLORS.text};
-    font-family: 'DM Sans', sans-serif;
+    color: #cbd5e1;
+    font-family: 'Inter', sans-serif;
   }
   .sticky-filter {
     position: sticky;
@@ -43,16 +43,22 @@ const styles = `
     background: rgba(15, 26, 42, 0.95);
     border: 1px solid rgba(251, 191, 36, 0.18);
     border-radius: 14px;
-    padding: 14px 18px;
-    margin-bottom: 24px;
+    padding: clamp(10px, 2vw, 18px);
+    margin-bottom: clamp(12px, 3vw, 24px);
     backdrop-filter: blur(16px);
     box-shadow: 0 8px 32px rgba(0,0,0,0.4);
   }
   .chart-description {
     margin-top: 10px;
-    font-size: 12px;
-    color: ${IIEE_COLORS.muted};
+    font-size: clamp(11px, 1.5vw, 13px);
+    color: #cbd5e1;
     line-height: 1.5;
+  }
+  @media (max-width: 768px) {
+    .sticky-filter {
+      padding: 12px;
+      margin-bottom: 16px;
+    }
   }
 `;
 
@@ -62,8 +68,8 @@ export default function ProfessorRegressionMetricsDashboard({ modelInfo }) {
     <div className="regression-dashboard fade-in">
       <style>{styles}</style>
       <div style={{ marginBottom: 22 }}>
-        <h2 style={{ margin: "0 0 4px", fontSize: 22, fontWeight: 800, fontFamily: "'Syne',sans-serif", color: IIEE_COLORS.secondary }}>Regression Metrics</h2>
-        <p style={{ margin: 0, fontSize: 13, color: IIEE_COLORS.muted }}>System metrics for rating prediction model development (Model A & B).</p>
+        <h2 style={{ margin: "0 0 4px", fontSize: "clamp(18px, 4vw, 24px)", fontWeight: 700, fontFamily: "'Montserrat',sans-serif", color: IIEE_COLORS.secondary }}>Regression Metrics</h2>
+        <p style={{ margin: 0, fontSize: "clamp(12px, 1.5vw, 14px)", color: "#cbd5e1", fontFamily: "'Inter',sans-serif" }}>System metrics for rating prediction model development (Model A & B).</p>
       </div>
 
       <div className="sticky-filter">

@@ -32,16 +32,16 @@ export default function ProfessorTimingModal({
           background: "#0b1220",
           border: "1px solid rgba(148,163,184,0.2)",
           borderRadius: 16,
-          padding: 20,
+          padding: "clamp(12px, 3vw, 24px)",
         }}
         onClick={(e) => e.stopPropagation()}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14, gap: 10 }}>
           <div>
-            <p style={{ margin: 0, fontSize: 17, fontWeight: 800, color: "#f8fafc", fontFamily: "'Syne',sans-serif" }}>
+            <p style={{ margin: 0, fontSize: "clamp(14px, 2.5vw, 18px)", fontWeight: 700, color: "#f8fafc", fontFamily: "'Montserrat',sans-serif" }}>
               Attempt Timer Drill-down
             </p>
-            <p style={{ margin: "2px 0 0", fontSize: 12, color: "#94a3b8" }}>
+            <p style={{ margin: "2px 0 0", fontSize: "clamp(11px, 1.5vw, 13px)", color: "#94a3b8", fontFamily: "'Inter',sans-serif" }}>
               {attempt?.name || "Unknown"} · {attempt?.attempt_id ? attempt.attempt_id.slice(0, 8) : ""}
             </p>
           </div>
@@ -54,7 +54,8 @@ export default function ProfessorTimingModal({
               padding: "7px 12px",
               color: "#cbd5e1",
               cursor: "pointer",
-              fontSize: 13,
+              fontSize: "clamp(12px, 1.5vw, 13px)",
+              fontFamily: "'Inter',sans-serif",
             }}
           >
             ✕ Close
@@ -62,9 +63,9 @@ export default function ProfessorTimingModal({
         </div>
 
         {loading ? (
-          <p style={{ color: "#94a3b8" }}>Loading timing details…</p>
+          <p style={{ color: "#cbd5e1", fontSize: "clamp(12px, 1.5vw, 13px)", fontFamily: "'Inter',sans-serif" }}>Loading timing details…</p>
         ) : data?.error ? (
-          <p style={{ color: "#fca5a5" }}>{data.error}</p>
+          <p style={{ color: "#fca5a5", fontSize: "clamp(12px, 1.5vw, 13px)", fontFamily: "'Inter',sans-serif" }}>{data.error}</p>
         ) : (
           <div style={{ overflowX: "auto" }}>
             <table className="att-table">

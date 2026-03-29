@@ -34,7 +34,7 @@ const styles = `
     background: ${IIEE_COLORS.background};
     min-height: 100vh;
     color: ${IIEE_COLORS.text};
-    font-family: 'DM Sans', sans-serif;
+    font-family: 'Inter', sans-serif;
   }
   .sticky-filter {
     position: sticky;
@@ -43,16 +43,23 @@ const styles = `
     background: rgba(15, 26, 42, 0.95);
     border: 1px solid rgba(251, 191, 36, 0.18);
     border-radius: 14px;
-    padding: 14px 18px;
-    margin-bottom: 24px;
+    padding: clamp(10px, 2vw, 18px);
+    margin-bottom: clamp(12px, 3vw, 24px);
     backdrop-filter: blur(16px);
     box-shadow: 0 8px 32px rgba(0,0,0,0.4);
   }
   .chart-description {
     margin-top: 10px;
-    font-size: 12px;
-    color: ${IIEE_COLORS.muted};
-    line-height: 1.5;
+    font-size: clamp(11px, 1.5vw, 13px);
+    color: #cbd5e1;
+    line-height: 1.6;
+    font-family: 'Inter', sans-serif;
+  }
+  @media (max-width: 768px) {
+    .test2025-dashboard { padding: 12px; }
+  }
+  @media (max-width: 640px) {
+    .test2025-dashboard { padding: 8px; }
   }
 `;
 
@@ -71,22 +78,22 @@ export default function ProfessorTest2025Dashboard({
     <div className="test2025-dashboard fade-in">
       <style>{styles}</style>
       <div style={{ marginBottom: 22 }}>
-        <h2 style={{ margin: "0 0 4px", fontSize: 22, fontWeight: 800, fontFamily: "'Syne',sans-serif", color: IIEE_COLORS.secondary }}>2025 Test Data Evaluation</h2>
-        <p style={{ margin: 0, fontSize: 13, color: IIEE_COLORS.muted }}>Held-out evaluation on <strong>DATA_TEST.xlsx</strong> (2025 only).</p>
+        <h2 style={{ margin: "0 0 4px", fontSize: "clamp(18px, 4vw, 24px)", fontWeight: 700, fontFamily: "'Montserrat',sans-serif", color: IIEE_COLORS.secondary }}>2025 Test Data Evaluation</h2>
+        <p style={{ margin: 0, fontSize: "clamp(12px, 1.5vw, 14px)", color: "#cbd5e1", fontFamily: "'Inter',sans-serif" }}>Held-out evaluation on <strong style={{ fontWeight: 700, fontFamily: "'Montserrat',sans-serif" }}>DATA_TEST.xlsx</strong> (2025 only).</p>
       </div>
       <div className="sticky-filter">
         <FilterPanel />
       </div>
       <div style={{ marginBottom: 22 }}>
-        <h2 style={{ margin: "0 0 4px", fontSize: 22, fontWeight: 800, fontFamily: "'Syne',sans-serif" }}>2025 Final Defense</h2>
-        <p style={{ margin: 0, fontSize: 13, color: "#64748b" }}>Held-out evaluation on <strong>DATA_TEST.xlsx</strong> (2025).</p>
+        <h2 style={{ margin: "0 0 4px", fontSize: "clamp(18px, 4vw, 24px)", fontWeight: 700, fontFamily: "'Montserrat',sans-serif" }}>2025 Final Defense</h2>
+        <p style={{ margin: 0, fontSize: "clamp(12px, 1.5vw, 14px)", color: "#cbd5e1", fontFamily: "'Inter',sans-serif" }}>Held-out evaluation on <strong style={{ fontWeight: 700, fontFamily: "'Montserrat',sans-serif" }}>DATA_TEST.xlsx</strong> (2025).</p>
       </div>
 
       {testLoading ? (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: 60, color: "#64748b" }}>Loading 2025 metrics…</div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: 60, color: "#cbd5e1", fontSize: "clamp(12px, 1.5vw, 14px)", fontFamily: "'Inter',sans-serif" }}>Loading 2025 metrics…</div>
       ) : test2025?.error ? (
-        <div style={{ background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.2)", borderRadius: 14, padding: "14px 18px" }}>
-          <p style={{ margin: 0, fontSize: 13, color: "#fca5a5", lineHeight: 1.6 }}>{test2025.error}</p>
+        <div style={{ background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.2)", borderRadius: 14, padding: "clamp(10px, 2vw, 18px)" }}>
+          <p style={{ margin: 0, fontSize: "clamp(12px, 1.5vw, 14px)", color: "#fca5a5", lineHeight: 1.6, fontFamily: "'Inter',sans-serif" }}>{test2025.error}</p>
         </div>
       ) : test2025 ? (
         <>
@@ -102,7 +109,7 @@ export default function ProfessorTest2025Dashboard({
               {[["R²", "r2", 4], ["MAE", "mae", 4], ["MSE", "mse", 4], ["RMSE", "rmse", 4]].map(([label, key, d]) => (
                 <div key={key} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
                   <span style={{ fontSize: 13, color: IIEE_COLORS.muted }}>{label}</span>
-                  <span style={{ fontSize: 15, fontWeight: 800, color: IIEE_COLORS.accent, fontFamily: "'Syne',sans-serif" }}>{num(test2025.regression?.a?.[key], d)}</span>
+                  <span style={{ fontSize: 15, fontWeight: 800, color: IIEE_COLORS.accent, fontFamily: "'Montserrat',sans-serif" }}>{num(test2025.regression?.a?.[key], d)}</span>
                 </div>
               ))}
               <div className="chart-description">This section shows model A performance on 2025 test data only. Lower MAE/RMSE and higher R² indicate stronger prediction quality for final rating data.</div>
@@ -112,7 +119,7 @@ export default function ProfessorTest2025Dashboard({
               {[["R²", "r2", 4], ["MAE", "mae", 4], ["MSE", "mse", 4], ["RMSE", "rmse", 4]].map(([label, key, d]) => (
                 <div key={key} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
                   <span style={{ fontSize: 13, color: IIEE_COLORS.muted }}>{label}</span>
-                  <span style={{ fontSize: 15, fontWeight: 800, color: c.indigo, fontFamily: "'Syne',sans-serif" }}>{num(test2025.regression?.b?.[key], d)}</span>
+                  <span style={{ fontSize: 15, fontWeight: 800, color: c.indigo, fontFamily: "'Montserrat',sans-serif" }}>{num(test2025.regression?.b?.[key], d)}</span>
                 </div>
               ))}
               <div className="chart-description">This section shows model B performance on 2025 test data only. It is built without subject scores to validate survey-only predictive capacity.</div>
@@ -159,11 +166,11 @@ export default function ProfessorTest2025Dashboard({
                     <div style={{ textAlign: "center", fontSize: 11, color: "#64748b", padding: "4px 8px" }}>Pred PASS</div>
                     <div style={{ fontSize: 11, color: c.fail, fontWeight: 700, padding: "4px 8px", display: "flex", alignItems: "center" }}>Act FAIL</div>
                     {[{ v: test2025.confusion_matrix.actual_fail.pred_fail, good: true }, { v: test2025.confusion_matrix.actual_fail.pred_pass, good: false }].map((cell, i) => (
-                      <div key={i} style={{ width: 80, height: 80, display: "flex", alignItems: "center", justifyContent: "center", background: cell.good ? `${c.pass}20` : `${c.fail}15`, border: `1px solid ${cell.good ? c.pass : c.fail}30`, borderRadius: 10, fontSize: 22, fontWeight: 800, color: cell.good ? c.pass : c.fail, fontFamily: "'Syne',sans-serif" }}>{cell.v}</div>
+                      <div key={i} style={{ width: 80, height: 80, display: "flex", alignItems: "center", justifyContent: "center", background: cell.good ? `${c.pass}20` : `${c.fail}15`, border: `1px solid ${cell.good ? c.pass : c.fail}30`, borderRadius: 10, fontSize: 22, fontWeight: 800, color: cell.good ? c.pass : c.fail, fontFamily: "'Montserrat',sans-serif" }}>{cell.v}</div>
                     ))}
                     <div style={{ fontSize: 11, color: c.pass, fontWeight: 700, padding: "4px 8px", display: "flex", alignItems: "center" }}>Act PASS</div>
                     {[{ v: test2025.confusion_matrix.actual_pass.pred_fail, good: false }, { v: test2025.confusion_matrix.actual_pass.pred_pass, good: true }].map((cell, i) => (
-                      <div key={i} style={{ width: 80, height: 80, display: "flex", alignItems: "center", justifyContent: "center", background: cell.good ? `${c.pass}20` : `${c.fail}15`, border: `1px solid ${cell.good ? c.pass : c.fail}30`, borderRadius: 10, fontSize: 22, fontWeight: 800, color: cell.good ? c.pass : c.fail, fontFamily: "'Syne',sans-serif" }}>{cell.v}</div>
+                      <div key={i} style={{ width: 80, height: 80, display: "flex", alignItems: "center", justifyContent: "center", background: cell.good ? `${c.pass}20` : `${c.fail}15`, border: `1px solid ${cell.good ? c.pass : c.fail}30`, borderRadius: 10, fontSize: 22, fontWeight: 800, color: cell.good ? c.pass : c.fail, fontFamily: "'Montserrat',sans-serif" }}>{cell.v}</div>
                     ))}
                   </div>
                 </div>

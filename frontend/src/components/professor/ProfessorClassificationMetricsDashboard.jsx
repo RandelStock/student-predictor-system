@@ -34,8 +34,8 @@ const styles = `
   .classification-dashboard {
     background: ${IIEE_COLORS.background};
     min-height: 100vh;
-    color: ${IIEE_COLORS.text};
-    font-family: 'DM Sans', sans-serif;
+    color: #cbd5e1;
+    font-family: 'Inter', sans-serif;
   }
   .sticky-filter {
     position: sticky;
@@ -44,16 +44,22 @@ const styles = `
     background: rgba(15, 26, 42, 0.95);
     border: 1px solid rgba(251, 191, 36, 0.18);
     border-radius: 14px;
-    padding: 14px 18px;
-    margin-bottom: 24px;
+    padding: clamp(10px, 2vw, 18px);
+    margin-bottom: clamp(12px, 3vw, 24px);
     backdrop-filter: blur(16px);
     box-shadow: 0 8px 32px rgba(0,0,0,0.4);
   }
   .chart-description {
     margin-top: 10px;
-    font-size: 12px;
-    color: ${IIEE_COLORS.muted};
+    font-size: clamp(11px, 1.5vw, 13px);
+    color: #cbd5e1;
     line-height: 1.5;
+  }
+  @media (max-width: 768px) {
+    .sticky-filter {
+      padding: 12px;
+      margin-bottom: 16px;
+    }
   }
 `;
 
@@ -63,8 +69,8 @@ export default function ProfessorClassificationMetricsDashboard({ modelInfo }) {
     <div className="classification-dashboard fade-in">
       <style>{styles}</style>
       <div style={{ marginBottom: 22 }}>
-        <h2 style={{ margin: "0 0 4px", fontSize: 22, fontWeight: 800, fontFamily: "'Syne',sans-serif", color: IIEE_COLORS.secondary }}>Classification Metrics</h2>
-        <p style={{ margin: 0, fontSize: 13, color: IIEE_COLORS.muted }}>Model performance on Pass/Fail prediction task.</p>
+        <h2 style={{ margin: "0 0 4px", fontSize: "clamp(18px, 4vw, 24px)", fontWeight: 700, fontFamily: "'Montserrat',sans-serif", color: IIEE_COLORS.secondary }}>Classification Metrics</h2>
+        <p style={{ margin: 0, fontSize: "clamp(12px, 1.5vw, 14px)", color: "#cbd5e1", fontFamily: "'Inter',sans-serif" }}>Model performance on Pass/Fail prediction task.</p>
       </div>
 
       <div className="sticky-filter">
@@ -115,11 +121,11 @@ export default function ProfessorClassificationMetricsDashboard({ modelInfo }) {
 
         <ChartContainer title="When to Use Each Metric" icon="📖" subtitle="Decision guide for model evaluation" accent={IIEE_COLORS.accent}>
           <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, fontFamily: "'DM Sans',sans-serif" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "clamp(10px, 1.5vw, 12px)", fontFamily: "'Inter',sans-serif" }}>
               <thead>
                 <tr>
                   {["METRIC", "SYSTEM VALUE", "FOCUS", "WHEN TO USE"].map((h) => (
-                    <th key={h} style={{ padding: "10px 12px", borderBottom: "1px solid rgba(148,163,184,0.15)", textAlign: "left", color: IIEE_COLORS.muted, fontWeight: 700, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.07em" }}>{h}</th>
+                    <th key={h} style={{ padding: "10px 12px", borderBottom: "1px solid rgba(148,163,184,0.15)", textAlign: "left", color: "#94a3b8", fontWeight: 700, fontSize: "clamp(9px, 1.2vw, 11px)", textTransform: "uppercase", letterSpacing: "0.07em", fontFamily: "'Montserrat',sans-serif" }}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -131,10 +137,10 @@ export default function ProfessorClassificationMetricsDashboard({ modelInfo }) {
                   ["F1-Score", modelInfo?.classification?.f1, "Precision-recall balance", "Imbalanced data"],
                 ].map((row, i) => (
                   <tr key={i}>
-                    <td style={{ padding: "10px 12px", borderBottom: "1px solid rgba(30,41,59,0.6)", color: IIEE_COLORS.text, fontWeight: 700 }}>{row[0]}</td>
-                    <td style={{ padding: "10px 12px", borderBottom: "1px solid rgba(30,41,59,0.6)", color: IIEE_COLORS.accent, fontWeight: 700 }}>{typeof row[1] === "number" ? pct(row[1] * 100) : "—"}</td>
-                    <td style={{ padding: "10px 12px", borderBottom: "1px solid rgba(30,41,59,0.6)", color: IIEE_COLORS.text }}>{row[2]}</td>
-                    <td style={{ padding: "10px 12px", borderBottom: "1px solid rgba(30,41,59,0.6)", color: IIEE_COLORS.muted }}>{row[3]}</td>
+                    <td style={{ padding: "10px 12px", borderBottom: "1px solid rgba(30,41,59,0.6)", color: "#cbd5e1", fontWeight: 700, fontFamily: "'Montserrat',sans-serif" }}>{row[0]}</td>
+                    <td style={{ padding: "10px 12px", borderBottom: "1px solid rgba(30,41,59,0.6)", color: IIEE_COLORS.accent, fontWeight: 700, fontFamily: "'Inter',sans-serif" }}>{typeof row[1] === "number" ? pct(row[1] * 100) : "—"}</td>
+                    <td style={{ padding: "10px 12px", borderBottom: "1px solid rgba(30,41,59,0.6)", color: "#cbd5e1", fontFamily: "'Inter',sans-serif" }}>{row[2]}</td>
+                    <td style={{ padding: "10px 12px", borderBottom: "1px solid rgba(30,41,59,0.6)", color: "#94a3b8", fontFamily: "'Inter',sans-serif" }}>{row[3]}</td>
                   </tr>
                 ))}
               </tbody>
@@ -144,7 +150,7 @@ export default function ProfessorClassificationMetricsDashboard({ modelInfo }) {
             This reference table explains the practical application of each classification metric. It helps you understand when to prioritize different aspects of model performance based on your specific use case. For example, in medical diagnosis, recall might be more important than precision to ensure all potential cases are identified, even if it means more false positives.
           </div>
           {modelInfo?.dataset_size && (
-            <p style={{ marginTop: 10, fontSize: 12, color: IIEE_COLORS.muted }}>Dataset size: <strong style={{ color: IIEE_COLORS.text }}>{modelInfo.dataset_size}</strong> records.</p>
+            <p style={{ marginTop: 10, fontSize: "clamp(11px, 1.5vw, 13px)", color: "#94a3b8", fontFamily: "'Inter',sans-serif" }}>Dataset size: <strong style={{ color: "#cbd5e1" }}>{modelInfo.dataset_size}</strong> records.</p>
           )}
         </ChartContainer>
       </div>

@@ -32,7 +32,7 @@ const styles = `
     background: ${IIEE_COLORS.background};
     min-height: 100vh;
     color: ${IIEE_COLORS.text};
-    font-family: 'DM Sans', sans-serif;
+    font-family: 'Inter', sans-serif;
   }
   .sticky-filter {
     position: sticky;
@@ -41,16 +41,23 @@ const styles = `
     background: rgba(15, 26, 42, 0.95);
     border: 1px solid rgba(251, 191, 36, 0.2);
     border-radius: 14px;
-    padding: 14px 18px;
-    margin-bottom: 18px;
+    padding: clamp(10px, 2vw, 18px);
+    margin-bottom: clamp(12px, 2vw, 18px);
     backdrop-filter: blur(16px);
     box-shadow: 0 8px 32px rgba(0,0,0,0.35);
   }
   .chart-description {
     margin-top: 10px;
-    font-size: 12px;
-    color: ${IIEE_COLORS.muted};
-    line-height: 1.5;
+    font-size: clamp(11px, 1.5vw, 13px);
+    color: #cbd5e1;
+    line-height: 1.6;
+    font-family: 'Inter', sans-serif;
+  }
+  @media (max-width: 768px) {
+    .trends-dashboard { padding: 12px; }
+  }
+  @media (max-width: 640px) {
+    .trends-dashboard { padding: 8px; }
   }
 `;
 
@@ -79,8 +86,8 @@ export default function ProfessorTrendsDashboard({
     <div className="trends-dashboard fade-in">
       <style>{styles}</style>
       <div style={{ marginBottom: 22 }}>
-        <h2 style={{ margin: "0 0 4px", fontSize: 22, fontWeight: 800, fontFamily: "'Syne',sans-serif", color: IIEE_COLORS.secondary }}>Trends & Monitoring</h2>
-        <p style={{ margin: 0, fontSize: 13, color: IIEE_COLORS.muted }}>Live data from the prediction database — student attempts, monthly summaries, and AI trend insights.</p>
+        <h2 style={{ margin: "0 0 4px", fontSize: "clamp(18px, 4vw, 24px)", fontWeight: 700, fontFamily: "'Montserrat',sans-serif", color: IIEE_COLORS.secondary }}>Trends & Monitoring</h2>
+        <p style={{ margin: 0, fontSize: "clamp(12px, 1.5vw, 14px)", color: "#cbd5e1", fontFamily: "'Inter',sans-serif" }}>Live data from the prediction database — student attempts, monthly summaries, and AI trend insights.</p>
       </div>
       <div className="sticky-filter">
         <FilterPanel />
@@ -88,7 +95,7 @@ export default function ProfessorTrendsDashboard({
 
       <ChartContainer title="System Usage & User Activity" icon="📊" subtitle="Active student users and prediction volume (last 30 days)" fullWidth accent={c.blue}>
         {usageLoading ? (
-          <p style={{ margin: 0, fontSize: 12, color: "#64748b" }}>Loading system usage…</p>
+          <p style={{ margin: 0, fontSize: "clamp(12px, 1.5vw, 13px)", color: "#cbd5e1", fontFamily: "'Inter',sans-serif" }}>Loading system usage…</p>
         ) : usageSummary ? (
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <div style={{ display: "flex", justifyContent: "flex-end" }}>
@@ -100,11 +107,11 @@ export default function ProfessorTrendsDashboard({
                   border: "1px solid rgba(255,255,255,0.09)",
                   borderRadius: 10,
                   padding: "8px 16px",
-                  color: "#94a3b8",
-                  fontSize: 12,
+                  color: "#cbd5e1",
+                  fontSize: "clamp(11px, 1.5vw, 12px)",
                   cursor: reportLoading ? "not-allowed" : "pointer",
                   opacity: reportLoading ? 0.6 : 1,
-                  fontFamily: "'DM Sans',sans-serif",
+                  fontFamily: "'Inter',sans-serif",
                 }}
               >
                 {reportLoading ? "Preparing…" : "⬇ Download Performance Report"}
@@ -168,8 +175,8 @@ export default function ProfessorTrendsDashboard({
                   {(trendInsights.stats.years ?? []).map((yr, i) => (
                     <div key={i} style={{ background: `${c.blue}0d`, border: `1px solid ${c.blue}25`, borderRadius: 10, padding: "10px 12px" }}>
                       <p style={{ margin: "0 0 2px", fontSize: 10, color: "#475569", textTransform: "uppercase" }}>{yr.year}</p>
-                      <p style={{ margin: "0 0 2px", fontSize: 20, fontWeight: 800, color: yr.pass_rate >= 70 ? c.pass : c.amber, fontFamily: "'Syne',sans-serif" }}>{yr.pass_rate.toFixed(1)}%</p>
-                      <p style={{ margin: 0, fontSize: 10, color: "#475569" }}>{yr.total} attempts · avg {yr.avg_rating?.toFixed(1)}</p>
+                      <p style={{ margin: "0 0 2px", fontSize: 20, fontWeight: 800, color: yr.pass_rate >= 70 ? c.pass : c.amber, fontFamily: "'Montserrat',sans-serif" }}>{yr.pass_rate.toFixed(1)}%</p>
+                      <p style={{ margin: 0, fontSize: 10, color: "#475569", fontFamily: "'Inter',sans-serif" }}>{yr.total} attempts · avg {yr.avg_rating?.toFixed(1)}</p>
                     </div>
                   ))}
                 </div>
@@ -221,7 +228,7 @@ export default function ProfessorTrendsDashboard({
               {(reviewAnalysis.items ?? []).map((item, idx) => (
                 <div key={idx} style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 12, padding: 16 }}>
                   <p style={{ margin: "0 0 4px", fontSize: 12, color: item.review_program === "Yes" ? c.pass : c.amber, fontWeight: 700 }}>{item.review_program === "Yes" ? "✅ Attended Review" : "⚠️ No Formal Review"}</p>
-                  <p style={{ margin: "0 0 2px", fontSize: 26, color: "#f1f5f9", fontWeight: 800, fontFamily: "'Syne',sans-serif" }}>{item.pass_rate?.toFixed(1)}%</p>
+                  <p style={{ margin: "0 0 2px", fontSize: 26, color: "#f1f5f9", fontWeight: 800, fontFamily: "'Montserrat',sans-serif" }}>{item.pass_rate?.toFixed(1)}%</p>
                   <p style={{ margin: 0, fontSize: 12, color: "#94a3b8" }}>
                     {item.pass_count}/{item.total} predicted pass
                     {item.human_like_rate != null ? ` · Human-like timing: ${item.human_like_rate.toFixed(1)}%` : ""}

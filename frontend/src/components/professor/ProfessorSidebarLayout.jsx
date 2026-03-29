@@ -189,6 +189,10 @@ function Sidebar({ activeTab, onTabChange, onRefresh, onLogout, collapsed, setCo
                       cursor: "pointer",
                       transition: "all 0.18s",
                       fontFamily: "'Inter',sans-serif",
+                      fontSize: isCollapsed ? "12px" : "13px",
+                      fontWeight: active ? 600 : 400,
+                      minHeight: isMobile ? "44px" : "36px",
+                      color: active ? T.gold : T.muted,
                     }}
                     onMouseEnter={e => {
                       if (!active) {
@@ -207,10 +211,11 @@ function Sidebar({ activeTab, onTabChange, onRefresh, onLogout, collapsed, setCo
                     {!isCollapsed && (
                       <span style={{
                         fontSize: 12,
-                        fontWeight: active ? 700 : 400,
+                        fontWeight: active ? 700 : 500,
                         color: active ? T.gold : T.muted,
                         whiteSpace: "nowrap",
                         transition: "color 0.18s",
+                        fontFamily: "'Inter',sans-serif",
                       }}>
                         {item.label}
                       </span>
@@ -295,11 +300,12 @@ function Topbar({ activeTab, setMobileOpen }) {
       background: "rgba(7,16,43,0.97)",
       backdropFilter: "blur(20px)",
       borderBottom: `1px solid ${T.border}`,
-      padding: "0 20px",
+      padding: "0 12px",
       height: 56,
       display: "flex",
       alignItems: "center",
-      gap: 14,
+      gap: 12,
+      minHeight: "56px",
     }}>
       <button
         onClick={() => setMobileOpen(o => !o)}
@@ -313,12 +319,25 @@ function Topbar({ activeTab, setMobileOpen }) {
           fontSize: 16,
           lineHeight: 1,
           display: "none",
+          minWidth: "44px",
+          minHeight: "44px",
         }}
         className="hud-hamburger"
       >☰</button>
 
-      <div>
-        <p style={{ margin: 0, fontSize: 12, color: T.gold, textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 700, fontFamily: "'Montserrat',sans-serif" }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{ 
+          margin: 0, 
+          fontSize: "clamp(11px, 2vw, 13px)", 
+          color: T.gold, 
+          textTransform: "uppercase", 
+          letterSpacing: "0.1em", 
+          fontWeight: 700, 
+          fontFamily: "'Montserrat',sans-serif",
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+        }}>
           {labelFor(activeTab)}
         </p>
       </div>
@@ -355,7 +374,9 @@ export default function ProfessorSidebarLayout({
   return (
     <div style={{ minHeight: "100vh", background: T.navy, fontFamily: "'Inter',system-ui,sans-serif", color: T.white }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800&family=Inter:wght@400;500;600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+
+        * { box-sizing: border-box; }
 
         @keyframes fadeUp  { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
         @keyframes spin    { to{transform:rotate(360deg)} }
@@ -373,36 +394,72 @@ export default function ProfessorSidebarLayout({
 
         .recharts-cartesian-grid line { stroke: rgba(255,255,255,0.05) !important; }
         .recharts-text { fill: #64748b !important; font-family:'Inter',sans-serif !important; font-size:11px !important; }
-        .recharts-legend-item-text { color:#94a3b8 !important; }
+        .recharts-legend-item-text { color:#94a3b8 !important; font-family:'Inter',sans-serif !important; }
         .recharts-tooltip-wrapper { filter: drop-shadow(0 4px 16px rgba(0,0,0,0.5)); }
 
-        .att-table { width:100%; border-collapse:collapse; font-size:12px; font-family:'Inter',sans-serif; }
-        .att-table th { padding:10px 12px; border-bottom:1px solid rgba(245,197,24,0.1); text-align:left; color:${T.gold}; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; font-size:11px; font-family:'Montserrat',sans-serif; }
-        .att-table td { padding:10px 12px; border-bottom:1px solid rgba(255,255,255,0.05); color:${T.muted}; }
+        .att-table { width:100%; border-collapse:collapse; font-size:13px; font-family:'Inter',sans-serif; }
+        .att-table th { padding:12px; border-bottom:1px solid rgba(245,197,24,0.1); text-align:left; color:${T.gold}; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; font-size:12px; font-family:'Montserrat',sans-serif; }
+        .att-table td { padding:12px; border-bottom:1px solid rgba(255,255,255,0.05); color:${T.muted}; font-family:'Inter',sans-serif; }
         .att-table tr:hover td { background:rgba(245,197,24,0.03); }
 
-        .filter-input { background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:7px 11px; color:${T.white}; font-size:12px; font-family:'Inter',sans-serif; outline:none; transition:border-color 0.2s; }
-        .filter-input:focus { border-color:rgba(245,197,24,0.45); }
+        .filter-input { background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:8px 12px; color:${T.white}; font-size:14px; font-family:'Inter',sans-serif; outline:none; transition:border-color 0.2s; }
+        .filter-input:focus { border-color:rgba(245,197,24,0.45); background:rgba(255,255,255,0.08); }
 
-        .dash-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:14px; }
+        .dash-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:16px; }
 
-        .prof-ui p { color:#dbeafe; font-size:14px; line-height:1.6; }
-        .prof-ui td,.prof-ui th { color:#dbeafe; font-size:13px; }
-        .prof-ui label { color:${T.muted}; font-size:13px; }
-
-        @media(max-width:767px){
-          .hud-hamburger { display:flex !important; }
-          .dash-grid { grid-template-columns:1fr !important; }
-          .hud-content { margin-left:0 !important; }
-        }
-        @media(max-width:640px){
-          .dash-grid { grid-template-columns:1fr !important; }
-        }
+        .prof-ui p { color:#dbeafe; font-size:15px; line-height:1.6; font-family:'Inter',sans-serif; }
+        .prof-ui td,.prof-ui th { color:#dbeafe; font-size:14px; font-family:'Inter',sans-serif; }
+        .prof-ui label { color:${T.muted}; font-size:14px; font-family:'Inter',sans-serif; }
 
         .tab-btn { background:transparent; border:none; cursor:pointer; font-family:'Inter',sans-serif; transition:all 0.2s; }
         .gold-line { width:32px; height:3px; background:${T.gold}; border-radius:2px; }
         .hud-card { transition: border-color 0.18s, box-shadow 0.18s; }
         .hud-card:hover { border-color: rgba(245,197,24,0.25) !important; box-shadow: 0 0 0 1px rgba(245,197,24,0.1), 0 8px 24px rgba(0,0,0,0.35) !important; }
+
+        /* ─── Mobile Responsiveness ─── */
+        @media(max-width:1024px){
+          .dash-grid { grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:12px; }
+        }
+
+        @media(max-width:768px){
+          .hud-hamburger { display:flex !important; }
+          .dash-grid { grid-template-columns:1fr !important; gap:12px; }
+          .hud-content { margin-left:0 !important; }
+          main { padding:16px 16px 80px !important; }
+          .prof-ui p { font-size:14px; }
+          .prof-ui td,.prof-ui th { font-size:13px; }
+          .att-table th { padding:10px; font-size:11px; }
+          .att-table td { padding:10px; font-size:12px; }
+          .filter-input { font-size:13px; padding:7px 10px; }
+        }
+
+        @media(max-width:640px){
+          .dash-grid { grid-template-columns:1fr !important; gap:10px; }
+          main { padding:12px 12px 60px !important; }
+          .prof-ui p { font-size:13px; line-height:1.5; }
+          .prof-ui td,.prof-ui th { font-size:12px; }
+          .att-table { font-size:12px; }
+          .att-table th { padding:8px; font-size:10px; }
+          .att-table td { padding:8px; font-size:11px; }
+          .filter-input { font-size:12px; padding:6px 8px; }
+          .recharts-text { font-size:10px !important; }
+          h2 { font-size:22px !important; }
+          h3 { font-size:18px !important; }
+        }
+
+        @media(max-width:480px){
+          .dash-grid { grid-template-columns:1fr !important; gap:8px; }
+          main { padding:10px 10px 50px !important; }
+          .prof-ui p { font-size:12px; }
+          .prof-ui td,.prof-ui th { font-size:11px; }
+          .att-table { font-size:11px; }
+          .att-table th { padding:6px; font-size:9px; }
+          .att-table td { padding:6px; font-size:10px; }
+          .filter-input { font-size:11px; }
+          .recharts-text { font-size:9px !important; }
+          h2 { font-size:18px !important; }
+          h3 { font-size:16px !important; }
+        }
       `}</style>
 
       <Sidebar
@@ -424,7 +481,11 @@ export default function ProfessorSidebarLayout({
         {/* ✅ Page header banner REMOVED as requested */}
 
         {/* Dashboard content */}
-        <main style={{ padding: "20px 28px 80px" }}>
+        <main style={{ 
+          padding: isMobile ? "16px 12px 80px" : "20px 28px 80px",
+          maxWidth: "100%",
+          overflowX: "hidden",
+        }}>
           {children}
         </main>
       </div>

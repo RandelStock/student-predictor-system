@@ -239,7 +239,7 @@ function SectionCard({ section, answers, passed, isActive, onToggle, attempt_id 
               borderRadius: "99px", transition: "width 0.8s cubic-bezier(0.4,0,0.2,1)",
             }} />
           </div>
-          <p style={{ margin: "4px 0 0", fontSize: "10px", color: weakItems.length > 0 ? "#94a3b8" : "#6ee7b7" }}>
+          <p style={{ margin: "4px 0 0", fontSize: "clamp(9px, 1.3vw, 10px)", color: weakItems.length > 0 ? "#94a3b8" : "#6ee7b7", fontFamily: "'Inter', sans-serif" }}>
             {weakItems.length > 0
               ? `${weakItems.length} area${weakItems.length > 1 ? "s" : ""} to improve · ${strongItems.length} strong`
               : `All ${section.fields.length} areas answered positively ✓`}
@@ -270,7 +270,7 @@ function SectionCard({ section, answers, passed, isActive, onToggle, attempt_id 
             maxHeight: "340px",
             overflowY: "auto",
           }}>
-            <p style={{ margin: "0 0 10px", fontSize: "10px", fontWeight: 700, color: "#475569", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+            <p style={{ margin: "0 0 10px", fontSize: "clamp(9px, 1.2vw, 10px)", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "'Montserrat', sans-serif" }}>
               Item Breakdown
             </p>
             {section.fields.map((f, i) => {
@@ -301,7 +301,7 @@ function SectionCard({ section, answers, passed, isActive, onToggle, attempt_id 
           <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "10px" }}>
               <span style={{ fontSize: "13px" }}>✨</span>
-              <span style={{ fontSize: "10px", fontWeight: 700, color: c.text, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+              <span style={{ fontSize: "clamp(9px, 1.2vw, 10px)", fontWeight: 700, color: c.text, textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "'Montserrat', sans-serif" }}>
                 AI Recommendations
               </span>
             </div>
@@ -322,10 +322,11 @@ function SectionCard({ section, answers, passed, isActive, onToggle, attempt_id 
                   const isNumbered = /^\d+\./.test(line.trim());
                   return (
                     <p key={i} style={{
-                      fontSize: "11px", lineHeight: 1.65,
+                      fontSize: "clamp(10px, 1.5vw, 11px)", lineHeight: 1.65,
                       margin: isNumbered ? "5px 0" : "0 0 8px",
-                      color: isNumbered ? "#e2e8f0" : "#94a3b8",
+                      color: isNumbered ? "#cbd5e1" : "#94a3b8",
                       fontWeight: isNumbered ? 500 : 400,
+                      fontFamily: isNumbered ? "'Inter', sans-serif" : "'Inter', sans-serif",
                     }}>
                       {isNumbered
                         ? <><span style={{ color: c.text, fontWeight: 700 }}>{line.match(/^\d+/)[0]}.</span>{line.replace(/^\d+\./, "")}</>
