@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import {
   BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, ReferenceLine, RadarChart,
-  PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend,
+  PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, 
 } from "recharts";
 import {  FilterPanel } from "./ProfessorShared";
 
