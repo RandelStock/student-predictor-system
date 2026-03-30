@@ -185,7 +185,7 @@ export default function ExamineeDetailPanel({ records, selectedIdx, onSelect, ru
   const [showSurvey, setShowSurvey] = useState(false);
 
   if (!records || records.length === 0) {
-    return <p style={{ margin:0, fontSize:"11px", color:"#64748b" }}>No DATA_TEST records loaded.</p>;
+    return <p style={{ margin:0, fontSize:"11px", color:"#64748b" }}>No DATA_EVALUATION records loaded.</p>;
   }
 
   // survey answers are embedded inside runData.raw_answers (added by backend below)
@@ -252,7 +252,7 @@ export default function ExamineeDetailPanel({ records, selectedIdx, onSelect, ru
                 {name ?? `Examinee #${selectedIdx+1}`}
               </p>
               <p className="edp-subheading" style={{ margin:0, fontSize:"11px", color:"#475569" }}>
-                2025 DATA_TEST · Row {selectedIdx+1} of {records.length}
+                2025 DATA_EVALUATION · Row {selectedIdx+1} of {records.length}
               </p>
             </div>
             {/* actual vs predicted badges */}

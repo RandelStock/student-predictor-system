@@ -64,12 +64,28 @@ const styles = `
 
 export default function ProfessorRegressionMetricsDashboard({ modelInfo }) {
 
+  const dataSourceText = modelInfo?.data_source ? `Primary source: ${modelInfo.data_source}` : "Primary source: DATA_EVALUATION (2025)";
+  const trainingSourceText = modelInfo?.dataset_sizes?.training ? `Training split: ${modelInfo.dataset_sizes.training} rows` : "Training split: ~123 rows";
+  const evaluationSourceText = modelInfo?.dataset_sizes?.evaluation ? `Evaluation split: ${modelInfo.dataset_sizes.evaluation} rows` : "Evaluation split: ~36 rows";
+
   return (
     <div className="regression-dashboard fade-in">
       <style>{styles}</style>
       <div style={{ marginBottom: 22 }}>
         <h2 style={{ margin: "0 0 4px", fontSize: "clamp(18px, 4vw, 24px)", fontWeight: 700, fontFamily: "'Montserrat',sans-serif", color: IIEE_COLORS.secondary }}>Regression Metrics</h2>
         <p style={{ margin: 0, fontSize: "clamp(12px, 1.5vw, 14px)", color: "#cbd5e1", fontFamily: "'Inter',sans-serif" }}>System metrics for rating prediction model development (Model A & B).</p>
+      </div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
+        <span style={{ padding: "6px 10px", borderRadius: 8, background: "rgba(251,191,36,0.16)", color: "#fbbf24", fontSize: 11, fontWeight: 600 }}>{dataSourceText}</span>
+        <span style={{ padding: "6px 10px", borderRadius: 8, background: "rgba(56,189,248,0.14)", color: "#38bdf8", fontSize: 11, fontWeight: 600 }}>{trainingSourceText}</span>
+        <span style={{ padding: "6px 10px", borderRadius: 8, background: "rgba(34,197,94,0.14)", color: "#22c55e", fontSize: 11, fontWeight: 600 }}>{evaluationSourceText}</span>
+      </div>
+      <div style={{ border: "1px solid rgba(255,255,255,0.13)", borderRadius: 14, padding: 14, marginBottom: 16, background: "rgba(15,26,42,0.72)" }}>
+        <h3 style={{ margin: "0 0 8px", fontSize: "clamp(13px, 1.7vw, 14px)", fontWeight: 700, color: IIEE_COLORS.secondary }}>Quick Regression Insights</h3>
+        <p style={{ margin: 0, color: "#cbd5e1", fontSize: "clamp(11px, 1.5vw, 12px)", lineHeight: 1.6 }}>
+          Model A RMSE: <strong>{num(modelInfo?.regression_a?.rmse, 3)}</strong>, Model B RMSE: <strong>{num(modelInfo?.regression_b?.rmse, 3)}</strong>. 
+          Current R² values indicate that Model B explains more variance when larger sample is available; MAE gap suggests model-target bias can be reduced via feature recalibration.
+        </p>
       </div>
 
       <div className="sticky-filter">

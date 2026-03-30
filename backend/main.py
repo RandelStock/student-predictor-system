@@ -188,10 +188,10 @@ else:
 #       dashboard analytics. This is the complete, deduplicated institutional
 #       dataset. DO NOT combine DATA_SYSTEM + DATA_TEST for analytics.
 #
-#   DATA_MODEL  (60 rows, 2022-2025) + DATA_TEST (21 rows, 2025) = 81 rows
+#   DATA_MODEL  (123 rows, 2022-2024) + DATA_EVALUATION (36 rows, 2025) = 159 rows
 #       → survey-based analyses only (section_scores, weakest_questions)
 #
-#   DATA_TEST (21 rows, 2025) → held-out evaluation only
+#   DATA_EVALUATION (36 rows, 2025) → held-out evaluation only
 # ══════════════════════════════════════════════════════════════════════════════
 
 FILE_UPCOMING = "DATA_UPCOMING.xlsx"  # Legacy fallback (333 rows, 2022-2025)
@@ -427,18 +427,18 @@ def _load_main_df() -> pd.DataFrame:
 
 def _load_survey_df() -> pd.DataFrame:
     """
-    60 rows DATA_MODEL (2022-2025) + 21 rows DATA_TEST (2025) = 81 rows.
+    DATA_MODEL (123 rows) + DATA_EVALUATION (36 rows) = 159 rows.
     Used ONLY for survey-based analyses: section_scores, weakest_questions.
     Both files have the full survey columns.
     """
     frames = []
-    for path in [FILE_MODEL, FILE_TEST]:
-        try:
-            d = pd.read_excel(path, sheet_name=0)
-            d.columns = d.columns.str.strip()
-            frames.append(d)
-        except Exception as e:
-            print(f"[survey] Could not load {path}: {e}")
+    for path in [FILE_MODEL, FILE_EVALUATION]:
+        d = _load_data_file(path)
+        if d is None:
+            print(f"[survey] Could not load {path} (CSV/XLSX fallback)")
+            continue
+        d.columns = d.columns.str.strip()
+        frames.append(d)
     if not frames:
         return pd.DataFrame()
     df = pd.concat(frames, ignore_index=True, sort=False)
@@ -1053,7 +1053,7 @@ def analytics():
     except Exception as e:
         return {"error": f"Could not load dataset: {e}"}
 
-    # ── survey dataframe: DATA_MODEL (60) + DATA_TEST (21) = 81 rows ─────────
+    # ── survey dataframe: DATA_MODEL (123) + DATA_EVALUATION (36) = 159 rows ─────────
     # Used only for survey-based analyses (section_scores, weakest_questions).
     try:
         df_survey = _load_survey_df()
@@ -1087,10 +1087,10 @@ def analytics():
         "avg_rating_failers": round(float(failers[COL_TOTAL_RATING].mean()), 2) if COL_TOTAL_RATING in df.columns and len(failers) else None,
         "passing_score":      70,
         "year_breakdown":     year_breakdown,
-        "data_source":        "DATA_UPCOMING (333 rows, 2022-2025)",
+        "data_source":        "DATA_ALL (2022-2025)",
         # Survey subset info for transparency
         "survey_rows":        len(df_survey) if not df_survey.empty else 0,
-        "survey_source":      "DATA_MODEL (60) + DATA_TEST (21) = 81 rows",
+        "survey_source":      "DATA_MODEL (123) + DATA_EVALUATION (36) = 159 rows",
     }
 
     # ── pass rate by year ─────────────────────────────────────────────────────
@@ -1125,8 +1125,8 @@ def analytics():
             cur["ESAS_delta"] = round(cur["ESAS_avg"] - prev["ESAS_avg"], 2)
 
     # ── strand / review / duration — sourced from df_survey (has those cols) ─
-    # df_survey (DATA_MODEL 60 + DATA_TEST 21 = 81 rows) has the survey columns
-    # that DATA_UPCOMING lacks. Fall back to df only if column happens to exist there.
+    # df_survey (DATA_MODEL 123 + DATA_EVALUATION 36 = 159 rows) has the survey columns
+    # that DATA_ALL lacks. Fall back to df only if column happens to exist there.
     df_strand = df_survey if (not df_survey.empty and COL_STRAND in df_survey.columns) else df
 
     pass_rate_by_strand = []
@@ -1720,7 +1720,7 @@ Numeric patterns (JSON):
 "year_stats": {stats},
 "key_patterns": {patterns},
 "curriculum_gaps": {curriculum},
-"note": "Dashboard uses DATA_UPCOMING (333 rows, 2022-2025) as the institutional analytics source. Survey analysis uses DATA_MODEL (60 rows) + DATA_TEST (21 rows) = 81 rows. FAILED-RETAKE is treated as an outcome label, not a second attempt."
+"note": "Dashboard uses DATA_ALL (2022-2025) as the institutional analytics source. Survey analysis uses DATA_MODEL (123 rows) + DATA_EVALUATION (36 rows) = 159 rows. FAILED-RETAKE is treated as an outcome label, not a second attempt."
 }}
 
 Write a tight faculty-facing report in 4 short sentences (plain text only, no bullets, no headings):
@@ -1836,10 +1836,10 @@ def admin_performance_report(year: Optional[int] = None, days: int = 30, db: Ses
         "year": year,
         "days": days,
         "data_architecture": {
-            "analytics_source":   "DATA_UPCOMING (333 rows, 2022-2025)",
-            "survey_source":      "DATA_MODEL (60 rows) + DATA_TEST (21 rows) = 81 rows",
-            "model_train_source": "DATA_MODEL (60 rows) + DATA_SYSTEM 2022-2024 (250 rows) for Reg-A",
-            "held_out_test":      "DATA_TEST (21 rows, 2025 Apr+Aug)",
+            "analytics_source":   "DATA_ALL (2022-2025)",
+            "survey_source":      "DATA_MODEL (123 rows) + DATA_EVALUATION (36 rows) = 159 rows",
+            "model_train_source": "DATA_MODEL (123 rows) + DATA_ALL (159 rows) for final retrain",
+            "held_out_test":      "DATA_EVALUATION (36 rows, 2025)",
         },
         "analytics": {},
         "model_info": {},
@@ -1929,11 +1929,11 @@ def defense_test_2025():
 
     return {
         "test_year": 2025,
-        "test_size": 21,  # DATA_TEST is 21 rows (2025 Apr+Aug)
+        "test_size": bundle.get("dataset_size_evaluation", 36),  # DATA_EVALUATION rows (2025)
         "train_size": {
-            "classification": 60,       # DATA_MODEL only
-            "regression_a": 310,         # DATA_MODEL 60 + DATA_SYSTEM 2022-2024 250
-            "regression_b": 60,          # DATA_MODEL only
+            "classification": bundle.get("dataset_size_model", 123),
+            "regression_a": bundle.get("dataset_size_model", 123),
+            "regression_b": bundle.get("dataset_size_model", 123),
         },
         "classification": {
             "accuracy": clf_accuracy,
@@ -1951,18 +1951,17 @@ def defense_test_2025():
     }
 
 
-TEST_FILE = "DATA_TEST.xlsx"
+TEST_FILE = "DATA_EVALUATION"  # supports CSV/XLSX via _load_data_file
 _TEST_CACHE = {"df": None}
 
 def _load_encoded_test_df():
     if _TEST_CACHE["df"] is not None:
         return _TEST_CACHE["df"]
 
-    path = os.path.join(os.path.dirname(__file__), TEST_FILE)
-    if not os.path.exists(path):
-        raise FileNotFoundError(f"{TEST_FILE} not found in backend folder.")
+    df = _load_data_file(TEST_FILE)
+    if df is None:
+        raise FileNotFoundError(f"{TEST_FILE}.csv or {TEST_FILE}.xlsx not found in backend folder.")
 
-    df = pd.read_excel(path, sheet_name=0)
     df.columns = df.columns.str.strip()
 
     if "Senior High School Strand" in df.columns and "shs_strand" in LABEL_ENCODERS:
@@ -2034,7 +2033,7 @@ def defense_test_2025_records():
     items = []
 
     if COL_PASSED not in df.columns or COL_TOTAL_RATING not in df.columns:
-        return {"error": f"{COL_PASSED} and/or {COL_TOTAL_RATING} columns missing in {TEST_FILE}"}
+        return {"error": f"{COL_PASSED} and/or {COL_TOTAL_RATING} columns missing in {TEST_FILE} (DATA_EVALUATION)"}
 
     for i in range(len(df)):
         passed_raw = str(df.iloc[i][COL_PASSED]).strip().upper()
@@ -2051,7 +2050,7 @@ def defense_test_2025_records():
 @app.get("/defense/test-2025-predict")
 def defense_test_2025_predict(idx: int):
     """
-    Predicts for a single DATA_TEST row (21 rows, 2025 Apr+Aug) using the trained models.
+    Predicts for a single DATA_EVALUATION row (36 rows, 2025) using the trained models.
     Returns:
       - actual/predicted outcomes
       - raw_answers (short key -> Likert int 1-4)
@@ -2137,7 +2136,7 @@ def defense_test_2025_predict(idx: int):
 
     df = _load_encoded_test_df()
     if idx < 0 or idx >= len(df):
-        return {"error": f"idx out of range. DATA_TEST has {len(df)} rows (0–{len(df)-1})."}
+        return {"error": f"idx out of range. DATA_EVALUATION has {len(df)} rows (0–{len(df)-1})."}
 
     row = df.iloc[idx]
 
@@ -2164,8 +2163,9 @@ def defense_test_2025_predict(idx: int):
     raw_answers = {}
     name = None
     try:
-        raw_path = os.path.join(os.path.dirname(__file__), TEST_FILE)
-        raw_df = pd.read_excel(raw_path, sheet_name=0)
+        raw_df = _load_data_file(TEST_FILE)
+        if raw_df is None:
+            raise FileNotFoundError(f"{TEST_FILE}.csv or {TEST_FILE}.xlsx not found")
         raw_df.columns = raw_df.columns.str.strip()
         raw_row = raw_df.iloc[idx]
 
@@ -2424,7 +2424,9 @@ def dashboard():
     try:
         df_main   = _load_main_df()
         df_survey = _load_survey_df()
-        df_test_raw = pd.read_excel(FILE_TEST)
+        df_test_raw = _load_data_file(FILE_EVALUATION)
+        if df_test_raw is None:
+            raise FileNotFoundError(f"{FILE_EVALUATION} not found")
         df_test_raw.columns = df_test_raw.columns.str.strip()
     except Exception as e:
         return {"error": f"Could not load data: {e}"}
@@ -2452,10 +2454,11 @@ def health():
         "passing_score":             PASSING_SCORE,
         "database":                  "connected" if get_database_url() else "not_configured",
         "data_architecture": {
-            "analytics_source":      f"{FILE_UPCOMING} (333 rows, 2022-2025)",
-            "survey_source":         f"{FILE_MODEL} (60) + {FILE_TEST} (21) = 81 rows",
-            "test_file":             f"{FILE_TEST} (21 rows, 2025 Apr+Aug)",
-            "test_size":             bundle.get("dataset_size_test", 21),
-            "reg_a_train_size":      bundle.get("dataset_size_reg_a_train", 310),
+            "analytics_source":      f"{FILE_ALL} (2022-2025)",
+            "survey_source":         f"{FILE_MODEL} + {FILE_EVALUATION} (combined)",
+            "test_file":             f"{FILE_EVALUATION} (2025 held-out)",
+            "test_size":             bundle.get("dataset_size_evaluation", 36),
+            "model_train_size":      bundle.get("dataset_size_model", 123),
+            "final_train_size":      bundle.get("dataset_size_all", 159),
         },
     }

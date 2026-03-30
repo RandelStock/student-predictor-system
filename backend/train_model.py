@@ -4,45 +4,36 @@ train_model.py — REE Licensure Exam Predictor (SLSU)
 
 DATA ARCHITECTURE (UPDATED)
 ----------------------------
-DATA_MODEL.xlsx     60 rows, 98 cols, 2022-2025
+DATA_MODEL.xlsx     123 rows, 98 cols, 2022-2024
                     EE + MATH + ESAS + GWA + full survey + PRC result
                     → PRIMARY training source (has survey answers)
 
-DATA_SYSTEM.xlsx    333 rows, 8 cols, 2022-2025
-                    EE + MATH + ESAS + GWA + PRC result, NO survey
-                    → Full dataset (identical to DATA_UPCOMING)
-                    → Only 2022-2024 rows (250) are used for Reg-A training
-                      to avoid leaking 2025 test data
-                    → Powers professor dashboard analytics (main.py)
+DATA_EVALUATION.xlsx 36 rows, 98 cols, 2025
+                     EE + MATH + ESAS + GWA + full survey + PRC result
+                     → HELD-OUT evaluation/test set (2025, never seen during training)
 
-DATA_TEST.xlsx      21 rows, 98 cols, 2025-Apr + 2025-Aug only
+DATA_ALL.xlsx       159 rows, 98 cols, 2022-2025
                     EE + MATH + ESAS + GWA + full survey + PRC result
-                    → HELD-OUT evaluation set (never seen during training)
+                    → FULL production set used for final model retrain and deployment
 
 DATA_UPCOMING.xlsx  333 rows, 8 cols, 2022-2025
                     EE + MATH + ESAS + GWA + PRC result, NO survey
-                    → Identical to DATA_SYSTEM; used by the professor
-                      dashboard (main.py) for the FULL 2022-2025 institutional
-                      analytics (all 333 examiners)
-                    → NOT used here in training
+                    → Identical to DATA_SYSTEM (legacy) for dashboard analytics
+                    → Powers main.py institutional dashboard (all 333 examiners)
+                    → NOT used for model training
 
 TRAINING STRATEGY
 -----------------
-Classification    train=DATA_MODEL(60),              test=DATA_TEST(21), features=ALL_FEATURES
-Regression A      train=DATA_MODEL(60)
-                       + DATA_SYSTEM[2022-2024](250) = 310 rows,
-                  test=DATA_TEST(21), features=BASIC_FEATURES
-Regression B      train=DATA_MODEL(60),              test=DATA_TEST(21), features=NO_SUBJECT_FEATURES
+Classification    train=DATA_MODEL(123),             test=DATA_EVALUATION(36), features=ALL_FEATURES
+Regression A      train=DATA_MODEL(123) + DATA_UPCOMING[2022-2024](250) = 373 rows,
+                  test=DATA_EVALUATION(36), features=BASIC_FEATURES
+Regression B      train=DATA_MODEL(123),             test=DATA_EVALUATION(36), features=NO_SUBJECT_FEATURES
 
-NOTE ON DATA_SYSTEM vs DATA_UPCOMING
--------------------------------------
-Both files are identical (333 rows, 2022-2025).
-- DATA_SYSTEM  → used here to boost Regression A training (2022-2024 slice only)
-- DATA_UPCOMING → used by main.py /dashboard endpoint for full institutional
-                  analytics covering all 333 examiners from 2022-2025.
-  DO NOT use DATA_SYSTEM + DATA_TEST as the institutional source — that only
-  gives 333+21 = 354 but with duplicate 2025 rows. Use DATA_UPCOMING (333)
-  as the single source of truth for dashboard analytics.
+NOTE ON DATA_UPCOMING vs DATA_ALL
+---------------------------------
+DATA_UPCOMING (333 rows) is the institutional analytics source for main.py.
+DATA_ALL (159 rows) is the model production training source (2022-2025).
+DO NOT combine DATA_UPCOMING with DATA_EVALUATION or DATA_MODEL for evaluation.
 """
 
 import pandas as pd

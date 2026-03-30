@@ -372,9 +372,10 @@ export default function ProfessorPage({ onLogout }) {
               filteredSubjectTrends={filteredSubjectTrends}
               correlation={correlation}
               scatterData={scatterData}
-              passByPeriod={dashboardData?.passByPeriod ?? []}    // ← ADD
-              subjectByYear={dashboardData?.subjectByYear ?? []}  // ← ADD
-              dataSource={dataSource}  // ← NEW: Dataset source metadata
+              passByPeriod={dashboardData?.passByPeriod ?? []}
+              subjectByYear={dashboardData?.subjectByYear ?? []}
+              dataSource={dataSource}
+              featureImp={featureImp}
             />
           )}
 

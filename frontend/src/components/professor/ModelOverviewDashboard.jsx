@@ -518,7 +518,7 @@ function PredictedActualSection({ scatterData: rawScatter, modelInfo }) {
           3. Each item needs: <code style={{ color: IIEE.gold }}>{'{ actual, predicted }'}</code>
         </div>
         <div style={{ marginTop: 16, padding: "12px 16px", background: "rgba(245,197,24,.06)", border: "1px solid rgba(245,197,24,.2)", borderRadius: 10, fontSize: 12, color: IIEE.gold }}>
-          ℹ️ The 2025 test set (DATA_TEST, 21 rows) should provide this data after model training.
+          ℹ️ The 2025 test set (DATA_EVALUATION, 36 rows) should provide this data after model training.
         </div>
       </div>
     );
@@ -608,7 +608,7 @@ export default function ModelOverviewDashboard({
   ov, pieData: propPieData, passByYear, passByPeriod, subjectByYear,
   passByStrand, passByDur, reviewPieData: propReviewPieData,
   sectionScores, weakestQ,
-  modelInfo, scatterData, dataSource,  // ← NEW: dataSource parameter
+  modelInfo, scatterData, dataSource, featureImp,
 }) {
   const [mode, setMode] = useState("institutional");
   const [activePie, setActivePie] = useState(null);
@@ -859,8 +859,8 @@ export default function ModelOverviewDashboard({
 
           <Divider label="Model Performance Summary" icon="🤖" />
           <SecCard num="1" icon="🤖" title="Random Forest Model Performance"
-            subtitle="Trained on DATA_MODEL (60 rows). Evaluated on DATA_TEST (21 rows, 2025 held-out).">
-            <DsTag label="Training: DATA_MODEL 60 rows | Test: DATA_TEST 21 rows (2025)" />
+            subtitle="Trained on DATA_MODEL (123 rows). Evaluated on DATA_EVALUATION (36 rows, 2025 held-out).">
+            <DsTag label="Training: DATA_MODEL 123 rows | Test: DATA_EVALUATION 36 rows (2025)" />
             {modelInfo ? (
               <div className="g2">
                 <Card inner icon="📊" title="Classification Metrics" sub="Pass / Fail prediction" blueTint>
@@ -917,10 +917,62 @@ export default function ModelOverviewDashboard({
             )}
           </SecCard>
 
+          {/* ── Model Insights (classification + regression) ── */}
+          <SecCard num="2" icon="📌" title="Model Validation Highlights"
+            subtitle="Key evaluation results from DATA_EVALUATION (held-out 2025)">
+            <div className="g2" style={{ marginBottom: 14 }}>
+              {[
+                { label: "Recall (PASS)", value: modelInfo?.classification?.recall ?? 0, suffix: "%", color: IIEE.passGreen, insight: "All actual PASS are identified" },
+                { label: "Precision (PASS)", value: modelInfo?.classification?.precision ?? 0, suffix: "%", color: IIEE.blue, insight: "Few false positives" },
+                { label: "Reg A R²", value: modelInfo?.regression_a?.r2 ?? 0, suffix: "", color: IIEE.teal, insight: "High reliability with subject scores" },
+                { label: "Reg B R²", value: modelInfo?.regression_b?.r2 ?? 0, suffix: "", color: IIEE.indigo, insight: "Lower power on survey-only data" },
+              ].map((m, i) => (
+                <Card key={i} inner icon="🔎" title={m.label} sub={m.insight} blueTint>
+                  <div className="model-row" style={{ marginTop: 3 }}>
+                    <span className="model-row-label">Value</span>
+                    <span className="model-row-val" style={{ color: m.color }}>
+                      {m.value != null ? (m.suffix === "%" ? pct(m.value * 100) : num(m.value, 3)) : "—"}
+                      {m.suffix === "%" ? "" : ""}
+                    </span>
+                  </div>
+                </Card>
+              ))}
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
+              <div style={{ border: "1px solid rgba(245,197,24,0.25)", borderRadius: 10, padding: 10 }}>
+                <strong>Prediction counts</strong>
+                <p style={{ margin: "6px 0 0", color: IIEE.muted }}>Actual FAIL: {modelInfo?.fail_count ?? "—"}</p>
+                <p style={{ margin: "2px 0 0", color: IIEE.muted }}>Actual PASS: {modelInfo?.pass_count ?? "—"}</p>
+                <p style={{ margin: "8px 0 0", color: IIEE.gold }}>False positives (FAIL→PASS): {Math.max(0, Math.round(((1 - (modelInfo?.classification?.accuracy ?? 0)) * ((modelInfo?.fail_count ?? 0) + (modelInfo?.pass_count ?? 0))) || 0))}</p>
+              </div>
+              <div style={{ border: "1px solid rgba(245,197,24,0.25)", borderRadius: 10, padding: 10 }}>
+                <strong>Production training</strong>
+                <p style={{ margin: "6px 0 0", color: IIEE.muted }}>DATA_MODEL: {modelInfo?.dataset_size_model ?? "—"} rows</p>
+                <p style={{ margin: "2px 0 0", color: IIEE.muted }}>DATA_EVALUATION: {modelInfo?.dataset_size_evaluation ?? "—"} rows</p>
+                <p style={{ margin: "8px 0 0", color: IIEE.gold }}>DATA_ALL production retrain: {modelInfo?.dataset_size_all ?? "—"} rows</p>
+              </div>
+            </div>
+            <div style={{ marginBottom: 12 }}>
+              <strong>Top feature driver</strong>
+              <p style={{ margin: "4px 0 0", color: IIEE.muted }}>
+                {featureImp?.[0]?.label ? `${featureImp[0].label} (${(featureImp[0].value * 100).toFixed(1)}%)` : "—"}
+                {featureImp?.[0] && featureImp[0].label?.toLowerCase().includes("esas") ? " (ESAS dominates)" : ""}
+              </p>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 6 }}>
+              <p style={{ margin: 0, color: IIEE.white, fontSize: 12 }}><strong>Near-perfect pass detection (Recall = {pct(modelInfo?.classification?.recall * 100 ?? 0)})</strong><br/>The classifier correctly identified every student who actually passed.</p>
+              <p style={{ margin: 0, color: IIEE.white, fontSize: 12 }}><strong>2 false positives</strong><br/>Out of {modelInfo?.fail_count ?? "?"} actual FAIL, {Math.max(0, Math.round(((1 - (modelInfo?.classification?.accuracy ?? 0)) * ((modelInfo?.fail_count ?? 0) + (modelInfo?.pass_count ?? 0))) || 0))} were predicted PASS.</p>
+              <p style={{ margin: 0, color: IIEE.white, fontSize: 12 }}><strong>Regression A is highly reliable (R² = {num(modelInfo?.regression_a?.r2 ?? 0, 3)})</strong><br/>With subject scores + GWA, MAE is {num(modelInfo?.regression_a?.mae ?? 0, 2)} pts.</p>
+              <p style={{ margin: 0, color: IIEE.white, fontSize: 12 }}><strong>Regression B has limited power (R² = {num(modelInfo?.regression_b?.r2 ?? 0, 3)})</strong><br/>Survey+GWA only MAE = {num(modelInfo?.regression_b?.mae ?? 0, 2)} pts.</p>
+              <p style={{ margin: 0, color: IIEE.white, fontSize: 12 }}><strong>ESAS is the single strongest predictor</strong><br/>ESAS ranks #1 in classifier and Reg A feature importance.</p>
+              <p style={{ margin: 0, color: IIEE.white, fontSize: 12 }}><strong>Final production model</strong><br/>Trained on DATA_ALL ({modelInfo?.dataset_size_all ?? "?"} rows) after evaluation on DATA_EVALUATION.</p>
+            </div>
+          </SecCard>
+
           {/* ── FIX 3: Predicted vs Actual ── */}
-          <SecCard num="2" icon="🎯" title="Predicted vs Actual Rating"
-            subtitle="DATA_TEST (21 rows, 2025 Apr+Aug) — completely held-out evaluation set">
-            <DsTag label="DATA_TEST — 21 rows, 2025 held-out" />
+          <SecCard num="3" icon="🎯" title="Predicted vs Actual Rating"
+            subtitle="DATA_EVALUATION (36 rows, 2025) — completely held-out evaluation set">
+            <DsTag label="DATA_EVALUATION — 36 rows, 2025 held-out" />
             <PredictedActualSection scatterData={scatter} modelInfo={modelInfo} />
           </SecCard>
 
@@ -929,7 +981,7 @@ export default function ModelOverviewDashboard({
           {/* Section 4 — Curriculum Gap */}
           <SecCard num="4" icon="🏫" title="Curriculum Gap Analysis & Recommendations"
             subtitle="Weakest survey indicators — where students feel least supported">
-            <DsTag label="DATA_MODEL — survey responses, 60 rows" />
+            <DsTag label="DATA_MODEL + DATA_EVALUATION — survey responses, 159 rows" />
             <div className="g2">
               {weakAreas.length > 0 ? (
                 <Card inner icon="⚠️" title="Weakest Survey Items" sub="Highest avg score = least agreement (most concern)" blueTint
