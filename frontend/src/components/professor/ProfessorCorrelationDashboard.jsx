@@ -700,7 +700,6 @@ export default function ProfessorCorrelationDashboard({
     { key: "stats",    label: "Statistical Tests", icon: "📐", color: IIEE.blue },
   ];
 
-  const activeColor = tabs.find((t) => t.key === activeTab)?.color ?? IIEE.gold;
 
   const pbBarColor = (rpb) => {
     const a = Math.abs(rpb);
