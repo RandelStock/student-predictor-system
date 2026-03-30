@@ -399,17 +399,22 @@ function resolveExpectedTime(stepId, displayIndex) {
 
 // ── Step indicator ────────────────────────────────────────────────────────────
 
-function StepIndicator({ steps, current }) {
+function StepIndicator({ steps, current, onStepClick }) {
   return (
     <div className="flex items-center gap-1 flex-wrap">
       {steps.map((step, i) => (
         <div key={step.id} className="flex items-center gap-1">
-          <div className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center text-xs font-bold transition
-            ${i < current   ? "bg-blue-600 text-white"
-            : i === current ? "bg-blue-500 text-white ring-2 ring-blue-400/40"
-            :                 "bg-slate-800 text-slate-500 border border-slate-700"}`}>
+          <button
+            onClick={() => onStepClick?.(i)}
+            disabled={i > current}
+            className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center text-xs font-bold transition
+            ${i < current   ? "bg-blue-600 text-white cursor-pointer hover:bg-blue-500"
+            : i === current ? "bg-blue-500 text-white ring-2 ring-blue-400/40 cursor-default"
+            :                 "bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed"}`}
+            title={i < current ? `Go back to ${step.title}` : step.title}
+          >
             {i < current ? "✓" : i + 1}
-          </div>
+          </button>
           {i < steps.length - 1 && (
             <div className={`h-0.5 w-3 sm:w-4 rounded ${i < current ? "bg-blue-600" : "bg-slate-700"}`} />
           )}
@@ -620,6 +625,7 @@ export default function PredictorForm({ onResult }) {
         age:            Number(form.age),
         sex:            form.sex,
         year_taking_exam: Number(form.year_taking_exam),
+        score_type:     "mock",
         EE:   Number(form.EE),
         MATH: Number(form.MATH),
         ESAS: Number(form.ESAS),
@@ -655,7 +661,18 @@ export default function PredictorForm({ onResult }) {
 
       if (!res.ok) {
         let msg = "Server returned an error.";
-        try { const e = await res.json(); msg = e.detail || JSON.stringify(e); } catch {}
+        try {
+          const e = await res.json();
+          if (e.detail) {
+            if (Array.isArray(e.detail)) {
+              msg = e.detail.map((err) => `${err.loc.join(".")}: ${err.msg}`).join(", ");
+            } else {
+              msg = e.detail;
+            }
+          } else {
+            msg = JSON.stringify(e);
+          }
+        } catch {}
         throw new Error(msg);
       }
 
@@ -689,6 +706,15 @@ export default function PredictorForm({ onResult }) {
     setQuestionIndex(0);
     setQuestionTimings({});
     window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleStepClick = (targetStep) => {
+    if (targetStep < step) {
+      setStep(targetStep);
+      setQuestionIndex(0);
+      setErrors({});
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
   };
 
   const isLastStep     = step === STEPS.length - 1;
@@ -737,7 +763,7 @@ export default function PredictorForm({ onResult }) {
         {/* ── Step indicator ── */}
         {!isDone && (
           <div className="flex flex-col gap-2">
-            <StepIndicator steps={STEPS} current={step} />
+            <StepIndicator steps={STEPS} current={step} onStepClick={handleStepClick} />
             <p className="text-xs text-slate-500" style={{ fontFamily: "'Inter', sans-serif", fontSize: "clamp(11px, 1.5vw, 12px)" }}>
               Step {step + 1} of {STEPS.length} — {currentStep.title}
             </p>
@@ -791,148 +817,163 @@ export default function PredictorForm({ onResult }) {
 
               {/* ── Background step ── */}
                 {currentStep.type === "background" && (
-                <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-8">
  
-                  {/* Personal Information */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-xs font-medium text-slate-400 uppercase tracking-wide" style={{ fontFamily: "'Inter', sans-serif", fontSize: "clamp(10px, 1.3vw, 11px)" }}>Full Name</label>
-                      <input
-                        className={`bg-slate-800/80 border rounded-xl px-3 py-3 text-slate-100 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 ${errors.name ? "border-red-500" : "border-slate-700"}`}
-                        type="text" name="name" value={form.name} onChange={handleChange}
-                        placeholder="e.g. Juan Dela Cruz"
-                        readOnly={!!loggedInName}
-                      />
-                      {loggedInName && <p className="text-[11px] text-slate-500">Auto-filled from logged-in account.</p>}
-                      {errors.name && <p className="text-[11px] text-red-400">⚠ Full name is required.</p>}
-                    </div>
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-xs font-medium text-slate-400 uppercase tracking-wide" style={{ fontFamily: "'Inter', sans-serif", fontSize: "clamp(10px, 1.3vw, 11px)" }}>Age</label>
-                      <input
-                        className={`bg-slate-800/80 border rounded-xl px-3 py-3 text-slate-100 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 ${errors.age ? "border-red-500" : "border-slate-700"}`}
-                        type="number" name="age" value={form.age} onChange={handleChange}
-                        min="15" max="80" placeholder="e.g. 22"
-                      />
-                      {errors.age && <p className="text-[11px] text-red-400">⚠ Age is required.</p>}
-                    </div>
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-xs font-medium text-slate-400 uppercase tracking-wide" style={{ fontFamily: "'Inter', sans-serif", fontSize: "clamp(10px, 1.3vw, 11px)" }}>Sex</label>
-                      <select
-                        className="bg-slate-800/80 border border-slate-700 rounded-xl px-3 py-3 text-slate-100 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition cursor-pointer"
-                        name="sex" value={form.sex} onChange={handleChange}
-                      >
-                        <option value="Male">Male</option>
-                        <option value="Female">Female</option>
-                        <option value="Prefer not to say">Prefer not to say</option>
-                      </select>
-                    </div>
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-xs font-medium text-slate-400 uppercase tracking-wide" style={{ fontFamily: "'Inter', sans-serif", fontSize: "clamp(10px, 1.3vw, 11px)" }}>Year Taking Exam</label>
-                      <input
-                        className={`bg-slate-800/80 border rounded-xl px-3 py-3 text-slate-100 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 ${errors.year_taking_exam ? "border-red-500" : "border-slate-700"}`}
-                        type="number" name="year_taking_exam" value={form.year_taking_exam} onChange={handleChange}
-                        min="2020" max="2040" placeholder={`e.g. ${new Date().getFullYear()}`}
-                      />
-                      {errors.year_taking_exam && <p className="text-[11px] text-red-400">⚠ Year is required.</p>}
+                  {/* Section 1: Personal Information */}
+                  <div className="flex flex-col gap-4">
+                    <h3 className="text-sm font-bold text-blue-400 uppercase tracking-wider border-b border-slate-800 pb-2">
+                      Personal Information
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-xs font-medium text-slate-400 uppercase tracking-wide" style={{ fontFamily: "'Inter', sans-serif", fontSize: "clamp(10px, 1.3vw, 11px)" }}>Full Name</label>
+                        <input
+                          className={`bg-slate-800/80 border rounded-xl px-3 py-3 text-slate-100 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 ${errors.name ? "border-red-500" : "border-slate-700"}`}
+                          type="text" name="name" value={form.name} onChange={handleChange}
+                          placeholder="e.g. Juan Dela Cruz"
+                          readOnly={!!loggedInName}
+                        />
+                        {loggedInName && <p className="text-[11px] text-slate-500">Auto-filled from logged-in account.</p>}
+                        {errors.name && <p className="text-[11px] text-red-400">⚠ Full name is required.</p>}
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-xs font-medium text-slate-400 uppercase tracking-wide" style={{ fontFamily: "'Inter', sans-serif", fontSize: "clamp(10px, 1.3vw, 11px)" }}>Age</label>
+                        <input
+                          className={`bg-slate-800/80 border rounded-xl px-3 py-3 text-slate-100 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 ${errors.age ? "border-red-500" : "border-slate-700"}`}
+                          type="number" name="age" value={form.age} onChange={handleChange}
+                          min="15" max="80" placeholder="e.g. 22"
+                        />
+                        {errors.age && <p className="text-[11px] text-red-400">⚠ Age is required.</p>}
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-xs font-medium text-slate-400 uppercase tracking-wide" style={{ fontFamily: "'Inter', sans-serif", fontSize: "clamp(10px, 1.3vw, 11px)" }}>Sex</label>
+                        <select
+                          className="bg-slate-800/80 border border-slate-700 rounded-xl px-3 py-3 text-slate-100 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition cursor-pointer"
+                          name="sex" value={form.sex} onChange={handleChange}
+                        >
+                          <option value="Male">Male</option>
+                          <option value="Female">Female</option>
+                          <option value="Prefer not to say">Prefer not to say</option>
+                        </select>
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-xs font-medium text-slate-400 uppercase tracking-wide" style={{ fontFamily: "'Inter', sans-serif", fontSize: "clamp(10px, 1.3vw, 11px)" }}>Year Taking Exam</label>
+                        <input
+                          className={`bg-slate-800/80 border rounded-xl px-3 py-3 text-slate-100 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 ${errors.year_taking_exam ? "border-red-500" : "border-slate-700"}`}
+                          type="number" name="year_taking_exam" value={form.year_taking_exam} onChange={handleChange}
+                          min="2020" max="2040" placeholder={`e.g. ${new Date().getFullYear()}`}
+                        />
+                        {errors.year_taking_exam && <p className="text-[11px] text-red-400">⚠ Year is required.</p>}
+                      </div>
                     </div>
                   </div>
  
-                  <div className="flex items-start gap-3 bg-blue-500/5 border border-blue-500/15 rounded-xl px-3 py-2.5 sm:px-4 sm:py-3">
-                    <span className="text-blue-400 text-sm mt-0.5">ℹ️</span>
-                    <p className="text-xs text-slate-400 leading-relaxed">
-                      GWA uses the Philippine grading system: <span className="text-white font-semibold">1.0</span> is highest, <span className="text-white font-semibold">5.0</span> is lowest. Decimals allowed (e.g. 1.75).
-                    </p>
-                  </div>
+                  {/* Section 2: Academic Standing */}
+                  <div className="flex flex-col gap-4">
+                    <h3 className="text-sm font-bold text-blue-400 uppercase tracking-wider border-b border-slate-800 pb-2">
+                      Academic Standing
+                    </h3>
+                    <div className="flex items-start gap-3 bg-blue-500/5 border border-blue-500/15 rounded-xl px-3 py-2.5 sm:px-4 sm:py-3">
+                      <span className="text-blue-400 text-sm mt-0.5">ℹ️</span>
+                      <p className="text-xs text-slate-400 leading-relaxed">
+                        GWA uses the Philippine grading system: <span className="text-white font-semibold">1.0</span> is highest, <span className="text-white font-semibold">5.0</span> is lowest. Decimals allowed (e.g. 1.75).
+                      </p>
+                    </div>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <GWAInput value={form.GWA} error={errors.GWA} onChange={handleChange} />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <GWAInput value={form.GWA} error={errors.GWA} onChange={handleChange} />
+                      <div className="flex flex-col gap-1.5">
+                        <label style={{
+                          display:"block", fontSize:"clamp(9px, 1.2vw, 10px)", fontWeight:700,
+                          color:"#64748b", textTransform:"uppercase",
+                          letterSpacing:"0.1em", marginBottom:6,
+                          fontFamily:"'Inter',sans-serif",
+                        }}>SHS Strand</label>
+                        <select
+                          className="bg-slate-800/80 border border-slate-700 rounded-xl px-3 py-3 text-slate-100 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition cursor-pointer"
+                          name="Senior_High_School_Strand" value={form.Senior_High_School_Strand} onChange={handleChange}>
+                          {STRAND_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                        <p className="text-[11px] text-slate-600">Senior High School track</p>
+                      </div>
+                    </div>
+
                     <div className="flex flex-col gap-1.5">
-                <label style={{
-                  display:"block", fontSize:"clamp(9px, 1.2vw, 10px)", fontWeight:700,
-                  color:"#64748b", textTransform:"uppercase",
-                  letterSpacing:"0.1em", marginBottom:6,
-                  fontFamily:"'Inter',sans-serif",
-                }}>SHS Strand</label>
-                      <select
-                        className="bg-slate-800/80 border border-slate-700 rounded-xl px-3 py-3 text-slate-100 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition cursor-pointer"
-                        name="Senior_High_School_Strand" value={form.Senior_High_School_Strand} onChange={handleChange}>
-                        {STRAND_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
-                      </select>
-                      <p className="text-[11px] text-slate-600">Senior High School track</p>
+                      <label className="text-xs font-medium text-slate-400 uppercase tracking-wide">
+                        My GWA reflects my mastery of EE concepts
+                      </label>
+                      <div className="grid grid-cols-5 gap-1.5 sm:gap-2">
+                        {[
+                          { val: 1, text: "Strongly Agree" },
+                          { val: 2, text: "Agree" },
+                          { val: 3, text: "Neutral" },
+                          { val: 4, text: "Disagree" },
+                          { val: 5, text: "Strongly Disagree" },
+                        ].map(({ val, text }) => (
+                          <label key={val} className={`flex flex-col items-center gap-0.5 py-2 rounded-xl border cursor-pointer transition select-none text-center
+                            ${String(form.GWA_Reflection) === String(val)
+                              ? "bg-blue-500/15 border-blue-500 text-blue-300"
+                              : errors.GWA_Reflection
+                              ? "bg-red-900/10 border-red-800/40 text-slate-400 hover:border-red-600"
+                              : "bg-slate-800/60 border-slate-700 text-slate-400 hover:border-slate-500 hover:text-slate-200"}`}>
+                            <input type="radio" name="GWA_Reflection" value={val}
+                              checked={String(form.GWA_Reflection) === String(val)}
+                              onChange={handleChange} className="sr-only" />
+                            <span className={`text-base font-extrabold ${String(form.GWA_Reflection) === String(val) ? "text-blue-400" : "text-slate-300"}`}>{val}</span>
+                            <span className="text-[9px] sm:text-[10px] leading-tight px-0.5">{text}</span>
+                          </label>
+                        ))}
+                      </div>
+                      {errors.GWA_Reflection && (
+                        <p className="text-[11px] text-red-400">⚠ Please select a rating.</p>
+                      )}
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                    <YesNoField name="SHS_Prepared"    label="SHS Prepared for EE?"       value={form.SHS_Prepared}    onChange={handleChange} />
-                    <YesNoField name="EE_First_Choice" label="EE Was First Choice?"        value={form.EE_First_Choice} onChange={handleChange} />
-                    <YesNoField name="College_Prepared" label="College Prepared for Exam?" value={form.College_Prepared} onChange={handleChange} />
-                  </div>
-
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                    <YesNoField name="Review_Program"  label="Attended Formal Review?"    value={form.Review_Program}  onChange={handleChange} />
-                    <YesNoField name="Study_Schedule"  label="Followed Study Schedule?"   value={form.Study_Schedule}  onChange={handleChange} />
-                    <YesNoField name="Used_Resources"  label="Used Learning Resources?"   value={form.Used_Resources}  onChange={handleChange} />
-                  </div>
-
-                  {/* GWA Reflection */}
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-medium text-slate-400 uppercase tracking-wide">
-                      My GWA reflects my mastery of EE concepts
-                    </label>
-                    <div className="grid grid-cols-5 gap-1.5 sm:gap-2">
-                      {[
-                        { val: 1, text: "Strongly Agree" },
-                        { val: 2, text: "Agree" },
-                        { val: 3, text: "Neutral" },
-                        { val: 4, text: "Disagree" },
-                        { val: 5, text: "Strongly Disagree" },
-                      ].map(({ val, text }) => (
-                        <label key={val} className={`flex flex-col items-center gap-0.5 py-2 rounded-xl border cursor-pointer transition select-none text-center
-                          ${String(form.GWA_Reflection) === String(val)
-                            ? "bg-blue-500/15 border-blue-500 text-blue-300"
-                            : errors.GWA_Reflection
-                            ? "bg-red-900/10 border-red-800/40 text-slate-400 hover:border-red-600"
-                            : "bg-slate-800/60 border-slate-700 text-slate-400 hover:border-slate-500 hover:text-slate-200"}`}>
-                          <input type="radio" name="GWA_Reflection" value={val}
-                            checked={String(form.GWA_Reflection) === String(val)}
-                            onChange={handleChange} className="sr-only" />
-                          <span className={`text-base font-extrabold ${String(form.GWA_Reflection) === String(val) ? "text-blue-400" : "text-slate-300"}`}>{val}</span>
-                          <span className="text-[9px] sm:text-[10px] leading-tight px-0.5">{text}</span>
-                        </label>
-                      ))}
+                  {/* Section 3: Exam Preparation */}
+                  <div className="flex flex-col gap-4">
+                    <h3 className="text-sm font-bold text-blue-400 uppercase tracking-wider border-b border-slate-800 pb-2">
+                      Exam Preparation
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <YesNoField name="SHS_Prepared"    label="SHS Prepared for EE?"       value={form.SHS_Prepared}    onChange={handleChange} />
+                      <YesNoField name="EE_First_Choice" label="EE Was First Choice?"        value={form.EE_First_Choice} onChange={handleChange} />
+                      <YesNoField name="College_Prepared" label="College Prepared for Exam?" value={form.College_Prepared} onChange={handleChange} />
                     </div>
-                    {errors.GWA_Reflection && (
-                      <p className="text-[11px] text-red-400">⚠ Please select a rating.</p>
-                    )}
-                  </div>
 
-                  {/* Review Duration */}
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-medium text-slate-400 uppercase tracking-wide">
-                      Board Review Duration
-                    </label>
-                    <div className="grid grid-cols-3 gap-2">
-                      {[
-                        { val: "0", text: "None" },
-                        { val: "1", text: "~3 Months" },
-                        { val: "2", text: "~6 Months" },
-                      ].map(({ val, text }) => (
-                        <label key={val} className={`flex items-center justify-center py-3 rounded-xl border transition select-none text-sm font-semibold
-                          ${form.Review_Program === "No" && val !== "0" ? "opacity-45 cursor-not-allowed" : "cursor-pointer"}
-                          ${form.Review_Duration === val
-                            ? "bg-blue-500/15 border-blue-500 text-blue-300"
-                            : "bg-slate-800/80 border-slate-700 text-slate-400 hover:border-slate-600 hover:text-slate-200"}`}>
-                          <input type="radio" name="Review_Duration" value={val}
-                            checked={form.Review_Duration === val}
-                            disabled={form.Review_Program === "No" && val !== "0"}
-                            onChange={handleChange} className="sr-only" />
-                          {text}
-                        </label>
-                      ))}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <YesNoField name="Review_Program"  label="Attended Formal Review?"    value={form.Review_Program}  onChange={handleChange} />
+                      <YesNoField name="Study_Schedule"  label="Followed Study Schedule?"   value={form.Study_Schedule}  onChange={handleChange} />
+                      <YesNoField name="Used_Resources"  label="Used Learning Resources?"   value={form.Used_Resources}  onChange={handleChange} />
                     </div>
-                    {form.Review_Program === "No" && (
-                      <p className="text-[11px] text-slate-500">Review duration is disabled when formal review is not attended.</p>
-                    )}
+
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-medium text-slate-400 uppercase tracking-wide">
+                        Board Review Duration
+                      </label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {[
+                          { val: "0", text: "None" },
+                          { val: "1", text: "~3 Months" },
+                          { val: "2", text: "~6 Months" },
+                        ].map(({ val, text }) => (
+                          <label key={val} className={`flex items-center justify-center py-3 rounded-xl border transition select-none text-sm font-semibold
+                            ${form.Review_Program === "No" && val !== "0" ? "opacity-45 cursor-not-allowed" : "cursor-pointer"}
+                            ${form.Review_Duration === val
+                              ? "bg-blue-500/15 border-blue-500 text-blue-300"
+                              : "bg-slate-800/80 border-slate-700 text-slate-400 hover:border-slate-600 hover:text-slate-200"}`}>
+                            <input type="radio" name="Review_Duration" value={val}
+                              checked={form.Review_Duration === val}
+                              disabled={form.Review_Program === "No" && val !== "0"}
+                              onChange={handleChange} className="sr-only" />
+                            {text}
+                          </label>
+                        ))}
+                      </div>
+                      {form.Review_Program === "No" && (
+                        <p className="text-[11px] text-slate-500">Review duration is disabled when formal review is not attended.</p>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}

@@ -1324,7 +1324,8 @@ def admin_attempts(
     page_size: int = 20,
     db: Session = Depends(get_db),
 ):
-    q = db.query(PredictionAttempt)
+    # Join with User table to get email
+    q = db.query(PredictionAttempt, User.email).outerjoin(User, PredictionAttempt.user_id == User.id)
     if year is not None:
         q = q.filter(extract("year", PredictionAttempt.created_at) == year)
     if month is not None:
@@ -1342,12 +1343,14 @@ def admin_attempts(
         "page_size": page_size,
         "items": [
             {
-                "id":                r.id,
-                "user_id":           r.user_id,
-                "label":             r.label,
-                "probability_pass":  r.probability_pass,
-                "predicted_rating_a": r.predicted_rating_a,
-                "created_at":        r.created_at.isoformat(),
+                "id":                r.PredictionAttempt.id,
+                "user_id":           r.PredictionAttempt.user_id,
+                "label":             r.PredictionAttempt.label,
+                "probability_pass":  r.PredictionAttempt.probability_pass,
+                "predicted_rating_a": r.PredictionAttempt.predicted_rating_a,
+                "created_at":        r.PredictionAttempt.created_at.isoformat(),
+                "name":              r.PredictionAttempt.name,
+                "email":             r.email if r.email else "—",
             }
             for r in rows
         ],
