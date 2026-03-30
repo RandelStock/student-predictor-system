@@ -4,7 +4,6 @@ import {
   Tooltip, ResponsiveContainer, ReferenceLine, RadarChart,
   PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, 
 } from "recharts";
-import {  FilterPanel } from "./ProfessorShared";
 
 /* ─── Design Tokens (mirrored from ModelOverviewDashboard) ─────── */
 const IIEE = {
@@ -445,16 +444,6 @@ export default function ProfessorCurriculumDashboard({
       </div>
 
       <div className="curric-body">
-
-        {/* ── Sticky filter ── */}
-        <div className="curric-filter-strip">
-          <FilterPanel
-            filters={dashFilters}
-            onChange={setDashFilters}
-            availableYears={availableYears}
-            availablePeriods={availablePeriods ?? []}
-          />
-        </div>
 
         {/* ═══ OVERVIEW TAB ═══ */}
         <div style={{ display: activeTab === "overview" ? "block" : "none" }}>
