@@ -52,14 +52,6 @@ const NAV_GROUPS = [
   },
 ];
 
-function labelFor(id) {
-  for (const g of NAV_GROUPS) {
-    const found = g.items.find(i => i.id === id);
-    if (found) return found.label;
-  }
-  return id;
-}
-
 // ─── Sidebar ─────────────────────────────────────────────────────────────────
 function Sidebar({ activeTab, onTabChange, onRefresh, onLogout, collapsed, setCollapsed, mobileOpen, setMobileOpen, windowWidth }) {
   const isCollapsed = collapsed && !mobileOpen;
@@ -104,7 +96,7 @@ function Sidebar({ activeTab, onTabChange, onRefresh, onLogout, collapsed, setCo
           minHeight: isCollapsed ? 72 : "auto",
           justifyContent: "center",
         }}>
-          {/* Faculty Portal badge — top */}
+          {/* Faculty Portal badge */}
           {!isCollapsed && (
             <div style={{
               display: "flex", alignItems: "center", gap: 7,
@@ -244,7 +236,6 @@ function Sidebar({ activeTab, onTabChange, onRefresh, onLogout, collapsed, setCo
           flexDirection: "column",
           gap: 6,
         }}>
-          {/* Collapse toggle (desktop only) */}
           {!isMobile && (
             <button
               onClick={() => setCollapsed(c => !c)}
@@ -291,59 +282,6 @@ const actionBtnStyle = (collapsed) => ({
   transition: "all 0.18s",
   fontFamily: "'Inter',sans-serif",
 });
-
-// ─── Topbar (mobile hamburger + breadcrumb) ───────────────────────────────────
-function Topbar({ activeTab, setMobileOpen }) {
-  return (
-    <header style={{
-      position: "sticky", top: 0, zIndex: 50,
-      background: "rgba(7,16,43,0.97)",
-      backdropFilter: "blur(20px)",
-      borderBottom: `1px solid ${T.border}`,
-      padding: "0 12px",
-      height: 56,
-      display: "flex",
-      alignItems: "center",
-      gap: 12,
-      minHeight: "56px",
-    }}>
-      <button
-        onClick={() => setMobileOpen(o => !o)}
-        style={{
-          background: "transparent",
-          border: `1px solid ${T.borderSub}`,
-          borderRadius: 8,
-          padding: "6px 9px",
-          color: T.muted,
-          cursor: "pointer",
-          fontSize: 16,
-          lineHeight: 1,
-          display: "none",
-          minWidth: "44px",
-          minHeight: "44px",
-        }}
-        className="hud-hamburger"
-      >☰</button>
-
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ 
-          margin: 0, 
-          fontSize: "clamp(11px, 2vw, 13px)", 
-          color: T.gold, 
-          textTransform: "uppercase", 
-          letterSpacing: "0.1em", 
-          fontWeight: 700, 
-          fontFamily: "'Montserrat',sans-serif",
-          whiteSpace: "nowrap",
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-        }}>
-          {labelFor(activeTab)}
-        </p>
-      </div>
-    </header>
-  );
-}
 
 // ─── Main exported wrapper ────────────────────────────────────────────────────
 export default function ProfessorSidebarLayout({
@@ -398,29 +336,28 @@ export default function ProfessorSidebarLayout({
         .recharts-tooltip-wrapper { filter: drop-shadow(0 4px 16px rgba(0,0,0,0.5)); }
 
         .att-table { width:100%; border-collapse:collapse; font-size:13px; font-family:'Inter',sans-serif; }
-        .att-table th { padding:12px; border-bottom:1px solid rgba(245,197,24,0.1); text-align:left; color:${T.gold}; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; font-size:12px; font-family:'Montserrat',sans-serif; }
-        .att-table td { padding:12px; border-bottom:1px solid rgba(255,255,255,0.05); color:${T.muted}; font-family:'Inter',sans-serif; }
+        .att-table th { padding:12px; border-bottom:1px solid rgba(245,197,24,0.1); text-align:left; color:#F5C518; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; font-size:12px; font-family:'Montserrat',sans-serif; }
+        .att-table td { padding:12px; border-bottom:1px solid rgba(255,255,255,0.05); color:#94A3B8; font-family:'Inter',sans-serif; }
         .att-table tr:hover td { background:rgba(245,197,24,0.03); }
 
-        .filter-input { background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:8px 12px; color:${T.white}; font-size:14px; font-family:'Inter',sans-serif; outline:none; transition:border-color 0.2s; }
+        .filter-input { background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:8px 12px; color:#F1F5F9; font-size:14px; font-family:'Inter',sans-serif; outline:none; transition:border-color 0.2s; }
         .filter-input:focus { border-color:rgba(245,197,24,0.45); background:rgba(255,255,255,0.08); }
 
         .dash-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:16px; }
 
         .prof-ui p { color:#dbeafe; font-size:15px; line-height:1.6; font-family:'Inter',sans-serif; }
         .prof-ui td,.prof-ui th { color:#dbeafe; font-size:14px; font-family:'Inter',sans-serif; }
-        .prof-ui label { color:${T.muted}; font-size:14px; font-family:'Inter',sans-serif; }
+        .prof-ui label { color:#94A3B8; font-size:14px; font-family:'Inter',sans-serif; }
 
         .tab-btn { background:transparent; border:none; cursor:pointer; font-family:'Inter',sans-serif; transition:all 0.2s; }
-        .gold-line { width:32px; height:3px; background:${T.gold}; border-radius:2px; }
+        .gold-line { width:32px; height:3px; background:#F5C518; border-radius:2px; }
         .hud-card { transition: border-color 0.18s, box-shadow 0.18s; }
         .hud-card:hover { border-color: rgba(245,197,24,0.25) !important; box-shadow: 0 0 0 1px rgba(245,197,24,0.1), 0 8px 24px rgba(0,0,0,0.35) !important; }
 
-        /* ─── Mobile Responsiveness ─── */
-        @media(max-width:1024px){
-          .dash-grid { grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:12px; }
-        }
+        /* ── Mobile hamburger button — only visible on mobile ── */
+        .hud-hamburger { display: none; }
 
+        /* ─── Mobile Responsiveness ─── */
         @media(max-width:768px){
           .hud-hamburger { display:flex !important; }
           .dash-grid { grid-template-columns:1fr !important; gap:12px; }
@@ -474,15 +411,39 @@ export default function ProfessorSidebarLayout({
         windowWidth={windowWidth}
       />
 
+      {/* Mobile-only hamburger button — floats top-left, no topbar */}
+      {isMobile && (
+        <button
+          className="hud-hamburger"
+          onClick={() => setMobileOpen(o => !o)}
+          style={{
+            position: "fixed",
+            top: 12,
+            left: 12,
+            zIndex: 97,
+            background: T.navyMid,
+            border: `1px solid ${T.borderSub}`,
+            borderRadius: 8,
+            padding: "6px 9px",
+            color: T.muted,
+            cursor: "pointer",
+            fontSize: 16,
+            lineHeight: 1,
+            minWidth: "44px",
+            minHeight: "44px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          ☰
+        </button>
+      )}
+
       <div className="hud-content" style={{ marginLeft: sidebarWidth }}>
-        {/* Mobile topbar only */}
-        <Topbar activeTab={activeTab} setMobileOpen={setMobileOpen} />
-
-        {/* ✅ Page header banner REMOVED as requested */}
-
-        {/* Dashboard content */}
-        <main style={{ 
-          padding: isMobile ? "16px 12px 80px" : "20px 28px 80px",
+        {/* Dashboard content — no topbar, content starts immediately */}
+        <main style={{
+          padding: isMobile ? "64px 12px 80px" : "20px 28px 80px",
           maxWidth: "100%",
           overflowX: "hidden",
         }}>
@@ -492,48 +453,3 @@ export default function ProfessorSidebarLayout({
     </div>
   );
 }
-
-/**
- * ══════════════════════════════════════════════════════════════════
- *  ✅ FIX FOR WHITE SCREEN — ProfessorPage.jsx
- * ══════════════════════════════════════════════════════════════════
- *
- *  The white screen happens because the old code had:
- *    {!loading && data && (...tab content...)}
- *
- *  The `data` object only covers some tabs. For tabs like
- *  correlation, classification_metrics, regression_metrics,
- *  test2025, and trends — their props come from SEPARATE fetches,
- *  not from the main `data` object. So `data` is falsy → blank screen.
- *
- *  SOLUTION — replace your render block in ProfessorPage.jsx with:
- *
- *  return (
- *    <ProfessorSidebarLayout
- *      activeTab={activeTab}
- *      onTabChange={setActiveTab}
- *      onRefresh={fetchAnalytics}
- *      onLogout={onLogout}
- *    >
- *      {loading && <LoadingSpinner />}
- *
- *      {!loading && (                          // ← REMOVE "&& data" from here
- *        <>
- *          {activeTab === "model_overview"         && <ModelOverviewDashboard         {...props} />}
- *          {activeTab === "performance"            && <ProfessorPerformanceDashboard  {...props} />}
- *          {activeTab === "features"               && <ProfessorFeaturesDashboard     {...props} />}
- *          {activeTab === "curriculum"             && <ProfessorCurriculumDashboard   {...props} />}
- *          {activeTab === "correlation"            && <ProfessorCorrelationDashboard  correlation={correlation} />}
- *          {activeTab === "classification_metrics" && <ProfessorClassificationMetricsDashboard modelInfo={modelInfo} />}
- *          {activeTab === "regression_metrics"     && <ProfessorRegressionMetricsDashboard     modelInfo={modelInfo} />}
- *          {activeTab === "test2025"               && <ProfessorTest2025Dashboard     {...test2025Props} />}
- *          {activeTab === "trends"                 && <ProfessorTrendsDashboard       {...trendsProps} />}
- *        </>
- *      )}
- *    </ProfessorSidebarLayout>
- *  );
- *
- *  Each child dashboard already handles missing data gracefully
- *  with optional chaining (?.) and "—" fallbacks, so removing
- *  the `&& data` gate is safe.
- */
