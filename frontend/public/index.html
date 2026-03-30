@@ -2,47 +2,108 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <link rel="icon" href="%PUBLIC_URL%/slsulogo2.png" />
-    <meta name="google-site-verification" content="h-uOLjJyk3-UYnuZTKs2AorPLi7-wKK1pNuHMBoZyaM" />
+
+    <!-- ===================== FAVICON / ICONS ===================== -->
+    <link rel="icon" type="image/png" href="%PUBLIC_URL%/slsulogo2.png" />
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/slsulogo2.png" />
+
+    <!-- ===================== VIEWPORT / THEME ===================== -->
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
+    <meta name="theme-color" content="#1a3a6b" />
+
+    <!-- ===================== PRIMARY SEO META ===================== -->
+    <title>EE Licensure Predictor | SLSU Electrical Engineering Exam Readiness</title>
     <meta
-      name=""
-      content=""
+      name="description"
+      content="AI-powered prediction system for Electrical Engineering licensure examinees at Southern Leyte State University (SLSU). Assess your readiness, get personalized feedback, and prepare smarter for the EE board exam."
     />
-    <link rel="icon" href="%PUBLIC_URL%/slsulogo2.png" />
-    <!-- Google Fonts for Montserrat and Inter -->
+    <meta
+      name="keywords"
+      content="EE Licensure Predictor, Electrical Engineering board exam, SLSU, Southern Leyte State University, EE exam readiness, licensure exam Philippines, EE board exam predictor, engineering exam preparation"
+    />
+    <meta name="author" content="Southern Leyte State University" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://slsureboardexampredictor.com/" />
+
+    <!-- ===================== GOOGLE SEARCH VERIFICATION ===================== -->
+    <meta name="google-site-verification" content="h-uOLjJyk3-UYnuZTKs2AorPLi7-wKK1pNuHMBoZyaM" />
+
+    <!-- ===================== OPEN GRAPH (Facebook / LinkedIn) ===================== -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://slsureboardexampredictor.com/" />
+    <meta property="og:title" content="EE Licensure Predictor | SLSU" />
+    <meta
+      property="og:description"
+      content="AI-powered readiness assessment for EE board exam candidates at SLSU. Get personalized feedback and predict your licensure exam performance."
+    />
+    <meta property="og:image" content="https://slsureboardexampredictor.com/slsulogo2.png" />
+    <meta property="og:site_name" content="SLSU EE Licensure Predictor" />
+    <meta property="og:locale" content="en_PH" />
+
+    <!-- ===================== TWITTER CARD ===================== -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="EE Licensure Predictor | SLSU" />
+    <meta
+      name="twitter:description"
+      content="AI-powered readiness assessment for EE board exam candidates at SLSU. Get personalized feedback and predict your licensure exam performance."
+    />
+    <meta name="twitter:image" content="https://slsureboardexampredictor.com/slsulogo2.png" />
+
+    <!-- ===================== SCHEMA.ORG STRUCTURED DATA ===================== -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "EE Licensure Predictor",
+      "url": "https://slsureboardexampredictor.com/",
+      "description": "An AI-powered prediction system for Electrical Engineering licensure examinees at Southern Leyte State University (SLSU). Assess your readiness, receive personalized feedback, and help faculty identify institutional gaps.",
+      "applicationCategory": "EducationalApplication",
+      "operatingSystem": "Web",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "PHP"
+      },
+      "provider": {
+        "@type": "EducationalOrganization",
+        "name": "Southern Leyte State University",
+        "url": "https://slsu.edu.ph",
+        "address": {
+          "@type": "PostalAddress",
+          "addressCountry": "PH",
+          "addressRegion": "Eastern Visayas"
+        }
+      },
+      "audience": {
+        "@type": "EducationalAudience",
+        "educationalRole": "student"
+      },
+      "about": {
+        "@type": "Thing",
+        "name": "Electrical Engineering Licensure Examination",
+        "description": "Philippine Electrical Engineering board examination"
+      }
+    }
+    </script>
+
+    <!-- ===================== PWA MANIFEST ===================== -->
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+
+    <!-- ===================== FONTS ===================== -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-    <!--
-      manifest.json provides metadata used when your web app is installed on a
-      user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
-    -->
-    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
-    <!--
-      Notice the use of %PUBLIC_URL% in the tags above.
-      It will be replaced with the URL of the `public` folder during the build.
-      Only files inside the `public` folder can be referenced from the HTML.
-
-      Unlike "/favicon.ico" or "favicon.ico", "%PUBLIC_URL%/favicon.ico" will
-      work correctly both with client-side routing and a non-root public URL.
-      Learn how to configure a non-root public URL by running `npm run build`.
-    -->
-    <title>EE Licensure Predictor</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
   </head>
   <body>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <noscript>
+      <strong>EE Licensure Predictor</strong> — An AI-powered prediction system for Electrical
+      Engineering licensure examinees at Southern Leyte State University (SLSU). Assess your
+      readiness, receive personalized feedback, and help faculty identify institutional gaps — all
+      in one platform. Please enable JavaScript to use this application.
+    </noscript>
     <div id="root"></div>
-    <!--
-      This HTML file is a template.
-      If you open it directly in the browser, you will see an empty page.
-
-      You can add webfonts, meta tags, or analytics to this file.
-      The build step will place the bundled scripts into the <body> tag.
-
-      To begin the development, run `npm start` or `yarn start`.
-      To create a production bundle, use `npm run build` or `yarn build`.
-    -->
   </body>
 </html>

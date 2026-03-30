@@ -780,7 +780,7 @@ export default function LandingPage({ onEnter }) {
           }}>
             An AI-powered prediction system for Electrical Engineering licensure
             examinees at SLSU. Assess your readiness, receive personalized feedback,
-            and help faculty identify institutional gaps — all in one platform.
+            and help faculty identify institutional gaps all in one platform.
           </p>
         </div>
 

@@ -248,6 +248,12 @@ export default function ProfessorPage({ onLogout }) {
   }, [data, dashboardData]);
   const weakestQ      = useMemo(() => data?.weakest_questions     ?? [],    [data]);
   const subjectTrends = useMemo(() => data?.subject_trends_by_year ?? [],   [data]);
+  // NEW: Data source metadata
+  const dataSource    = useMemo(() => ({
+    production: data?.data_source ?? "DATA_ALL - 2022–2025",
+    training: data?.training_source ?? "DATA_MODEL - 2022–2024",
+    evaluation: data?.evaluation_source ?? "DATA_EVALUATION - 2025",
+  }), [data]);
 
   const reviewYesTotal = useMemo(() => passByReview.find(x => String(x.label).toLowerCase().includes("attended"))?.total ?? 0, [passByReview]);
   const reviewNoTotal  = useMemo(() => passByReview.find(x => String(x.label).toLowerCase().includes("no formal"))?.total ?? 0, [passByReview]);
@@ -368,6 +374,7 @@ export default function ProfessorPage({ onLogout }) {
               scatterData={scatterData}
               passByPeriod={dashboardData?.passByPeriod ?? []}    // ← ADD
               subjectByYear={dashboardData?.subjectByYear ?? []}  // ← ADD
+              dataSource={dataSource}  // ← NEW: Dataset source metadata
             />
           )}
 

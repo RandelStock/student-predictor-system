@@ -608,7 +608,7 @@ export default function ModelOverviewDashboard({
   ov, pieData: propPieData, passByYear, passByPeriod, subjectByYear,
   passByStrand, passByDur, reviewPieData: propReviewPieData,
   sectionScores, weakestQ,
-  modelInfo, scatterData,
+  modelInfo, scatterData, dataSource,  // ← NEW: dataSource parameter
 }) {
   const [mode, setMode] = useState("institutional");
   const [activePie, setActivePie] = useState(null);
@@ -706,8 +706,8 @@ export default function ModelOverviewDashboard({
         </h2>
         <p className="comb-hero-sub">
           {mode === "institutional"
-            ? "Full 333-examiner dataset (DATA_UPCOMING) — SLSU PRC performance 2022-2025."
-            : "Random Forest model metrics, survey analysis (DATA_MODEL 60 rows) & test evaluation (DATA_TEST 21 rows)."}
+            ? `Analytics: ${dataSource?.production || "DATA_ALL"} — SLSU PRC 2022-2025.`
+            : `Model (Train: ${dataSource?.training || "DATA_MODEL"} | Test: ${dataSource?.evaluation || "DATA_EVALUATION"})`}
         </p>
       </div>
 

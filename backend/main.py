@@ -194,9 +194,10 @@ else:
 #   DATA_TEST (21 rows, 2025) → held-out evaluation only
 # ══════════════════════════════════════════════════════════════════════════════
 
-FILE_UPCOMING = "DATA_UPCOMING.xlsx"  # 333 rows, 2022-2025 — dashboard analytics source
-FILE_MODEL    = "DATA_MODEL.xlsx"     # 60 rows, 2022-2025, full survey
-FILE_TEST     = "DATA_TEST.xlsx"      # 21 rows, 2025 Apr+Aug, full survey
+FILE_UPCOMING = "DATA_UPCOMING.xlsx"  # Legacy fallback (333 rows, 2022-2025)
+FILE_MODEL    = "DATA_MODEL"          # NEW: Training set (CSV/XLSX)
+FILE_EVALUATION = "DATA_EVALUATION"   # NEW: Evaluation set (CSV/XLSX)
+FILE_ALL      = "DATA_ALL"            # NEW: Final dataset (CSV/XLSX, primary)
 
 COL_PASSED       = "PASSED / FAILED-RETAKE"
 COL_TOTAL_RATING = "TOTAL RATING"
@@ -358,17 +359,41 @@ def _normalise_passed(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+def _load_data_file(filename_base):
+    """Try to load CSV first, then xlsx. Helper for new CSV-based datasets."""
+    for ext in [".csv", ".xlsx"]:
+        path = filename_base + ext
+        try:
+            if ext == ".csv":
+                return pd.read_csv(path)
+            else:
+                return pd.read_excel(path, sheet_name=0)
+        except FileNotFoundError:
+            continue
+    return None
+
+
 def _load_main_df() -> pd.DataFrame:
     """
-    Load DATA_UPCOMING.xlsx — 333 rows (2022-2025).
-    This is the SINGLE SOURCE OF TRUTH for all dashboard/analytics KPIs.
-    DO NOT combine DATA_SYSTEM + DATA_TEST here — that causes duplicate
-    2025 rows and incorrect totals.
-
-    Falls back to DATA_SYSTEM.xlsx if DATA_UPCOMING is not found,
-    with a warning logged to the console.
+    Load primary analytics dataset. Priority order:
+    1. DATA_ALL.csv/xlsx (2022-2025, new)
+    2. DATA_UPCOMING.xlsx (legacy, 333 rows, 2022-2025)
+    3. DATA_SYSTEM.xlsx + DATA_TEST.xlsx (fallback, may have duplicates)
     """
-    # Primary: DATA_UPCOMING (333 rows, all years, no survey)
+    # Try DATA_ALL first (new structure)
+    try:
+        d = _load_data_file(FILE_ALL)
+        if d is not None:
+            d.columns = d.columns.str.strip()
+            d["_source"] = "DATA_ALL"
+            d = _normalise_year(d)
+            d = _normalise_passed(d)
+            print(f"[analytics] Loaded {FILE_ALL}: {len(d)} rows")
+            return d
+    except Exception as e:
+        print(f"[analytics] Could not load DATA_ALL: {e}")
+
+    # Fallback to DATA_UPCOMING (legacy)
     for path, label in [(FILE_UPCOMING, "upcoming")]:
         try:
             d = pd.read_excel(path, sheet_name=0)
@@ -376,15 +401,15 @@ def _load_main_df() -> pd.DataFrame:
             d["_source"] = label
             d = _normalise_year(d)
             d = _normalise_passed(d)
-            print(f"[analytics] Loaded {FILE_UPCOMING}: {len(d)} rows")
+            print(f"[analytics] Loaded {FILE_UPCOMING}: {len(d)} rows (legacy fallback)")
             return d
         except Exception as e:
-            print(f"[analytics] WARNING: Could not load {FILE_UPCOMING}: {e}")
-            print(f"[analytics] Falling back to DATA_SYSTEM + DATA_TEST (may produce duplicate 2025 rows)")
+            print(f"[analytics] Could not load {FILE_UPCOMING}: {e}")
 
-    # Fallback: combine DATA_SYSTEM + DATA_TEST (legacy behaviour)
+    # Final fallback: combine old structure (may produce duplicates)
+    print(f"[analytics] Falling back to combined DATA_SYSTEM + DATA_TEST (legacy)")
     frames = []
-    for path, label in [("DATA_SYSTEM.xlsx", "system"), (FILE_TEST, "test")]:
+    for path, label in [("DATA_SYSTEM.xlsx", "system"), ("DATA_TEST.xlsx", "test")]:
         try:
             d = pd.read_excel(path, sheet_name=0)
             d.columns = d.columns.str.strip()
@@ -858,17 +883,20 @@ def _rating_label(score: float) -> str:
 
 @app.get("/model-info")
 def model_info():
+    # Get dataset metadata from bundle (set in train_model.py)
+    data_src = bundle.get("data_source", {})
+    
     return {
-        # Primary training dataset (DATA_MODEL, 60 rows with survey)
-        "dataset_size":               bundle["dataset_size"],
-        # System/upcoming dataset (333 rows, full institution 2022-2025)
-        "dataset_size_system":        bundle.get("dataset_size_system", 333),
-        # 2022-2024 slice used for Reg-A training (250 rows)
-        "dataset_size_system_train":  bundle.get("dataset_size_system_train", 250),
-        # Held-out test set (DATA_TEST, 21 rows, 2025)
-        "dataset_size_test":          bundle.get("dataset_size_test", 21),
-        # Combined Reg-A train rows (MODEL 60 + SYSTEM 2022-2024 250 = 310)
-        "dataset_size_reg_a_train":   bundle.get("dataset_size_reg_a_train", 310),
+        # — Dataset metadata (NEW 2026-03-30) —
+        "data_source": {
+            "training":   data_src.get("training", "DATA_MODEL - 2022–2024"),
+            "evaluation": data_src.get("evaluation", "DATA_EVALUATION - 2025"),
+            "production": data_src.get("production", "DATA_ALL - 2022–2025"),
+        },
+        "dataset_size_model":       bundle.get("dataset_size_model", 121),
+        "dataset_size_evaluation":  bundle.get("dataset_size_evaluation", 36),
+        "dataset_size_all":         bundle.get("dataset_size_all", 157),
+        # — Model evaluation metrics (on EVALUATION set) —
         "pass_count":                 bundle["pass_count"],
         "fail_count":                 bundle["fail_count"],
         "passing_score":              PASSING_SCORE,
@@ -881,21 +909,21 @@ def model_info():
             "cv_f1":     round(EVAL["clf_cv_f1_mean"], 4),
         },
         "regression_a": {
-            "description": f"EE+MATH+ESAS+GWA ({bundle.get('dataset_size_reg_a_train', 310)} train rows: MODEL 60 + SYSTEM 2022-2024 250)",
+            "description": "EE+MATH+ESAS+GWA",
             "mae":  round(EVAL["reg_a_mae"], 4),
             "rmse": round(EVAL["reg_a_rmse"], 4),
             "mse":  round(float(EVAL["reg_a_rmse"]) ** 2, 4),
             "r2":   round(EVAL["reg_a_r2"], 4),
         },
         "regression_b": {
-            "description": "GWA + survey features only (no subject scores, 60 train rows)",
+            "description": "GWA + survey features only (no subject scores)",
             "mae":  round(EVAL["reg_b_mae"], 4),
             "rmse": round(EVAL["reg_b_rmse"], 4),
             "mse":  round(float(EVAL["reg_b_rmse"]) ** 2, 4),
             "r2":   round(EVAL["reg_b_r2"], 4),
         },
         "test_year": EVAL.get("test_year", 2025),
-        "test_size": EVAL.get("test_size", 21),
+        "test_size": EVAL.get("test_size", 36),
     }
 
 
@@ -1242,6 +1270,10 @@ def analytics():
         "section_scores":         section_scores,
         "weakest_questions":      weakest_questions,
         "subject_trends_by_year": subject_trends_by_year,
+        # — Data source metadata (NEW 2026-03-30) —
+        "data_source":            bundle.get("data_source", {}).get("production", "DATA_ALL - 2022–2025"),
+        "training_source":        bundle.get("data_source", {}).get("training", "DATA_MODEL - 2022–2024"),
+        "evaluation_source":      bundle.get("data_source", {}).get("evaluation", "DATA_EVALUATION - 2025"),
     }
 
 

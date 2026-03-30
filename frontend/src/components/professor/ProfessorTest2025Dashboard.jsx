@@ -79,14 +79,14 @@ export default function ProfessorTest2025Dashboard({
       <style>{styles}</style>
       <div style={{ marginBottom: 22 }}>
         <h2 style={{ margin: "0 0 4px", fontSize: "clamp(18px, 4vw, 24px)", fontWeight: 700, fontFamily: "'Montserrat',sans-serif", color: IIEE_COLORS.secondary }}>2025 Test Data Evaluation</h2>
-        <p style={{ margin: 0, fontSize: "clamp(12px, 1.5vw, 14px)", color: "#cbd5e1", fontFamily: "'Inter',sans-serif" }}>Held-out evaluation on <strong style={{ fontWeight: 700, fontFamily: "'Montserrat',sans-serif" }}>DATA_TEST.xlsx</strong> (2025 only).</p>
+        <p style={{ margin: 0, fontSize: "clamp(12px, 1.5vw, 14px)", color: "#cbd5e1", fontFamily: "'Inter',sans-serif" }}>Held-out evaluation on <strong style={{ fontWeight: 700, fontFamily: "'Montserrat',sans-serif" }}>DATA_EVALUATION.csv</strong> (2025 only).</p>
       </div>
       <div className="sticky-filter">
         <FilterPanel />
       </div>
       <div style={{ marginBottom: 22 }}>
         <h2 style={{ margin: "0 0 4px", fontSize: "clamp(18px, 4vw, 24px)", fontWeight: 700, fontFamily: "'Montserrat',sans-serif" }}>2025 Final Defense</h2>
-        <p style={{ margin: 0, fontSize: "clamp(12px, 1.5vw, 14px)", color: "#cbd5e1", fontFamily: "'Inter',sans-serif" }}>Held-out evaluation on <strong style={{ fontWeight: 700, fontFamily: "'Montserrat',sans-serif" }}>DATA_TEST.xlsx</strong> (2025).</p>
+        <p style={{ margin: 0, fontSize: "clamp(12px, 1.5vw, 14px)", color: "#cbd5e1", fontFamily: "'Inter',sans-serif" }}>Held-out evaluation on <strong style={{ fontWeight: 700, fontFamily: "'Montserrat',sans-serif" }}>DATA_EVALUATION.csv</strong> (2025).</p>
       </div>
 
       {testLoading ? (
@@ -155,7 +155,7 @@ export default function ProfessorTest2025Dashboard({
             </ChartContainer>
           )}
 
-          <ChartContainer title="Confusion Matrix (Pass/Fail)" icon="🧾" subtitle="Actual vs Predicted on DATA_TEST 2025" fullWidth accent={c.fail}>
+          <ChartContainer title="Confusion Matrix (Pass/Fail)" icon="🧾" subtitle="Actual vs Predicted on DATA_EVALUATION 2025" fullWidth accent={c.fail}>
             {test2025.confusion_matrix ? (
               <div style={{ display: "flex", gap: 24, alignItems: "flex-start", flexWrap: "wrap" }}>
                 <div>
@@ -208,7 +208,7 @@ export default function ProfessorTest2025Dashboard({
             )}
           </ChartContainer>
 
-          <ChartContainer title="Select a 2025 Examinee (Row-level check)" icon="🧪" subtitle="Choose one row from DATA_TEST and view predicted vs actual + survey answers" fullWidth accent={c.teal}>
+          <ChartContainer title="Select a 2025 Examinee (Row-level check)" icon="🧪" subtitle="Choose one row from DATA_EVALUATION and view predicted vs actual + survey answers" fullWidth accent={c.teal}>
             <ExamineeDetailPanel records={test2025Records} selectedIdx={selectedTestIdx} onSelect={setSelectedTestIdx} runData={test2025Run} runLoading={test2025RunLoading} />
           </ChartContainer>
         </>

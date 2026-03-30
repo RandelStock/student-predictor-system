@@ -65,12 +65,29 @@ from sklearn.metrics import (
 from sklearn.preprocessing import LabelEncoder
 
 # ─────────────────────────────────────────────
-# FILE PATHS
+# FILE PATHS & HELPER (UPDATED 2026-03-30)
 # ─────────────────────────────────────────────
-FILE_MODEL  = "DATA_MODEL.xlsx"
-FILE_SYSTEM = "DATA_SYSTEM.xlsx"
-FILE_TEST   = "DATA_TEST.xlsx"
-# DATA_UPCOMING is NOT loaded here — it is used exclusively by main.py
+# NEW: CSV files with xlsx fallback for backward compatibility
+def _load_data_file(filename_base):
+    """Try to load CSV first, then xlsx."""
+    for ext in [".csv", ".xlsx"]:
+        path = filename_base + ext
+        try:
+            if ext == ".csv":
+                return pd.read_csv(path)
+            else:
+                return pd.read_excel(path, sheet_name=0)
+        except FileNotFoundError:
+            continue
+    raise FileNotFoundError(f"Neither {filename_base}.csv nor {filename_base}.xlsx found.")
+
+# Dataset definitions (2026 March 30 restructure):
+# - DATA_MODEL (121 rows, 2022-2024) → training data
+# - DATA_EVALUATION (36 rows, 2025) → evaluation/test data
+# - DATA_ALL (157 rows, 2022-2025) → final model retrain
+FILE_MODEL       = "DATA_MODEL"       # training set (2022-2024, n=121 expected)
+FILE_EVALUATION  = "DATA_EVALUATION"  # test/evaluation set (2025, n=36 expected)
+FILE_ALL         = "DATA_ALL"         # final model (2022-2025, n=157 expected)
 
 TARGET_CLASS = "PASSED / FAILED-RETAKE"
 TARGET_REG   = "TOTAL RATING"
@@ -81,19 +98,33 @@ print("  REE LICENSURE EXAM PREDICTOR — MODEL TRAINING")
 print("=" * 65)
 
 # ═══════════════════════════════════════════════════════════════
-# STEP 1 — LOAD RAW FILES
+# STEP 1 — LOAD RAW FILES (CSV/XLSX, NEW DATASET STRUCTURE)
 # ═══════════════════════════════════════════════════════════════
-print(f"\n[1] Loading data files...")
-df_model  = pd.read_excel(FILE_MODEL,  sheet_name=0)
-df_system = pd.read_excel(FILE_SYSTEM, sheet_name=0)
-df_test   = pd.read_excel(FILE_TEST,   sheet_name=0)
+print(f"\n[1] Loading data files (CSV/XLSX)...")
+try:
+    df_model = _load_data_file(FILE_MODEL)
+except FileNotFoundError as e:
+    print(f"    ERROR: {e}")
+    exit(1)
 
-for df in [df_model, df_system, df_test]:
+try:
+    df_evaluation = _load_data_file(FILE_EVALUATION)
+except FileNotFoundError as e:
+    print(f"    ERROR: {e}")
+    exit(1)
+
+try:
+    df_all = _load_data_file(FILE_ALL)
+except FileNotFoundError as e:
+    print(f"    WARNING: {FILE_ALL} not found. Will construct from MODEL+EVALUATION.")
+    df_all = pd.concat([df_model, df_evaluation], ignore_index=True)
+
+for df in [df_model, df_evaluation, df_all]:
     df.columns = df.columns.str.strip()
 
-print(f"    DATA_MODEL  : {len(df_model)} rows x {len(df_model.columns)} cols  (60 with survey, 2022-2025)")
-print(f"    DATA_SYSTEM : {len(df_system)} rows x {len(df_system.columns)} cols  (333 no-survey, 2022-2025)")
-print(f"    DATA_TEST   : {len(df_test)} rows x {len(df_test.columns)} cols  (21 with survey, 2025 Apr+Aug) <- eval only")
+print(f"    DATA_MODEL      : {len(df_model)} rows x {len(df_model.columns)} cols (training)")
+print(f"    DATA_EVALUATION : {len(df_evaluation)} rows x {len(df_evaluation.columns)} cols (test/eval)")
+print(f"    DATA_ALL        : {len(df_all)} rows x {len(df_all.columns)} cols (final retrain)")
 
 # ───────────────────────────────────────────────────────────────
 # STEP 1.5 — NORMALISE YEAR COLUMN IN ALL SPLITS
@@ -115,28 +146,15 @@ def _normalize_year_column(df):
     return df
 
 if YEAR_COL:
-    df_model  = _normalize_year_column(df_model)
-    df_system = _normalize_year_column(df_system)
-    df_test   = _normalize_year_column(df_test)
-    print(f"\n[1.5] Year column '{YEAR_COL}' normalised to integers in all splits.")
-    print(f"    DATA_MODEL  years : {sorted(df_model[YEAR_COL].dropna().unique().tolist())}")
-    print(f"    DATA_SYSTEM years : {sorted(df_system[YEAR_COL].dropna().unique().tolist())}")
-    print(f"    DATA_TEST   years : {sorted(df_test[YEAR_COL].dropna().unique().tolist())}")
+    df_model       = _normalize_year_column(df_model)
+    df_evaluation  = _normalize_year_column(df_evaluation)
+    df_all         = _normalize_year_column(df_all)
+    print(f"\n[1.5] Year column '{YEAR_COL}' normalised to integers.")
+    print(f"    DATA_MODEL      years : {sorted(df_model[YEAR_COL].dropna().unique().tolist())}")
+    print(f"    DATA_EVALUATION years : {sorted(df_evaluation[YEAR_COL].dropna().unique().tolist())}")
+    print(f"    DATA_ALL        years : {sorted(df_all[YEAR_COL].dropna().unique().tolist())}")
 else:
-    print("\n[1.5] WARNING: No YEAR column found — cannot filter by year.")
-
-# ───────────────────────────────────────────────────────────────
-# STEP 1.6 — SLICE DATA_SYSTEM TO 2022-2024 FOR REGRESSION-A
-#            (prevents 2025 test-set leakage into Reg-A training)
-# ───────────────────────────────────────────────────────────────
-if YEAR_COL:
-    df_system_train = df_system[df_system[YEAR_COL] < 2025].copy()
-    print(f"\n[1.6] DATA_SYSTEM sliced to 2022-2024 for Reg-A training.")
-    print(f"    Full DATA_SYSTEM : {len(df_system)} rows")
-    print(f"    Kept (< 2025)    : {len(df_system_train)} rows  (expected ~250)")
-else:
-    df_system_train = df_system.copy()
-    print("\n[1.6] WARNING: No YEAR column — using full DATA_SYSTEM for Reg-A (may include 2025 rows).")
+    print("\n[1.5] WARNING: No YEAR column found — cannot validate year ranges.")
 
 # ═══════════════════════════════════════════════════════════════
 # STEP 2 — ENCODE PASS/FAIL TARGET
@@ -148,9 +166,9 @@ def encode_target(df):
     )
     return df
 
-df_model         = encode_target(df_model)
-df_system_train  = encode_target(df_system_train)
-df_test          = encode_target(df_test)
+df_model       = encode_target(df_model)
+df_evaluation  = encode_target(df_evaluation)
+df_all         = encode_target(df_all)
 
 # ═══════════════════════════════════════════════════════════════
 # STEP 3 — ENCODE SURVEY / CATEGORICAL COLUMNS
@@ -214,20 +232,21 @@ def encode_survey(df):
     df.drop(columns=[c for c in drop_text if c in df.columns], inplace=True)
     return df
 
-df_model = encode_survey(df_model)
-df_test  = encode_survey(df_test)
-# DATA_SYSTEM_TRAIN has no survey columns — skip
+df_model      = encode_survey(df_model)
+df_evaluation = encode_survey(df_evaluation)
+df_all        = encode_survey(df_all)
 
+# ═══════════════════════════════════════════════════════════════
 # ═══════════════════════════════════════════════════════════════
 # STEP 4 — FILL MISSING VALUES WITH COLUMN MEDIAN
 # ═══════════════════════════════════════════════════════════════
 print("[3] Filling missing values with column median...")
-for df in [df_model, df_system_train, df_test]:
+for df in [df_model, df_evaluation, df_all]:
     for col in df.select_dtypes(include=[np.number]).columns:
         if df[col].isnull().sum() > 0:
             df[col].fillna(df[col].median(), inplace=True)
 print(f"    Nulls remaining — MODEL:{df_model.isnull().sum().sum()}  "
-      f"SYSTEM_TRAIN:{df_system_train.isnull().sum().sum()}  TEST:{df_test.isnull().sum().sum()}")
+      f"EVALUATION:{df_evaluation.isnull().sum().sum()}  ALL:{df_all.isnull().sum().sum()}")
 
 # ═══════════════════════════════════════════════════════════════
 # STEP 5 — BUILD FEATURE SETS
@@ -243,40 +262,34 @@ BASIC_FEATURES = [c for c in ["EE", "MATH", "ESAS", "GWA"] if c in df_model.colu
 
 print(f"    ALL_FEATURES        : {len(ALL_FEATURES)} cols  (classification + reg-B)")
 print(f"    NO_SUBJECT_FEATURES : {len(NO_SUBJECT_FEATURES)} cols  (reg-B only, no EE/MATH/ESAS)")
-print(f"    BASIC_FEATURES      : {len(BASIC_FEATURES)} cols  (reg-A, combined dataset)")
+print(f"    BASIC_FEATURES      : {len(BASIC_FEATURES)} cols  (reg-A)")
 
 # ═══════════════════════════════════════════════════════════════
-# STEP 6 — ASSEMBLE TRAIN / TEST SPLITS
+# STEP 6 — ASSEMBLE TRAIN / TEST SPLITS (NEW DATASET STRUCTURE)
 # ═══════════════════════════════════════════════════════════════
 print("\n[5] Assembling train/test sets...")
 
-# — Classification: DATA_MODEL(60) train, DATA_TEST(21) test, ALL survey features
+# — Classification: DATA_MODEL train, DATA_EVALUATION test, ALL features
 X_train_clf = df_model[ALL_FEATURES]
 y_train_clf = df_model[TARGET_CLASS]
-X_test_clf  = df_test.reindex(columns=ALL_FEATURES, fill_value=0)
-y_test_clf  = df_test[TARGET_CLASS]
+X_test_clf  = df_evaluation.reindex(columns=ALL_FEATURES, fill_value=0)
+y_test_clf  = df_evaluation[TARGET_CLASS]
 
-# — Regression A: DATA_MODEL(60) + DATA_SYSTEM[2022-2024](250) = 310 rows
-#   Uses only BASIC_FEATURES (no survey) since DATA_SYSTEM has no survey
-df_combined = pd.concat(
-    [df_model[BASIC_FEATURES + [TARGET_REG]],
-     df_system_train[BASIC_FEATURES + [TARGET_REG]]],
-    ignore_index=True
-)
-X_train_ra = df_combined[BASIC_FEATURES]
-y_train_ra = df_combined[TARGET_REG]
-X_test_ra  = df_test.reindex(columns=BASIC_FEATURES, fill_value=0)
-y_test_ra  = df_test[TARGET_REG]
+# — Regression A: DATA_MODEL train, DATA_EVALUATION test, BASIC_FEATURES
+X_train_ra = df_model[BASIC_FEATURES]
+y_train_ra = df_model[TARGET_REG]
+X_test_ra  = df_evaluation.reindex(columns=BASIC_FEATURES, fill_value=0)
+y_test_ra  = df_evaluation[TARGET_REG]
 
-# — Regression B: DATA_MODEL(60) train, DATA_TEST(21) test, survey + GWA (no subject scores)
+# — Regression B: DATA_MODEL train, DATA_EVALUATION test, survey features only
 X_train_rb = df_model[NO_SUBJECT_FEATURES]
 y_train_rb = df_model[TARGET_REG]
-X_test_rb  = df_test.reindex(columns=NO_SUBJECT_FEATURES, fill_value=0)
-y_test_rb  = df_test[TARGET_REG]
+X_test_rb  = df_evaluation.reindex(columns=NO_SUBJECT_FEATURES, fill_value=0)
+y_test_rb  = df_evaluation[TARGET_REG]
 
-print(f"    Classification — train:{len(X_train_clf)} (MODEL 60) | test:{len(X_test_clf)} (TEST 21)")
-print(f"    Regression A   — train:{len(X_train_ra)} (MODEL 60 + SYSTEM 2022-2024 250) | test:{len(X_test_ra)}")
-print(f"    Regression B   — train:{len(X_train_rb)} (MODEL 60) | test:{len(X_test_rb)}")
+print(f"    Classification — train:{len(X_train_clf)} (MODEL) | test:{len(X_test_clf)} (EVAL)")
+print(f"    Regression A   — train:{len(X_train_ra)} (MODEL) | test:{len(X_test_ra)} (EVAL)")
+print(f"    Regression B   — train:{len(X_train_rb)} (MODEL) | test:{len(X_test_rb)} (EVAL)")
 print(f"    Train balance  — PASS:{y_train_clf.sum()} | FAIL:{(y_train_clf==0).sum()}")
 print(f"    Test  balance  — PASS:{y_test_clf.sum()}  | FAIL:{(y_test_clf==0).sum()}")
 
@@ -369,23 +382,23 @@ top5_rb  = top5(reg_b, NO_SUBJECT_FEATURES, "Regression B (GWA+survey)")
 # ═══════════════════════════════════════════════════════════════
 lines = [
     "=" * 65,
-    "  REE PREDICTOR - MODEL EVALUATION REPORT",
+    "  REE PREDICTOR - MODEL EVALUATION REPORT (2026-03-30 NEW STRUCTURE)",
     "=" * 65,
-    f"  Training : DATA_MODEL ({len(df_model)} rows, 2022-2025 with survey)",
-    f"           + DATA_SYSTEM 2022-2024 ({len(df_system_train)} rows, no survey) for Reg-A",
-    f"  Testing  : DATA_TEST ({len(df_test)} rows, 2025 Apr+Aug — completely held out)",
+    f"  Training : DATA_MODEL ({len(df_model)} rows, 2022-2024 with survey)",
+    f"  Testing  : DATA_EVALUATION ({len(df_evaluation)} rows, 2025 — held-out)",
+    f"  Final    : DATA_ALL ({len(df_all)} rows, 2022-2025 — production retrain)",
     f"",
     f"  Train PASS:{y_train_clf.sum()} | FAIL:{(y_train_clf==0).sum()}",
     f"  Test  PASS:{y_test_clf.sum()}  | FAIL:{(y_test_clf==0).sum()}",
     "",
-    "  NOTE: DATA_UPCOMING (333 rows, 2022-2025) is NOT used here.",
-    "        It is the single source of truth for dashboard analytics",
-    "        (all 333 examiners). main.py loads it via /dashboard.",
+    "  MODELS: Final versions trained on DATA_ALL for production.",
+    "          Evaluation metrics computed on DATA_EVALUATION.",
     "",
     "-" * 65,
-    "  MODEL 1: CLASSIFICATION (tested on 2025 DATA_TEST, 21 rows)",
+    f"  MODEL 1: CLASSIFICATION (tested on DATA_EVALUATION, {len(df_evaluation)} rows)",
     "-" * 65,
-    f"  Train rows        : {len(X_train_clf)} (DATA_MODEL, all years, survey+scores)",
+    f"  Train rows        : {len(X_train_clf)} (DATA_MODEL)",
+    f"  Test rows         : {len(X_test_clf)} (DATA_EVALUATION)",
     f"  Features used     : {len(ALL_FEATURES)}",
     f"  Accuracy          : {acc:.4f} ({acc*100:.2f}%)",
     f"  Precision         : {prec:.4f}",
@@ -404,7 +417,8 @@ lines = [
     "-" * 65,
     f"  MODEL 2A: REGRESSION (EE+MATH+ESAS+GWA, {len(X_train_ra)} train rows)",
     "-" * 65,
-    f"  Train rows        : {len(X_train_ra)} (DATA_MODEL 60 + DATA_SYSTEM 2022-2024 {len(df_system_train)})",
+    f"  Train rows        : {len(X_train_ra)} (DATA_MODEL)",
+    f"  Test rows         : {len(X_test_ra)} (DATA_EVALUATION)",
     f"  Features          : {len(BASIC_FEATURES)}",
     f"  MAE               : {mae_a:.4f} pts",
     f"  RMSE              : {rmse_a:.4f} pts",
@@ -413,7 +427,7 @@ lines = [
     f"  5-Fold CV MAE     : {(-cv_mae_a.mean()):.4f} +/- {cv_mae_a.std():.4f}",
     "",
     "-" * 65,
-    "  MODEL 2B: REGRESSION (GWA+Survey only, 60 train rows)",
+    "  MODEL 2B: REGRESSION (GWA+Survey only, 123 train rows)",
     "-" * 65,
     f"  Train rows        : {len(X_train_rb)} (DATA_MODEL only)",
     f"  Features          : {len(NO_SUBJECT_FEATURES)}",
@@ -477,7 +491,7 @@ sns.heatmap(cm, annot=True, fmt="d", cmap="Blues",
 ax.set_xlabel("Predicted Label", fontsize=12)
 ax.set_ylabel("Actual Label", fontsize=12)
 ax.set_title(
-    f"Confusion Matrix — 2025 Test Set (DATA_TEST, {len(df_test)} rows)\n"
+    f"Confusion Matrix — Evaluation Set (DATA_EVALUATION, {len(df_evaluation)} rows)\n"
     f"Accuracy:{acc*100:.2f}% | F1:{f1:.4f}",
     fontsize=11
 )
@@ -555,21 +569,53 @@ for ax, y_true, y_pred, title, r2, mae in [
     ax.set_title(f"{title}\nR2={r2:.4f} | MAE={mae:.2f} pts", fontsize=11, fontweight="bold")
     ax.legend(fontsize=9)
     ax.set_xlim(mn,mx); ax.set_ylim(mn,mx)
-plt.suptitle(f"Actual vs Predicted — DATA_TEST 2025 ({len(df_test)} rows, held-out)", fontsize=11, y=1.01)
+plt.suptitle(f"Actual vs Predicted — DATA_EVALUATION ({len(df_evaluation)} rows, held-out)", fontsize=11, y=1.01)
 plt.tight_layout()
 plt.savefig("regression_actual_vs_predicted.png", dpi=150, bbox_inches="tight")
 plt.close()
 print("    Saved: regression_actual_vs_predicted.png")
 
 # ═══════════════════════════════════════════════════════════════
-# STEP 15 — SAVE MODEL BUNDLE
+# STEP 15 — SAVE MODEL BUNDLE (WITH NEW DATASET METADATA)
 # ═══════════════════════════════════════════════════════════════
 print("\n[14] Saving ree_survey_model.pkl...")
 
+# Final model: train on DATA_ALL (2022-2025) for production deployment
+print(f"    Training final model on DATA_ALL ({len(df_all)} rows)...")
+X_final_clf = df_all[ALL_FEATURES]
+y_final_clf = df_all[TARGET_CLASS]
+final_clf = RandomForestClassifier(
+    n_estimators=200, max_depth=10,
+    min_samples_split=5, min_samples_leaf=2,
+    class_weight="balanced", random_state=42
+)
+final_clf.fit(X_final_clf, y_final_clf)
+
+X_final_ra = df_all[BASIC_FEATURES]
+y_final_ra = df_all[TARGET_REG]
+final_reg_a = RandomForestRegressor(
+    n_estimators=200, max_depth=10,
+    min_samples_split=5, min_samples_leaf=2,
+    random_state=42
+)
+final_reg_a.fit(X_final_ra, y_final_ra)
+
+X_final_rb = df_all[NO_SUBJECT_FEATURES]
+y_final_rb = df_all[TARGET_REG]
+final_reg_b = RandomForestRegressor(
+    n_estimators=200, max_depth=10,
+    min_samples_split=5, min_samples_leaf=2,
+    random_state=42
+)
+final_reg_b.fit(X_final_rb, y_final_rb)
+print(f"    Final models trained on DATA_ALL.")
+
 bundle = {
-    "classifier":          clf,
-    "regressor_a":         reg_a,
-    "regressor_b":         reg_b,
+    # — Production models (trained on DATA_ALL) —
+    "classifier":          final_clf,
+    "regressor_a":         final_reg_a,
+    "regressor_b":         final_reg_b,
+    # — Feature sets —
     "features_all":        ALL_FEATURES,
     "features_nosub":      NO_SUBJECT_FEATURES,
     "features_basic":      BASIC_FEATURES,
@@ -578,19 +624,17 @@ bundle = {
     "target_class":        TARGET_CLASS,
     "target_reg":          TARGET_REG,
     "passing_score":       70.0,
-    # ── dataset sizes ──
-    "dataset_size":             len(df_model),           # 60 (MODEL, survey)
-    "dataset_size_system":      len(df_system),          # 333 (full SYSTEM/UPCOMING)
-    "dataset_size_system_train":len(df_system_train),    # 250 (SYSTEM 2022-2024 slice for Reg-A)
-    "dataset_size_test":        len(df_test),            # 21  (TEST, held-out)
-    "dataset_size_reg_a_train": len(X_train_ra),         # 310 (MODEL + SYSTEM 2022-2024)
-    # ── class balance ──
-    "pass_count":          int(y_train_clf.sum()),
-    "fail_count":          int((y_train_clf == 0).sum()),
-    # ── evaluation results ──
+    # — Training dataset sizes —
+    "dataset_size_model":       len(df_model),        # Training set
+    "dataset_size_evaluation":  len(df_evaluation),   # Test/eval set
+    "dataset_size_all":         len(df_all),          # Final training set
+    # — Class balance (from test set) —
+    "pass_count":          int(y_test_clf.sum()),
+    "fail_count":          int((y_test_clf == 0).sum()),
+    # — Evaluation results (on DATA_EVALUATION) —
     "eval": {
         "test_year":       2025,
-        "test_size":       len(df_test),
+        "test_size":       len(df_evaluation),
         "clf_accuracy":    acc,
         "clf_precision":   prec,
         "clf_recall":      rec,
@@ -603,7 +647,13 @@ bundle = {
         "reg_b_mae":       mae_b,
         "reg_b_rmse":      rmse_b,
         "reg_b_r2":        r2_b,
-    }
+    },
+    # — Data source metadata —
+    "data_source": {
+        "training": f"DATA_MODEL ({len(df_model)} rows, 2022-2024)",
+        "evaluation": f"DATA_EVALUATION ({len(df_evaluation)} rows, 2025)",
+        "production": f"DATA_ALL ({len(df_all)} rows, 2022-2025)",
+    },
 }
 
 joblib.dump(bundle, "ree_survey_model.pkl")
@@ -613,34 +663,35 @@ print("    Saved: ree_survey_model.pkl")
 # STEP 16 — FINAL SUMMARY
 # ═══════════════════════════════════════════════════════════════
 print("\n" + "=" * 65)
-print("  TRAINING COMPLETE")
+print("  TRAINING COMPLETE — NEW DATASET STRUCTURE (2026-03-30)")
 print("=" * 65)
 print(f"""
-  Train : DATA_MODEL ({len(df_model)} rows, 2022-2025 with survey)
-        + DATA_SYSTEM 2022-2024 ({len(df_system_train)} rows, no survey) — Reg-A only
-  Test  : DATA_TEST  ({len(df_test)} rows, 2025 Apr+Aug — completely held out)
+  Configuration:
+    Training   : DATA_MODEL      ({len(df_model)} rows, 2022-2024)
+    Testing    : DATA_EVALUATION ({len(df_evaluation)} rows, 2025)
+    Production : DATA_ALL        ({len(df_all)} rows, 2022-2025)
 
-  Classification  Accuracy : {acc*100:.2f}%
-  Classification  F1-Score : {f1:.4f}
-  Regression A    R2       : {r2_a:.4f}  (MAE: {mae_a:.2f} pts, {len(X_train_ra)} train rows)
-  Regression B    R2       : {r2_b:.4f}  (MAE: {mae_b:.2f} pts, 60 train rows)
+  Evaluation Results (on DATA_EVALUATION, {len(df_evaluation)} rows):
+    Classification Accuracy : {acc*100:.2f}%
+    Classification F1-Score : {f1:.4f}
+    Regression A R2         : {r2_a:.4f}  (MAE: {mae_a:.2f} pts)
+    Regression B R2         : {r2_b:.4f}  (MAE: {mae_b:.2f} pts)
+
+  Production Models (trained on DATA_ALL):
+    All models retrained on complete 2022-2025 dataset.
+    Use these in main.py via ree_survey_model.pkl
 
   Output files:
-    ree_survey_model.pkl                  <- loaded by main.py at startup
-    evaluation_report.txt                 <- Chapter 4 thesis metrics
-    confusion_matrix_test2025.png         <- Chapter 4 figure
-    feature_importance_classification.png
-    feature_importance_regression_a.png
-    feature_importance_regression_b.png
-    correlation_matrix.png                <- Objectives 4 and 5
-    regression_actual_vs_predicted.png
+    ree_survey_model.pkl                  ← Production models + metadata
+    evaluation_report.txt                 ← Full evaluation metrics
+    confusion_matrix_test2025.png         ← Classification results
+    feature_importance_*.png              ← Feature analysis
+    correlation_matrix.png                ← Correlation heatmap
+    regression_actual_vs_predicted.png    ← Regression validation
 
-  DASHBOARD DATA NOTE:
-    main.py should load DATA_UPCOMING.xlsx (333 rows, 2022-2025) as the
-    single source of truth for ALL institutional analytics. This covers
-    every examiner and avoids double-counting.
-    DATA_UPCOMING == DATA_SYSTEM (same file, different role):
-      DATA_SYSTEM   → training only (2022-2024 slice, 250 rows)
-      DATA_UPCOMING → dashboard analytics (full 333 rows, 2022-2025)
+  Dashboard Data Note:
+    main.py should load DATA_ALL (or fallback to DATA_UPCOMING)
+    for all institutional analytics. Do NOT mix DATA_MODEL+DATA_EVALUATION
+    to avoid data leakage into dashboard KPIs.
 """)
 print("=" * 65)
