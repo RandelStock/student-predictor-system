@@ -250,10 +250,10 @@ export default function ProfessorPage({ onLogout }) {
   const subjectTrends = useMemo(() => data?.subject_trends_by_year ?? [],   [data]);
   // NEW: Data source metadata
   const dataSource    = useMemo(() => ({
-    production: data?.data_source ?? "DATA_ALL - 2022–2025",
+    upcoming: data?.upcoming_source ?? "DATA_UPCOMING (333 rows)",
+    production: data?.data_source ?? "DATA_UPCOMING - 333 rows",
     training: data?.training_source ?? "DATA_MODEL - 2022–2024",
     evaluation: data?.evaluation_source ?? "DATA_EVALUATION - 2025",
-    upcoming: data?.upcoming_source ?? "DATA_UPCOMING - (not loaded)",
   }), [data]);
 
   const reviewYesTotal = useMemo(() => passByReview.find(x => String(x.label).toLowerCase().includes("attended"))?.total ?? 0, [passByReview]);

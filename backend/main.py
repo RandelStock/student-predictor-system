@@ -375,12 +375,24 @@ def _load_data_file(filename_base):
 
 def _load_main_df() -> pd.DataFrame:
     """
-    Load primary analytics dataset. Priority order:
-    1. DATA_ALL.csv/xlsx (2022-2025, new)
-    2. DATA_UPCOMING.xlsx (legacy, 333 rows, 2022-2025)
+    Load primary analytics dataset. Priority order for institutional dashboard:
+    1. DATA_UPCOMING.xlsx (legacy, 333 rows, 2022-2025) — PRIMARY for institutional
+    2. DATA_ALL.csv/xlsx (2022-2025, new structure)
     3. DATA_SYSTEM.xlsx + DATA_TEST.xlsx (fallback, may have duplicates)
     """
-    # Try DATA_ALL first (new structure)
+    # Try DATA_UPCOMING first (legacy institutional analytics — 333 rows)
+    try:
+        d = pd.read_excel(FILE_UPCOMING + ".xlsx", sheet_name=0)
+        d.columns = d.columns.str.strip()
+        d["_source"] = "upcoming"
+        d = _normalise_year(d)
+        d = _normalise_passed(d)
+        print(f"[analytics] Loaded DATA_UPCOMING: {len(d)} rows (PRIMARY institutional source)")
+        return d
+    except Exception as e:
+        print(f"[analytics] Could not load DATA_UPCOMING: {e}")
+
+    # Fallback to DATA_ALL (new structure)
     try:
         d = _load_data_file(FILE_ALL)
         if d is not None:
@@ -388,23 +400,10 @@ def _load_main_df() -> pd.DataFrame:
             d["_source"] = "DATA_ALL"
             d = _normalise_year(d)
             d = _normalise_passed(d)
-            print(f"[analytics] Loaded {FILE_ALL}: {len(d)} rows")
+            print(f"[analytics] Loaded {FILE_ALL}: {len(d)} rows (fallback)")
             return d
     except Exception as e:
         print(f"[analytics] Could not load DATA_ALL: {e}")
-
-    # Fallback to DATA_UPCOMING (legacy)
-    for path, label in [(FILE_UPCOMING, "upcoming")]:
-        try:
-            d = pd.read_excel(path, sheet_name=0)
-            d.columns = d.columns.str.strip()
-            d["_source"] = label
-            d = _normalise_year(d)
-            d = _normalise_passed(d)
-            print(f"[analytics] Loaded {FILE_UPCOMING}: {len(d)} rows (legacy fallback)")
-            return d
-        except Exception as e:
-            print(f"[analytics] Could not load {FILE_UPCOMING}: {e}")
 
     # Final fallback: combine old structure (may produce duplicates)
     print(f"[analytics] Falling back to combined DATA_SYSTEM + DATA_TEST (legacy)")
@@ -1099,9 +1098,9 @@ def analytics():
         "avg_rating_failers": round(float(failers[COL_TOTAL_RATING].mean()), 2) if COL_TOTAL_RATING in df.columns and len(failers) else None,
         "passing_score":      70,
         "year_breakdown":     year_breakdown,
-        "data_source":        "DATA_ALL (2022-2025)" if not df_upcoming.empty else "DATA_SYSTEM+DATA_TEST fallback",
+        "data_source":        ("DATA_UPCOMING - 333 rows (2022-2025), Primary institutional source" if len(df) == 333 else f"DATA_ALL - {len(df)} rows (fallback)"),
         "upcoming_rows":      len(df_upcoming),
-        "upcoming_source":    "DATA_UPCOMING (333 rows, 2022-2025)",
+        "upcoming_source":    "DATA_UPCOMING (333 rows, 2022-2025)" if len(df_upcoming) > 0 else "Not available",
         # Survey subset info for transparency
         "survey_rows":        len(df_survey) if not df_survey.empty else 0,
         "survey_source":      "DATA_MODEL (123) + DATA_EVALUATION (36) = 159 rows",
@@ -1284,11 +1283,12 @@ def analytics():
         "section_scores":         section_scores,
         "weakest_questions":      weakest_questions,
         "subject_trends_by_year": subject_trends_by_year,
-        # — Data source metadata (NEW 2026-03-30) —
-        "data_source":            bundle.get("data_source", {}).get("production", "DATA_ALL - 2022–2025"),
+        # — Data source metadata (prioritizes DATA_UPCOMING for institutional) —
+        "data_source":            ("DATA_UPCOMING (333 rows)" if len(df) >= 333 else "DATA_ALL fallback"),
         "training_source":        bundle.get("data_source", {}).get("training", "DATA_MODEL - 2022–2024"),
         "evaluation_source":      bundle.get("data_source", {}).get("evaluation", "DATA_EVALUATION - 2025"),
-        "upcoming_source":        "DATA_UPCOMING - 333 rows (legacy analytics)",
+        "upcoming_source":        "DATA_UPCOMING - 333 rows (Primary institutional analytics source)",
+        "active_source_rows":     len(df),
     }
 
 
