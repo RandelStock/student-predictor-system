@@ -194,7 +194,7 @@ else:
 #   DATA_EVALUATION (36 rows, 2025) → held-out evaluation only
 # ══════════════════════════════════════════════════════════════════════════════
 
-FILE_UPCOMING = "DATA_UPCOMING.xlsx"  # Legacy fallback (333 rows, 2022-2025)
+FILE_UPCOMING = "DATA_UPCOMING"    # Legacy fallback (333 rows, 2022-2025)
 FILE_MODEL    = "DATA_MODEL"          # NEW: Training set (CSV/XLSX)
 FILE_EVALUATION = "DATA_EVALUATION"   # NEW: Evaluation set (CSV/XLSX)
 FILE_ALL      = "DATA_ALL"            # NEW: Final dataset (CSV/XLSX, primary)
@@ -361,6 +361,19 @@ def _normalise_passed(df: pd.DataFrame) -> pd.DataFrame:
 
 def _load_data_file(filename_base):
     """Try to load CSV first, then xlsx. Helper for new CSV-based datasets."""
+    # Look in backend/ dir first
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    for ext in [".csv", ".xlsx"]:
+        path = os.path.join(base_dir, filename_base + ext)
+        try:
+            if ext == ".csv":
+                return pd.read_csv(path)
+            else:
+                return pd.read_excel(path, sheet_name=0)
+        except FileNotFoundError:
+            continue
+
+    # Fallback to working directory (for root process cwd scenarios)
     for ext in [".csv", ".xlsx"]:
         path = filename_base + ext
         try:
@@ -1066,6 +1079,15 @@ def analytics():
     except Exception as e:
         return {"error": f"Could not load dataset: {e}"}
 
+    # Debug check: is the selected analytics set DATA_UPCOMING?
+    ds = "none"
+    if not df.empty and "_source" in df.columns:
+        ds = str(df["_source"].iloc[0]).lower()
+    if ds not in ["upcoming", "data_upcoming"]:
+        print(f"[analytics] WARNING source is '{ds}' with {len(df)} rows (expect 333 from DATA_UPCOMING).")
+    else:
+        print(f"[analytics] OK primary source DATA_UPCOMING with {len(df)} rows.")
+
     df_upcoming = pd.DataFrame()
     try:
         upcoming = _load_data_file(FILE_UPCOMING)
@@ -1075,6 +1097,10 @@ def analytics():
             upcoming = _normalise_passed(upcoming)
             df_upcoming = upcoming
             print(f"[analytics] Loaded DATA_UPCOMING: {len(df_upcoming)} rows (legacy 333)")
+            if len(df_upcoming) >= 300:
+                # Force institutional source to always be DATA_UPCOMING when available
+                print(f"[analytics] Forcing main analytics to use DATA_UPCOMING (333 expected, got {len(df_upcoming)}).")
+                df = df_upcoming
     except Exception as e:
         print(f"[analytics] Could not load DATA_UPCOMING: {e}")
 

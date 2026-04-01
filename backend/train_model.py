@@ -36,6 +36,7 @@ DATA_ALL (159 rows) is the model production training source (2022-2025).
 DO NOT combine DATA_UPCOMING with DATA_EVALUATION or DATA_MODEL for evaluation.
 """
 
+import os
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -45,6 +46,8 @@ import seaborn as sns
 import joblib
 import warnings
 warnings.filterwarnings("ignore")
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.model_selection import StratifiedKFold, KFold, cross_val_score
@@ -62,6 +65,16 @@ from sklearn.preprocessing import LabelEncoder
 def _load_data_file(filename_base):
     """Try to load CSV first, then xlsx."""
     for ext in [".csv", ".xlsx"]:
+        path = os.path.join(BASE_DIR, filename_base + ext)
+        try:
+            if ext == ".csv":
+                return pd.read_csv(path)
+            else:
+                return pd.read_excel(path, sheet_name=0)
+        except FileNotFoundError:
+            continue
+    # Final fallback on cwd-based relative path for compatibility
+    for ext in [".csv", ".xlsx"]:
         path = filename_base + ext
         try:
             if ext == ".csv":
@@ -70,7 +83,7 @@ def _load_data_file(filename_base):
                 return pd.read_excel(path, sheet_name=0)
         except FileNotFoundError:
             continue
-    raise FileNotFoundError(f"Neither {filename_base}.csv nor {filename_base}.xlsx found.")
+    raise FileNotFoundError(f"Neither {filename_base}.csv nor {filename_base}.xlsx found in {BASE_DIR} or cwd.")
 
 # Dataset definitions (2026 March 30 restructure):
 # - DATA_MODEL (123 rows, 2022-2024) → training data with survey
