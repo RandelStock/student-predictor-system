@@ -474,9 +474,8 @@ function DsTag({ label }) {
 
 const barColor = (r) => r >= 70 ? IIEE.passGreen : r >= 55 ? IIEE.amber : IIEE.failRed;
 
-/* ─── FIX 3: Predicted vs Actual (uses test2025 data) ────────── */
+/* ─── Predicted vs Actual (uses DATA_EVALUATION scatter data) ── */
 function PredictedActualSection({ scatterData: rawScatter, modelInfo }) {
-  // Build safe scatter data — works whether from scatterData prop OR test2025 evaluation
   const scatter = useMemo(() => {
     const raw = rawScatter ?? [];
     return raw
@@ -526,7 +525,6 @@ function PredictedActualSection({ scatterData: rawScatter, modelInfo }) {
 
   return (
     <div>
-      {/* Quick stats */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(130px,1fr))", gap: 10, marginBottom: 16 }}>
         {[
           { label: "Test Records", value: scatter.length, color: IIEE.blue, icon: "📋" },
@@ -542,7 +540,6 @@ function PredictedActualSection({ scatterData: rawScatter, modelInfo }) {
         ))}
       </div>
 
-      {/* Scatter plot */}
       <ResponsiveContainer width="100%" height={300}>
         <ScatterChart margin={{ top: 12, right: 24, left: -8, bottom: 20 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="rgba(245,197,24,.12)" />
@@ -575,7 +572,6 @@ function PredictedActualSection({ scatterData: rawScatter, modelInfo }) {
             }}
             cursor={{ strokeDasharray: "3 3" }}
           />
-          {/* Perfect prediction line */}
           <ReferenceLine
             segment={[{ x: 40, y: 40 }, { x: 100, y: 100 }]}
             stroke="rgba(245,197,24,.35)" strokeDasharray="5 4"
@@ -601,6 +597,78 @@ function PredictedActualSection({ scatterData: rawScatter, modelInfo }) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
+   HELPER — derive full DATA_UPCOMING KPIs from analytics response
+   ---------------------------------------------------------------
+   The backend /analytics endpoint loads DATA_UPCOMING (333 rows)
+   as the primary source and returns its aggregates in `ov`:
+     ov.total_students     → 333 (all examiners)
+     ov.total_passers      → from DATA_UPCOMING
+     ov.total_failers      → from DATA_UPCOMING
+     ov.overall_pass_rate  → from DATA_UPCOMING
+     ov.avg_gwa_passers    → from DATA_UPCOMING
+     ov.avg_gwa_failers    → from DATA_UPCOMING
+     ov.year_breakdown     → { 2022: {passers,failers,pass_rate,total}, ... }
+
+   When a year filter is applied we read from ov.year_breakdown
+   instead of filtering passByYear (which already comes from
+   DATA_UPCOMING pass_rate_by_year). This keeps everything in the
+   333-row universe.
+═══════════════════════════════════════════════════════════════ */
+function useInstitutionalKpi(ov, selectedYear, passByYear) {
+  return useMemo(() => {
+    // ── No year filter → use full DATA_UPCOMING aggregates from ov ──
+    if (!selectedYear) {
+      return {
+        total_students:    ov?.total_students    ?? 0,
+        total_passers:     ov?.total_passers     ?? 0,
+        total_failers:     ov?.total_failers     ?? 0,
+        overall_pass_rate: ov?.overall_pass_rate ?? 0,
+        avg_gwa_passers:   ov?.avg_gwa_passers   ?? 0,
+        avg_gwa_failers:   ov?.avg_gwa_failers   ?? 0,
+      };
+    }
+
+    // ── Year filter → prefer ov.year_breakdown (DATA_UPCOMING per-year) ──
+    const yb = ov?.year_breakdown?.[Number(selectedYear)];
+    if (yb) {
+      return {
+        total_students:    yb.total     ?? 0,
+        total_passers:     yb.passers   ?? 0,
+        total_failers:     yb.failers   ?? 0,
+        overall_pass_rate: yb.pass_rate ?? 0,
+        // GWA per-year breakdown not stored; fall back to overall averages
+        avg_gwa_passers:   ov?.avg_gwa_passers ?? 0,
+        avg_gwa_failers:   ov?.avg_gwa_failers ?? 0,
+      };
+    }
+
+    // ── Fallback: derive from passByYear (also from DATA_UPCOMING) ──
+    const yr = (passByYear ?? []).find((d) => String(d.label) === String(selectedYear));
+    if (yr) {
+      const p = yr.passers ?? Math.round(((yr.pass_rate ?? 0) / 100) * (yr.total ?? 0));
+      return {
+        total_students:    yr.total     ?? 0,
+        total_passers:     p,
+        total_failers:     (yr.total ?? 0) - p,
+        overall_pass_rate: yr.pass_rate ?? 0,
+        avg_gwa_passers:   ov?.avg_gwa_passers ?? 0,
+        avg_gwa_failers:   ov?.avg_gwa_failers ?? 0,
+      };
+    }
+
+    // ── No match → full overview ──
+    return {
+      total_students:    ov?.total_students    ?? 0,
+      total_passers:     ov?.total_passers     ?? 0,
+      total_failers:     ov?.total_failers     ?? 0,
+      overall_pass_rate: ov?.overall_pass_rate ?? 0,
+      avg_gwa_passers:   ov?.avg_gwa_passers   ?? 0,
+      avg_gwa_failers:   ov?.avg_gwa_failers   ?? 0,
+    };
+  }, [ov, selectedYear, passByYear]);
+}
+
+/* ═══════════════════════════════════════════════════════════════
    MAIN COMPONENT
 ═══════════════════════════════════════════════════════════════ */
 export default function ModelOverviewDashboard({
@@ -615,41 +683,34 @@ export default function ModelOverviewDashboard({
 
   const selectedYear = dashFilters?.year || "";
 
-  const yearRows = useMemo(() => {
+  // ── DATA_UPCOMING KPIs (always from 333-row universe) ──────────────────────
+  // useInstitutionalKpi reads from ov (populated by /analytics which loads
+  // DATA_UPCOMING first) and ov.year_breakdown for per-year breakdown.
+  const kpi = useInstitutionalKpi(ov, selectedYear, passByYear);
+
+  // ── Rows shown in year-filtered charts ────────────────────────────────────
+  // passByYear comes from /analytics pass_rate_by_year → DATA_UPCOMING 333 rows
+  const displayRows = useMemo(() => {
     if (!selectedYear) return passByYear ?? [];
-    return (passByYear ?? []).filter((d) => String(d.label) === String(selectedYear));
+    const filtered = (passByYear ?? []).filter((d) => String(d.label) === String(selectedYear));
+    return filtered.length ? filtered : (passByYear ?? []);
   }, [selectedYear, passByYear]);
 
-  const displayRows = useMemo(
-    () => (yearRows.length ? yearRows : (passByYear ?? [])),
-    [yearRows, passByYear]
-  );
-
-  const kpi = useMemo(() => {
-    if (!selectedYear || !yearRows.length) return ov ?? {};
-    const yr = yearRows[0];
-    const p = yr.passers ?? Math.round((yr.pass_rate / 100) * (yr.total || 0));
-    const f = (yr.total || 0) - p;
-    return {
-      total_students:    yr.total ?? 0,
-      total_passers:     p,
-      total_failers:     f,
-      overall_pass_rate: yr.pass_rate ?? 0,
-      avg_gwa_passers:   ov?.avg_gwa_passers ?? 0,
-      avg_gwa_failers:   ov?.avg_gwa_failers ?? 0,
-    };
-  }, [selectedYear, yearRows, ov]);
-
+  // ── Pie chart data — derived from DATA_UPCOMING KPIs ──────────────────────
+  // Always build from kpi (DATA_UPCOMING) rather than propPieData which may
+  // come from the smaller DATA_ALL dataset.
   const pieData = useMemo(() => {
-    if (!selectedYear || !yearRows.length) return propPieData ?? [];
     const p = kpi.total_passers;
     const f = kpi.total_failers;
+    // Only fall back to propPieData if both counts are 0 (no data yet)
+    if (p === 0 && f === 0 && propPieData?.length) return propPieData;
     return [
       { name: "Passers", value: p, color: IIEE.passGreen },
       { name: "Failers", value: f, color: IIEE.failRed },
     ];
-  }, [selectedYear, yearRows, kpi, propPieData]);
+  }, [kpi, propPieData]);
 
+  // ── Stacked bar data — also from DATA_UPCOMING via passByYear ─────────────
   const stackData = useMemo(() =>
     displayRows.map((d) => {
       const p = d.passers ?? Math.round(((d.pass_rate ?? 0) / 100) * (d.total ?? 0));
@@ -657,7 +718,6 @@ export default function ModelOverviewDashboard({
     }),
   [displayRows]);
 
-  
   const scatter = useMemo(() => scatterData ?? [], [scatterData]);
 
   const regTrend = useMemo(() => {
@@ -669,6 +729,18 @@ export default function ModelOverviewDashboard({
   }, [modelInfo]);
 
   const weakAreas = useMemo(() => (weakestQ ?? []).slice(0, 6), [weakestQ]);
+
+  // ── Data source label for hero subtitle ───────────────────────────────────
+  // Show upcoming_rows count (333) when available, else fall back to production
+  const institutionalSourceLabel = useMemo(() => {
+    if (ov?.upcoming_rows && ov.upcoming_rows > 0) {
+      return `DATA_UPCOMING — ${ov.upcoming_rows} rows (Primary institutional analytics source)`;
+    }
+    return dataSource?.upcoming || dataSource?.production || "DATA_UPCOMING — 333 rows";
+  }, [ov, dataSource]);
+
+  // ── Whether DATA_UPCOMING loaded correctly (333 rows expected) ────────────
+  const upcomingLoaded = (ov?.upcoming_rows ?? 0) >= 300 || (ov?.total_students ?? 0) >= 300;
 
   return (
     <div className="iiee-combined fade-in">
@@ -706,7 +778,7 @@ export default function ModelOverviewDashboard({
         </h2>
         <p className="comb-hero-sub">
           {mode === "institutional"
-            ? `Analytics: ${dataSource?.upcoming || dataSource?.production || "DATA_UPCOMING"} — SLSU PRC 2022-2025.`
+            ? institutionalSourceLabel + " — SLSU PRC 2022-2025."
             : `Model (Train: ${dataSource?.training || "DATA_MODEL"} | Test: ${dataSource?.evaluation || "DATA_EVALUATION"})`}
         </p>
       </div>
@@ -744,55 +816,124 @@ export default function ModelOverviewDashboard({
         {/* ══ INSTITUTIONAL ══ */}
         <div style={{ display: mode === "institutional" ? "block" : "none" }}>
 
-          <Divider label="Key Performance Indicators — 333 Examiners (2022-2025)" icon="📌" />
-          <DsTag label="DATA_UPCOMING — 333 rows, 2022-2025" />
+          <Divider
+            label={`Key Performance Indicators — ${ov?.total_students ?? 333} Examiners (2022-2025)`}
+            icon="📌"
+          />
 
-          {(!dataSource?.upcoming && dataSource?.production) && (
+          {/* DATA_UPCOMING source tag */}
+          <DsTag label={`DATA_UPCOMING — ${ov?.upcoming_rows ?? ov?.total_students ?? 333} rows, 2022-2025`} />
+
+          {/* Warning only when DATA_UPCOMING genuinely failed to load */}
+          {!upcomingLoaded && (
             <div style={{ marginBottom: 16, border: "1px solid rgba(245,197,24,0.3)", background: "rgba(245,197,24,0.08)", color: IIEE.white, borderRadius: 10, padding: "10px 12px", fontSize: 13 }}>
-              ⚠️ DATA_UPCOMING is not available; using {dataSource.production || "production dataset"} for institutional overview. Ensure DATA_UPCOMING (333 rows) is loaded for full legacy institutional analytics.
+              ⚠️ DATA_UPCOMING may not be fully loaded (expected ≥ 300 rows, got {ov?.total_students ?? 0}).
+              Ensure <code>DATA_UPCOMING.csv</code> or <code>DATA_UPCOMING.xlsx</code> (333 rows, GWA + subject scores)
+              is present in the backend directory. Currently showing available data.
             </div>
           )}
+
           <div className="metrics-grid" style={{ marginBottom: 28 }}>
-            <KPI label="Total Examiners"   value={kpi.total_students ?? "—"}   icon="👥" color={IIEE.blue}      sub="All exam sittings 2022-2025" />
-            <KPI label="Total Passers"     value={kpi.total_passers  ?? "—"}   icon="✅" color={IIEE.passGreen} />
-            <KPI label="Total Failers"     value={kpi.total_failers  ?? "—"}   icon="❌" color={IIEE.failRed}   />
-            <KPI label="Legacy DATA_UPCOMING" value={dataSource?.upcoming_source ? "✓" : "–"} icon="🗂️" color={IIEE.gold} sub={dataSource?.upcoming_source || "DATA_UPCOMING not loaded"} />
-            <KPI label="Overall Pass Rate" value={pct(kpi.overall_pass_rate)}  icon="📊"
+            {/* All KPI values now sourced from useInstitutionalKpi → ov → DATA_UPCOMING */}
+            <KPI
+              label="Total Examiners"
+              value={kpi.total_students || "—"}
+              icon="👥"
+              color={IIEE.blue}
+              sub="DATA_UPCOMING — All exam sittings 2022-2025"
+            />
+            <KPI
+              label="Total Passers"
+              value={kpi.total_passers || "—"}
+              icon="✅"
+              color={IIEE.passGreen}
+              sub="DATA_UPCOMING source"
+            />
+            <KPI
+              label="Total Failers"
+              value={kpi.total_failers || "—"}
+              icon="❌"
+              color={IIEE.failRed}
+              sub="DATA_UPCOMING source"
+            />
+            <KPI
+              label="Dataset Source"
+              value={upcomingLoaded ? "333 ✓" : `${ov?.total_students ?? "—"}`}
+              icon="🗂️"
+              color={upcomingLoaded ? IIEE.passGreen : IIEE.amber}
+              sub={upcomingLoaded
+                ? "DATA_UPCOMING loaded (GWA + scores)"
+                : "DATA_UPCOMING not fully loaded"}
+            />
+            <KPI
+              label="Overall Pass Rate"
+              value={pct(kpi.overall_pass_rate)}
+              icon="📊"
               color={(kpi.overall_pass_rate ?? 0) >= 70 ? IIEE.passGreen : IIEE.amber}
-              sub="PRC passing threshold = 70%" />
-            <KPI label="Avg GWA Passers"   value={num(kpi.avg_gwa_passers)}    icon="🎓" color={IIEE.passGreen} sub="Lower = better (PH scale)" />
-            <KPI label="Avg GWA Failers"   value={num(kpi.avg_gwa_failers)}    icon="📉" color={IIEE.failRed}   sub="Lower = better (PH scale)" />
+              sub="PRC passing threshold = 70%"
+            />
+            <KPI
+              label="Avg GWA Passers"
+              value={num(kpi.avg_gwa_passers)}
+              icon="🎓"
+              color={IIEE.passGreen}
+              sub="Lower = better (PH scale)"
+            />
+            <KPI
+              label="Avg GWA Failers"
+              value={num(kpi.avg_gwa_failers)}
+              icon="📉"
+              color={IIEE.failRed}
+              sub="Lower = better (PH scale)"
+            />
           </div>
 
           <Divider label="Distribution Analysis" icon="🥧" />
           <div className="g2" style={{ marginBottom: 20 }}>
-            <Card icon="🥧" title="Pass / Fail Distribution" sub="All examiners, 2022-2025"
-              note="Donut chart of overall pass/fail outcomes across 333 examiners."
-              insight={`${pct(kpi.overall_pass_rate)} pass rate — ${(kpi.overall_pass_rate ?? 0) >= 70 ? "above" : "below"} the 70% PRC benchmark.`}>
+            <Card
+              icon="🥧"
+              title="Pass / Fail Distribution"
+              sub={`All examiners — DATA_UPCOMING (${ov?.upcoming_rows ?? ov?.total_students ?? 333} rows)`}
+              note={`Donut chart of overall pass/fail outcomes across ${kpi.total_students} examiners from DATA_UPCOMING.`}
+              insight={`${pct(kpi.overall_pass_rate)} pass rate — ${(kpi.overall_pass_rate ?? 0) >= 70 ? "above" : "below"} the 70% PRC benchmark.`}
+            >
               <ResponsiveContainer width="100%" height={220}>
                 <PieChart>
-                  <Pie data={pieData} cx="50%" cy="50%" innerRadius={55} outerRadius={88}
+                  <Pie
+                    data={pieData}
+                    cx="50%" cy="50%"
+                    innerRadius={55} outerRadius={88}
                     paddingAngle={3} dataKey="value"
                     onMouseEnter={(_, i) => setActivePie(i)}
-                    onMouseLeave={() => setActivePie(null)}>
+                    onMouseLeave={() => setActivePie(null)}
+                  >
                     {pieData.map((e, i) => (
-                      <Cell key={i} fill={e.color}
+                      <Cell
+                        key={i}
+                        fill={e.color}
                         stroke={activePie === i ? IIEE.gold : "none"}
                         strokeWidth={activePie === i ? 3 : 0}
                         opacity={activePie === null || activePie === i ? 1 : 0.5}
-                        style={{ transition: "all .3s" }} />
+                        style={{ transition: "all .3s" }}
+                      />
                     ))}
                   </Pie>
                   <Tooltip content={<Tip />} />
-                  <Legend iconType="circle" iconSize={9}
-                    formatter={(v) => <span style={{ color: IIEE.muted, fontSize: 12 }}>{v}</span>} />
+                  <Legend
+                    iconType="circle" iconSize={9}
+                    formatter={(v) => <span style={{ color: IIEE.muted, fontSize: 12 }}>{v}</span>}
+                  />
                 </PieChart>
               </ResponsiveContainer>
             </Card>
 
-            <Card icon="📅" title="Pass Rate by Year" sub="Annual PRC performance trend"
-              note="Each bar is a full calendar year. 2024 peaked at 79.8%; 2025 dropped to 45.8%."
-              insight="2025 August sitting had only 4.5% pass rate — a major outlier requiring investigation.">
+            <Card
+              icon="📅"
+              title="Pass Rate by Year"
+              sub="Annual PRC performance trend — DATA_UPCOMING"
+              note="Each bar is a full calendar year sourced from DATA_UPCOMING (333 rows). 2024 peaked; 2025 declined."
+              insight="2025 August sitting had only 4.5% pass rate — a major outlier requiring investigation."
+            >
               <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={displayRows} margin={{ top: 8, right: 16, left: -8, bottom: 4 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(245,197,24,.12)" />
@@ -801,25 +942,34 @@ export default function ModelOverviewDashboard({
                   <Tooltip content={<Tip fmt={(v) => `${v?.toFixed(1)}%`} />} />
                   <ReferenceLine y={70} stroke={IIEE.gold} strokeDasharray="5 3"
                     label={{ value: "70% threshold", position: "insideTopRight", fill: IIEE.gold, fontSize: 10 }} />
-                  <Bar dataKey="pass_rate" name="Pass Rate" radius={[6,6,0,0]}
-                    activeBar={{ fill: IIEE.gold, filter: "drop-shadow(0 0 8px rgba(245,197,24,.6))" }}>
+                  <Bar
+                    dataKey="pass_rate" name="Pass Rate" radius={[6,6,0,0]}
+                    activeBar={{ fill: IIEE.gold, filter: "drop-shadow(0 0 8px rgba(245,197,24,.6))" }}
+                  >
                     {displayRows.map((e, i) => <Cell key={i} fill={barColor(e.pass_rate)} />)}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </Card>
 
-            <Card icon="📦" title="Pass / Fail Counts by Year" sub="Absolute cohort composition" fullWidth
-              note="Stacked bars show how many students passed vs failed per year."
-              insight="2022 had the largest cohort (103) yet lowest pass rate (52.4%) — high volume, high risk.">
+            <Card
+              icon="📦"
+              title="Pass / Fail Counts by Year"
+              sub="Absolute cohort composition — DATA_UPCOMING (333 rows)"
+              fullWidth
+              note="Stacked bars show how many students passed vs failed per year. All counts from DATA_UPCOMING."
+              insight="2022 had the largest cohort yet lowest pass rate — high volume, high risk."
+            >
               <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={stackData} margin={{ top: 8, right: 16, left: -8, bottom: 4 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(245,197,24,.12)" />
                   <XAxis dataKey="label" tick={{ fill: IIEE.dimText, fontSize: 11 }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fill: IIEE.dimText, fontSize: 11 }} axisLine={false} tickLine={false} />
                   <Tooltip content={<Tip />} />
-                  <Legend iconType="circle" iconSize={9}
-                    formatter={(v) => <span style={{ color: IIEE.muted, fontSize: 12 }}>{v}</span>} />
+                  <Legend
+                    iconType="circle" iconSize={9}
+                    formatter={(v) => <span style={{ color: IIEE.muted, fontSize: 12 }}>{v}</span>}
+                  />
                   <Bar dataKey="Passers" stackId="a" fill={IIEE.passGreen} />
                   <Bar dataKey="Failers" stackId="a" fill={IIEE.failRed} radius={[6,6,0,0]} />
                 </BarChart>
@@ -827,12 +977,16 @@ export default function ModelOverviewDashboard({
             </Card>
           </div>
 
-          {/* ── FIX 2: Subject Score Trends (GWA only) ── */}
-          <Divider label="Subject Score Trends" icon="📐" />
+          {/* GWA Comparison */}
+          <Divider label="GWA Analysis — DATA_UPCOMING" icon="🎓" />
           <div className="g2" style={{ marginBottom: 20 }}>
-            <Card icon="🎓" title="GWA: Passers vs Failers" sub="DATA_UPCOMING — lower is better (PH grading)"
-              note="GWA gap of 0.23 between passers and failers is consistent across all years (Pearson r = −0.439 with Total Rating)."
-              insight="Every 0.1 improvement in GWA corresponds to roughly a 2-point increase in predicted board rating.">
+            <Card
+              icon="🎓"
+              title="GWA: Passers vs Failers"
+              sub="DATA_UPCOMING — lower is better (PH grading scale)"
+              note="GWA gap between passers and failers from the 333-row DATA_UPCOMING dataset. Pearson r = −0.439 with Total Rating."
+              insight="Every 0.1 improvement in GWA corresponds to roughly a 2-point increase in predicted board rating."
+            >
               <div style={{ display: "flex", gap: 12, marginBottom: 14 }}>
                 {[
                   { label: "Passers Avg GWA", value: num(kpi.avg_gwa_passers), color: IIEE.passGreen },
@@ -845,8 +999,13 @@ export default function ModelOverviewDashboard({
                 ))}
               </div>
               <ResponsiveContainer width="100%" height={120}>
-                <BarChart data={[{ name: "Passers", value: kpi.avg_gwa_passers }, { name: "Failers", value: kpi.avg_gwa_failers }]}
-                  margin={{ top: 0, right: 8, left: -20, bottom: 0 }}>
+                <BarChart
+                  data={[
+                    { name: "Passers", value: kpi.avg_gwa_passers },
+                    { name: "Failers", value: kpi.avg_gwa_failers },
+                  ]}
+                  margin={{ top: 0, right: 8, left: -20, bottom: 0 }}
+                >
                   <XAxis dataKey="name" tick={{ fill: IIEE.dimText, fontSize: 11 }} axisLine={false} tickLine={false} />
                   <YAxis domain={[1.5, 2.5]} tick={{ fill: IIEE.dimText, fontSize: 11 }} axisLine={false} tickLine={false} />
                   <Tooltip content={<Tip fmt={(v) => v?.toFixed(3)} />} />
@@ -864,8 +1023,11 @@ export default function ModelOverviewDashboard({
         <div style={{ display: mode === "model" ? "block" : "none" }}>
 
           <Divider label="Model Performance Summary" icon="🤖" />
-          <SecCard num="1" icon="🤖" title="Random Forest Model Performance"
-            subtitle="Trained on DATA_MODEL (123 rows). Evaluated on DATA_EVALUATION (36 rows, 2025 held-out).">
+          <SecCard
+            num="1" icon="🤖"
+            title="Random Forest Model Performance"
+            subtitle="Trained on DATA_MODEL (123 rows). Evaluated on DATA_EVALUATION (36 rows, 2025 held-out)."
+          >
             <DsTag label="Training: DATA_MODEL 123 rows | Test: DATA_EVALUATION 36 rows (2025)" />
             {modelInfo ? (
               <div className="g2">
@@ -923,22 +1085,23 @@ export default function ModelOverviewDashboard({
             )}
           </SecCard>
 
-          {/* ── Model Insights (classification + regression) ── */}
-          <SecCard num="2" icon="📌" title="Model Validation Highlights"
-            subtitle="Key evaluation results from DATA_EVALUATION (held-out 2025)">
+          <SecCard
+            num="2" icon="📌"
+            title="Model Validation Highlights"
+            subtitle="Key evaluation results from DATA_EVALUATION (held-out 2025)"
+          >
             <div className="g2" style={{ marginBottom: 14 }}>
               {[
-                { label: "Recall (PASS)", value: modelInfo?.classification?.recall ?? 0, suffix: "%", color: IIEE.passGreen, insight: "All actual PASS are identified" },
-                { label: "Precision (PASS)", value: modelInfo?.classification?.precision ?? 0, suffix: "%", color: IIEE.blue, insight: "Few false positives" },
-                { label: "Reg A R²", value: modelInfo?.regression_a?.r2 ?? 0, suffix: "", color: IIEE.teal, insight: "High reliability with subject scores" },
-                { label: "Reg B R²", value: modelInfo?.regression_b?.r2 ?? 0, suffix: "", color: IIEE.indigo, insight: "Lower power on survey-only data" },
+                { label: "Recall (PASS)",    value: modelInfo?.classification?.recall    ?? 0, suffix: "%", color: IIEE.passGreen, insight: "All actual PASS are identified" },
+                { label: "Precision (PASS)", value: modelInfo?.classification?.precision ?? 0, suffix: "%", color: IIEE.blue,       insight: "Few false positives" },
+                { label: "Reg A R²",         value: modelInfo?.regression_a?.r2          ?? 0, suffix: "",  color: IIEE.teal,       insight: "High reliability with subject scores" },
+                { label: "Reg B R²",         value: modelInfo?.regression_b?.r2          ?? 0, suffix: "",  color: IIEE.indigo,     insight: "Lower power on survey-only data" },
               ].map((m, i) => (
                 <Card key={i} inner icon="🔎" title={m.label} sub={m.insight} blueTint>
                   <div className="model-row" style={{ marginTop: 3 }}>
                     <span className="model-row-label">Value</span>
                     <span className="model-row-val" style={{ color: m.color }}>
                       {m.value != null ? (m.suffix === "%" ? pct(m.value * 100) : num(m.value, 3)) : "—"}
-                      {m.suffix === "%" ? "" : ""}
                     </span>
                   </div>
                 </Card>
@@ -946,10 +1109,9 @@ export default function ModelOverviewDashboard({
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
               <div style={{ border: "1px solid rgba(245,197,24,0.25)", borderRadius: 10, padding: 10 }}>
-                <strong>Prediction counts</strong>
+                <strong>Prediction counts (DATA_EVALUATION)</strong>
                 <p style={{ margin: "6px 0 0", color: IIEE.muted }}>Actual FAIL: {modelInfo?.fail_count ?? "—"}</p>
                 <p style={{ margin: "2px 0 0", color: IIEE.muted }}>Actual PASS: {modelInfo?.pass_count ?? "—"}</p>
-                <p style={{ margin: "8px 0 0", color: IIEE.gold }}>False positives (FAIL→PASS): {Math.max(0, Math.round(((1 - (modelInfo?.classification?.accuracy ?? 0)) * ((modelInfo?.fail_count ?? 0) + (modelInfo?.pass_count ?? 0))) || 0))}</p>
               </div>
               <div style={{ border: "1px solid rgba(245,197,24,0.25)", borderRadius: 10, padding: 10 }}>
                 <strong>Production training</strong>
@@ -958,35 +1120,27 @@ export default function ModelOverviewDashboard({
                 <p style={{ margin: "8px 0 0", color: IIEE.gold }}>DATA_ALL production retrain: {modelInfo?.dataset_size_all ?? "—"} rows</p>
               </div>
             </div>
-            <div style={{ marginBottom: 12 }}>
-              <strong>Top feature driver</strong>
-              <p style={{ margin: "4px 0 0", color: IIEE.muted }}>
-                {featureImp?.[0]?.label ? `${featureImp[0].label} (${(featureImp[0].value * 100).toFixed(1)}%)` : "—"}
-                {featureImp?.[0] && featureImp[0].label?.toLowerCase().includes("esas") ? " (ESAS dominates)" : ""}
-              </p>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 6 }}>
-              <p style={{ margin: 0, color: IIEE.white, fontSize: 12 }}><strong>Near-perfect pass detection (Recall = {pct(modelInfo?.classification?.recall * 100 ?? 0)})</strong><br/>The classifier correctly identified every student who actually passed.</p>
-              <p style={{ margin: 0, color: IIEE.white, fontSize: 12 }}><strong>2 false positives</strong><br/>Out of {modelInfo?.fail_count ?? "?"} actual FAIL, {Math.max(0, Math.round(((1 - (modelInfo?.classification?.accuracy ?? 0)) * ((modelInfo?.fail_count ?? 0) + (modelInfo?.pass_count ?? 0))) || 0))} were predicted PASS.</p>
-              <p style={{ margin: 0, color: IIEE.white, fontSize: 12 }}><strong>Regression A is highly reliable (R² = {num(modelInfo?.regression_a?.r2 ?? 0, 3)})</strong><br/>With subject scores + GWA, MAE is {num(modelInfo?.regression_a?.mae ?? 0, 2)} pts.</p>
-              <p style={{ margin: 0, color: IIEE.white, fontSize: 12 }}><strong>Regression B has limited power (R² = {num(modelInfo?.regression_b?.r2 ?? 0, 3)})</strong><br/>Survey+GWA only MAE = {num(modelInfo?.regression_b?.mae ?? 0, 2)} pts.</p>
-              <p style={{ margin: 0, color: IIEE.white, fontSize: 12 }}><strong>ESAS is the single strongest predictor</strong><br/>ESAS ranks #1 in classifier and Reg A feature importance.</p>
-              <p style={{ margin: 0, color: IIEE.white, fontSize: 12 }}><strong>Final production model</strong><br/>Trained on DATA_ALL ({modelInfo?.dataset_size_all ?? "?"} rows) after evaluation on DATA_EVALUATION.</p>
+            <div style={{ padding: "10px 14px", background: "rgba(245,197,24,0.04)", border: "1px solid rgba(245,197,24,0.15)", borderRadius: 10, fontSize: 12, color: IIEE.muted, lineHeight: 1.8 }}>
+              <strong style={{ color: IIEE.gold }}>Note on data sources:</strong> Institutional dashboard (KPIs, pass rates, counts) uses
+              DATA_UPCOMING (333 rows, GWA + subject scores). Model training uses DATA_MODEL (123 rows) + DATA_EVALUATION (36 rows).
+              These are separate datasets — survey-based analyses use the 159-row MODEL+EVALUATION union only.
             </div>
           </SecCard>
 
-          {/* ── FIX 3: Predicted vs Actual ── */}
-          <SecCard num="3" icon="🎯" title="Predicted vs Actual Rating"
-            subtitle="DATA_EVALUATION (36 rows, 2025) — completely held-out evaluation set">
+          <SecCard
+            num="3" icon="🎯"
+            title="Predicted vs Actual Rating"
+            subtitle="DATA_EVALUATION (36 rows, 2025) — completely held-out evaluation set"
+          >
             <DsTag label="DATA_EVALUATION — 36 rows, 2025 held-out" />
             <PredictedActualSection scatterData={scatter} modelInfo={modelInfo} />
           </SecCard>
 
-          {/* Survey Analysis section removed as requested */}
-
-          {/* Section 4 — Curriculum Gap */}
-          <SecCard num="4" icon="🏫" title="Curriculum Gap Analysis & Recommendations"
-            subtitle="Weakest survey indicators — where students feel least supported">
+          <SecCard
+            num="4" icon="🏫"
+            title="Curriculum Gap Analysis & Recommendations"
+            subtitle="Weakest survey indicators — where students feel least supported"
+          >
             <DsTag label="DATA_MODEL + DATA_EVALUATION — survey responses, 159 rows" />
             <div className="g2">
               {weakAreas.length > 0 ? (
@@ -994,8 +1148,10 @@ export default function ModelOverviewDashboard({
                   note="Items with higher average scores indicate areas where students feel least agreement (scale: 1=Strongly Agree to 4=Strongly Disagree)."
                   insight="These items point to specific curriculum or support gaps that directly affect board readiness.">
                   <ResponsiveContainer width="100%" height={240}>
-                    <BarChart data={weakAreas.map((w) => ({ key: w.key, avg: w.avg }))}
-                      margin={{ top: 8, right: 16, left: -8, bottom: 4 }}>
+                    <BarChart
+                      data={weakAreas.map((w) => ({ key: w.key, avg: w.avg }))}
+                      margin={{ top: 8, right: 16, left: -8, bottom: 4 }}
+                    >
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(245,197,24,.12)" />
                       <XAxis dataKey="key" tick={{ fill: IIEE.dimText, fontSize: 11 }} axisLine={false} tickLine={false} />
                       <YAxis tick={{ fill: IIEE.dimText, fontSize: 11 }} axisLine={false} tickLine={false} />
