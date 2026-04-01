@@ -1337,23 +1337,106 @@ def admin_attempts(
         .limit(page_size)
         .all()
     )
+
+    def build_attempt_payload(r, email=None):
+        answers = {}
+        reliability_score = None
+        subject_status = None
+        score_type = None
+        try:
+            if r.PredictionAttempt.input_json:
+                answers = json.loads(r.PredictionAttempt.input_json)
+                req_obj = PredictRequest(**answers)
+                reliability_score = compute_reliability(req_obj)
+                score_type = req_obj.score_type
+                subject_status = {
+                    "EE":   {"score": req_obj.EE,   "passed": req_obj.EE   >= PASSING_SCORE, "type": req_obj.score_type},
+                    "MATH": {"score": req_obj.MATH, "passed": req_obj.MATH >= PASSING_SCORE, "type": req_obj.score_type},
+                    "ESAS": {"score": req_obj.ESAS, "passed": req_obj.ESAS >= PASSING_SCORE, "type": req_obj.score_type},
+                }
+        except Exception:
+            pass
+
+        return {
+            "id":                r.PredictionAttempt.id,
+            "attempt_id":        r.PredictionAttempt.id,
+            "user_id":           r.PredictionAttempt.user_id,
+            "label":             r.PredictionAttempt.label,
+            "prediction":        r.PredictionAttempt.prediction,
+            "probability_pass":  r.PredictionAttempt.probability_pass,
+            "probability_fail":  r.PredictionAttempt.probability_fail,
+            "predicted_rating_a": r.PredictionAttempt.predicted_rating_a,
+            "predicted_rating_b": r.PredictionAttempt.predicted_rating_b,
+            "passing_score":     r.PredictionAttempt.passing_score,
+            "created_at":        r.PredictionAttempt.created_at.isoformat(),
+            "name":              r.PredictionAttempt.name,
+            "email":             email if email else "—",
+            "answers":           answers,
+            "score_type":        score_type,
+            "subject_status":    subject_status,
+            "reliability_score": reliability_score,
+            "reliability_category": _reliability_category(reliability_score) if reliability_score is not None else None,
+            "date":              r.PredictionAttempt.created_at.isoformat() if r.PredictionAttempt.created_at else None,
+        }
+
     return {
         "total": total,
         "page": page,
         "page_size": page_size,
         "items": [
-            {
-                "id":                r.PredictionAttempt.id,
-                "user_id":           r.PredictionAttempt.user_id,
-                "label":             r.PredictionAttempt.label,
-                "probability_pass":  r.PredictionAttempt.probability_pass,
-                "predicted_rating_a": r.PredictionAttempt.predicted_rating_a,
-                "created_at":        r.PredictionAttempt.created_at.isoformat(),
-                "name":              r.PredictionAttempt.name,
-                "email":             r.email if r.email else "—",
-            }
+            build_attempt_payload(r, r.email)
             for r in rows
         ],
+    }
+
+
+@app.get("/admin/attempts/{attempt_id}")
+def admin_attempt_detail(attempt_id: str, db: Session = Depends(get_db)):
+    r = db.query(PredictionAttempt, User.email).outerjoin(User, PredictionAttempt.user_id == User.id).filter(PredictionAttempt.id == attempt_id).first()
+    if not r:
+        raise HTTPException(status_code=404, detail="Attempt not found")
+
+    attempt_meta = r.PredictionAttempt
+    user_email = r.email
+
+    answers = {}
+    reliability_score = None
+    subject_status = None
+    score_type = None
+    try:
+        if attempt_meta.input_json:
+            answers = json.loads(attempt_meta.input_json)
+            req_obj = PredictRequest(**answers)
+            reliability_score = compute_reliability(req_obj)
+            score_type = req_obj.score_type
+            subject_status = {
+                "EE":   {"score": req_obj.EE,   "passed": req_obj.EE   >= PASSING_SCORE, "type": req_obj.score_type},
+                "MATH": {"score": req_obj.MATH, "passed": req_obj.MATH >= PASSING_SCORE, "type": req_obj.score_type},
+                "ESAS": {"score": req_obj.ESAS, "passed": req_obj.ESAS >= PASSING_SCORE, "type": req_obj.score_type},
+            }
+    except Exception:
+        pass
+
+    return {
+        "id":                attempt_meta.id,
+        "attempt_id":        attempt_meta.id,
+        "user_id":           attempt_meta.user_id,
+        "label":             attempt_meta.label,
+        "prediction":        attempt_meta.prediction,
+        "probability_pass":  attempt_meta.probability_pass,
+        "probability_fail":  attempt_meta.probability_fail,
+        "predicted_rating_a": attempt_meta.predicted_rating_a,
+        "predicted_rating_b": attempt_meta.predicted_rating_b,
+        "passing_score":     attempt_meta.passing_score,
+        "created_at":        attempt_meta.created_at.isoformat() if attempt_meta.created_at else None,
+        "date":              attempt_meta.created_at.isoformat() if attempt_meta.created_at else None,
+        "name":              attempt_meta.name,
+        "email":             user_email or "—",
+        "answers":           answers,
+        "score_type":        score_type,
+        "subject_status":    subject_status,
+        "reliability_score": reliability_score,
+        "reliability_category": _reliability_category(reliability_score) if reliability_score is not None else None,
     }
 
 

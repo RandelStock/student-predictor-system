@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   BarChart,
   Bar,
@@ -8,6 +9,8 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import API_BASE_URL from "../../apiBase";
+import ResultCard from "../ResultCard";
 import { MONTH_NAMES } from "./ProfessorShared";
 
 /* ─── Design Tokens (matches ModelOverviewDashboard) ─────────── */
@@ -396,6 +399,82 @@ function ChartCard({ icon, title, sub, children, note }) {
   );
 }
 
+function AttemptDetailModal({ open, onClose, attempt, loading, error }) {
+  if (!open) return null;
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(2,6,23,0.8)",
+        backdropFilter: "blur(6px)",
+        zIndex: 90,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 16,
+      }}
+      onClick={onClose}
+    >
+      <div
+        style={{
+          width: "min(980px, 96vw)",
+          maxHeight: "85vh",
+          overflow: "auto",
+          background: "#0b1220",
+          border: "1px solid rgba(148,163,184,0.2)",
+          borderRadius: 16,
+          padding: "clamp(12px, 3vw, 24px)",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <div>
+            <p style={{ margin: 0, fontSize: "clamp(14px, 2.2vw, 18px)", fontWeight: 700, color: "#f8fafc", fontFamily: "'Montserrat',sans-serif" }}>
+              Recent Attempt Details
+            </p>
+            <p style={{ margin: "4px 0 0", fontSize: "clamp(11px, 1.3vw, 13px)", color: "#94a3b8", fontFamily: "'Inter',sans-serif" }}>
+              {attempt?.name ?? "Unknown"} · {attempt?.attempt_id ? attempt.attempt_id.slice(0, 8) : "—"}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            style={{
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(255,255,255,0.12)",
+              borderRadius: 8,
+              padding: "7px 12px",
+              color: "#cbd5e1",
+              cursor: "pointer",
+              fontSize: "clamp(12px, 1.3vw, 13px)",
+              fontFamily: "'Inter',sans-serif",
+            }}
+          >
+            ✕ Close
+          </button>
+        </div>
+
+        {loading ? (
+          <p style={{ color: "#cbd5e1", fontSize: "clamp(12px, 1.3vw, 13px)", fontFamily: "'Inter',sans-serif" }}>
+            Loading attempt details…
+          </p>
+        ) : error ? (
+          <p style={{ color: "#fca5a5", fontSize: "clamp(12px, 1.3vw, 13px)", fontFamily: "'Inter',sans-serif" }}>
+            {error}
+          </p>
+        ) : attempt ? (
+          <ResultCard result={attempt} />
+        ) : (
+          <p style={{ color: "#cbd5e1", fontSize: "clamp(12px, 1.3vw, 13px)", fontFamily: "'Inter',sans-serif" }}>
+            No attempt selected.
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function CustomTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
   return (
@@ -434,6 +513,47 @@ export default function ProfessorTrendsDashboard({
   attempts,
   attPage,
 }) {
+  const [attemptDetailOpen, setAttemptDetailOpen] = useState(false);
+  const [selectedAttempt, setSelectedAttempt] = useState(null);
+  const [attemptDetailLoading, setAttemptDetailLoading] = useState(false);
+  const [attemptDetailError, setAttemptDetailError] = useState("");
+
+  const openAttemptDetail = async (item) => {
+    setAttemptDetailOpen(true);
+    setSelectedAttempt(null);
+    setAttemptDetailError("");
+
+    if (item?.answers) {
+      setSelectedAttempt(item);
+      return;
+    }
+
+    if (!item?.id) {
+      setAttemptDetailError("Attempt details are unavailable.");
+      return;
+    }
+
+    setAttemptDetailLoading(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/admin/attempts/${encodeURIComponent(item.id)}`);
+      if (!res.ok) throw new Error("Could not load attempt details.");
+      const data = await res.json();
+      setSelectedAttempt(data);
+    } catch (e) {
+      console.error(e);
+      setAttemptDetailError("Could not fetch attempt detail.");
+    } finally {
+      setAttemptDetailLoading(false);
+    }
+  };
+
+  const closeAttemptDetail = () => {
+    setAttemptDetailOpen(false);
+    setSelectedAttempt(null);
+    setAttemptDetailError("");
+    setAttemptDetailLoading(false);
+  };
+
   return (
     <div className="iiee-trends tr-fade-in">
       <style>{styles}</style>
@@ -823,7 +943,11 @@ export default function ProfessorTrendsDashboard({
                   </thead>
                   <tbody>
                     {(attempts.items ?? []).map((item, i) => (
-                      <tr key={i}>
+                      <tr
+                        key={i}
+                        style={{ cursor: "pointer" }}
+                        onClick={() => openAttemptDetail(item)}
+                      >
                         <td style={{ color: IIEE.dimText, fontSize: 11 }}>
                           {new Date(item.created_at).toLocaleDateString("en-PH", {
                             year: "numeric", month: "short", day: "numeric",
@@ -893,6 +1017,14 @@ export default function ProfessorTrendsDashboard({
             Recent attempts reveal user behavior and probability accuracy name/email shown for identification.
           </div>
         </SecCard>
+
+        <AttemptDetailModal
+          open={attemptDetailOpen}
+          onClose={closeAttemptDetail}
+          attempt={selectedAttempt}
+          loading={attemptDetailLoading}
+          error={attemptDetailError}
+        />
 
       </div>
     </div>
