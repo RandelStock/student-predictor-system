@@ -523,19 +523,21 @@ export default function ProfessorTrendsDashboard({
     setSelectedAttempt(null);
     setAttemptDetailError("");
 
-    if (item?.answers) {
-      setSelectedAttempt(item);
+    const attemptId = item?.attempt_id || item?.id;
+    if (!attemptId) {
+      setAttemptDetailError("Attempt identifier is missing.");
       return;
     }
 
-    if (!item?.id) {
-      setAttemptDetailError("Attempt details are unavailable.");
+    const hasAnswers = item?.answers && Object.keys(item.answers).length > 0;
+    if (hasAnswers) {
+      setSelectedAttempt(item);
       return;
     }
 
     setAttemptDetailLoading(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/admin/attempts/${encodeURIComponent(item.id)}`);
+      const res = await fetch(`${API_BASE_URL}/admin/attempts/${encodeURIComponent(attemptId)}`);
       if (!res.ok) throw new Error("Could not load attempt details.");
       const data = await res.json();
       setSelectedAttempt(data);
