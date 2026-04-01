@@ -376,21 +376,35 @@ def _load_data_file(filename_base):
 def _load_main_df() -> pd.DataFrame:
     """
     Load primary analytics dataset. Priority order for institutional dashboard:
-    1. DATA_UPCOMING.xlsx (legacy, 333 rows, 2022-2025) — PRIMARY for institutional
+    1. DATA_UPCOMING (legacy, 333 rows, 2022-2025) — PRIMARY for institutional
     2. DATA_ALL.csv/xlsx (2022-2025, new structure)
     3. DATA_SYSTEM.xlsx + DATA_TEST.xlsx (fallback, may have duplicates)
     """
     # Try DATA_UPCOMING first (legacy institutional analytics — 333 rows)
+    d = _load_data_file(FILE_UPCOMING)
+    if d is not None:
+        try:
+            d.columns = d.columns.str.strip()
+            d["_source"] = "DATA_UPCOMING"
+            d = _normalise_year(d)
+            d = _normalise_passed(d)
+            print(f"[analytics] Loaded DATA_UPCOMING: {len(d)} rows (PRIMARY institutional source)")
+            return d
+        except Exception as e:
+            print(f"[analytics] Loaded DATA_UPCOMING but normalization failed: {e}")
+
+    # Fallback to DATA_ALL (new structure)
     try:
-        d = pd.read_excel(FILE_UPCOMING + ".xlsx", sheet_name=0)
-        d.columns = d.columns.str.strip()
-        d["_source"] = "upcoming"
-        d = _normalise_year(d)
-        d = _normalise_passed(d)
-        print(f"[analytics] Loaded DATA_UPCOMING: {len(d)} rows (PRIMARY institutional source)")
-        return d
+        d = _load_data_file(FILE_ALL)
+        if d is not None:
+            d.columns = d.columns.str.strip()
+            d["_source"] = "DATA_ALL"
+            d = _normalise_year(d)
+            d = _normalise_passed(d)
+            print(f"[analytics] Loaded {FILE_ALL}: {len(d)} rows (fallback)")
+            return d
     except Exception as e:
-        print(f"[analytics] Could not load DATA_UPCOMING: {e}")
+        print(f"[analytics] Could not load DATA_ALL: {e}")
 
     # Fallback to DATA_ALL (new structure)
     try:
