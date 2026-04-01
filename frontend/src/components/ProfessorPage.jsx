@@ -253,6 +253,7 @@ export default function ProfessorPage({ onLogout }) {
     production: data?.data_source ?? "DATA_ALL - 2022–2025",
     training: data?.training_source ?? "DATA_MODEL - 2022–2024",
     evaluation: data?.evaluation_source ?? "DATA_EVALUATION - 2025",
+    upcoming: data?.upcoming_source ?? "DATA_UPCOMING - (not loaded)",
   }), [data]);
 
   const reviewYesTotal = useMemo(() => passByReview.find(x => String(x.label).toLowerCase().includes("attended"))?.total ?? 0, [passByReview]);

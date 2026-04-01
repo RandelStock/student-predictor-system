@@ -73,12 +73,14 @@ def _load_data_file(filename_base):
     raise FileNotFoundError(f"Neither {filename_base}.csv nor {filename_base}.xlsx found.")
 
 # Dataset definitions (2026 March 30 restructure):
-# - DATA_MODEL (121 rows, 2022-2024) → training data
-# - DATA_EVALUATION (36 rows, 2025) → evaluation/test data
-# - DATA_ALL (157 rows, 2022-2025) → final model retrain
+# - DATA_MODEL (123 rows, 2022-2024) → training data with survey
+# - DATA_EVALUATION (36 rows, 2025) → evaluation/test data with survey
+# - DATA_ALL (159 rows, 2022-2025) → final model retrain data with survey
+# - DATA_UPCOMING (333 rows, 2022-2025) → legacy institutional analytics (no survey)
 FILE_MODEL       = "DATA_MODEL"       # training set (2022-2024, n=121 expected)
-FILE_EVALUATION  = "DATA_EVALUATION"  # test/evaluation set (2025, n=36 expected)
+FILE_EVALUATION  = "DATA_EVALUATION"  # evaluation set (2025, n=36 expected)
 FILE_ALL         = "DATA_ALL"         # final model (2022-2025, n=157 expected)
+FILE_UPCOMING    = "DATA_UPCOMING"    # legacy analytics (333 rows, 2022-2025)
 
 TARGET_CLASS = "PASSED / FAILED-RETAKE"
 TARGET_REG   = "TOTAL RATING"
@@ -113,6 +115,17 @@ except FileNotFoundError as e:
 for df in [df_model, df_evaluation, df_all]:
     df.columns = df.columns.str.strip()
 
+# Load DATA_UPCOMING for institutional analytics and additional training samples in regression A
+try:
+    df_upcoming = _load_data_file(FILE_UPCOMING)
+    if df_upcoming is None:
+        raise FileNotFoundError(f"No file for {FILE_UPCOMING} found (CSV/XLSX)")
+    df_upcoming.columns = df_upcoming.columns.str.strip()
+    print(f"    DATA_UPCOMING  : {len(df_upcoming)} rows x {len(df_upcoming.columns)} cols (legacy 333)")
+except FileNotFoundError as e:
+    print(f"    WARNING: {e}")
+    df_upcoming = pd.DataFrame()
+
 print(f"    DATA_MODEL      : {len(df_model)} rows x {len(df_model.columns)} cols (training)")
 print(f"    DATA_EVALUATION : {len(df_evaluation)} rows x {len(df_evaluation.columns)} cols (test/eval)")
 print(f"    DATA_ALL        : {len(df_all)} rows x {len(df_all.columns)} cols (final retrain)")
@@ -140,10 +153,15 @@ if YEAR_COL:
     df_model       = _normalize_year_column(df_model)
     df_evaluation  = _normalize_year_column(df_evaluation)
     df_all         = _normalize_year_column(df_all)
+    if not df_upcoming.empty:
+        df_upcoming = _normalize_year_column(df_upcoming)
+
     print(f"\n[1.5] Year column '{YEAR_COL}' normalised to integers.")
     print(f"    DATA_MODEL      years : {sorted(df_model[YEAR_COL].dropna().unique().tolist())}")
     print(f"    DATA_EVALUATION years : {sorted(df_evaluation[YEAR_COL].dropna().unique().tolist())}")
     print(f"    DATA_ALL        years : {sorted(df_all[YEAR_COL].dropna().unique().tolist())}")
+    if not df_upcoming.empty:
+        print(f"    DATA_UPCOMING   years : {sorted(df_upcoming[YEAR_COL].dropna().unique().tolist())}")
 else:
     print("\n[1.5] WARNING: No YEAR column found — cannot validate year ranges.")
 
@@ -160,8 +178,10 @@ def encode_target(df):
 df_model       = encode_target(df_model)
 df_evaluation  = encode_target(df_evaluation)
 df_all         = encode_target(df_all)
+if not df_upcoming.empty:
+    df_upcoming = encode_target(df_upcoming)
 
-# ═══════════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════
 # STEP 3 — ENCODE SURVEY / CATEGORICAL COLUMNS
 #          Applied to DATA_MODEL and DATA_TEST (both have survey)
 # ═══════════════════════════════════════════════════════════════
@@ -226,18 +246,21 @@ def encode_survey(df):
 df_model      = encode_survey(df_model)
 df_evaluation = encode_survey(df_evaluation)
 df_all        = encode_survey(df_all)
+if not df_upcoming.empty:
+    df_upcoming = encode_survey(df_upcoming)
 
 # ═══════════════════════════════════════════════════════════════
 # ═══════════════════════════════════════════════════════════════
 # STEP 4 — FILL MISSING VALUES WITH COLUMN MEDIAN
 # ═══════════════════════════════════════════════════════════════
 print("[3] Filling missing values with column median...")
-for df in [df_model, df_evaluation, df_all]:
+for df in [df_model, df_evaluation, df_all] + ([df_upcoming] if not df_upcoming.empty else []):
     for col in df.select_dtypes(include=[np.number]).columns:
         if df[col].isnull().sum() > 0:
             df[col].fillna(df[col].median(), inplace=True)
 print(f"    Nulls remaining — MODEL:{df_model.isnull().sum().sum()}  "
-      f"EVALUATION:{df_evaluation.isnull().sum().sum()}  ALL:{df_all.isnull().sum().sum()}")
+      f"EVALUATION:{df_evaluation.isnull().sum().sum()}  ALL:{df_all.isnull().sum().sum()}"
+      f"  UPCOMING:{(df_upcoming.isnull().sum().sum() if not df_upcoming.empty else 0)}")
 
 # ═══════════════════════════════════════════════════════════════
 # STEP 5 — BUILD FEATURE SETS
@@ -272,6 +295,17 @@ y_train_ra = df_model[TARGET_REG]
 X_test_ra  = df_evaluation.reindex(columns=BASIC_FEATURES, fill_value=0)
 y_test_ra  = df_evaluation[TARGET_REG]
 
+# Add DATA_UPCOMING to Regression A training when available (legacy 333 rows)
+X_train_ra_aug = X_train_ra.copy()
+y_train_ra_aug = y_train_ra.copy()
+if not df_upcoming.empty and TARGET_REG in df_upcoming.columns:
+    upcoming_ra = df_upcoming.copy()
+    upcoming_ra = upcoming_ra[pd.notna(upcoming_ra[TARGET_REG])]
+    if not upcoming_ra.empty:
+        upcoming_basis = upcoming_ra.reindex(columns=BASIC_FEATURES, fill_value=0)
+        X_train_ra_aug = pd.concat([X_train_ra_aug, upcoming_basis], ignore_index=True, sort=False)
+        y_train_ra_aug = pd.concat([y_train_ra_aug, upcoming_ra[TARGET_REG]], ignore_index=True, sort=False)
+
 # — Regression B: DATA_MODEL train, DATA_EVALUATION test, survey features only
 X_train_rb = df_model[NO_SUBJECT_FEATURES]
 y_train_rb = df_model[TARGET_REG]
@@ -280,6 +314,10 @@ y_test_rb  = df_evaluation[TARGET_REG]
 
 print(f"    Classification — train:{len(X_train_clf)} (MODEL) | test:{len(X_test_clf)} (EVAL)")
 print(f"    Regression A   — train:{len(X_train_ra)} (MODEL) | test:{len(X_test_ra)} (EVAL)")
+if len(X_train_ra_aug) > len(X_train_ra):
+    print(f"    Regression A+Upcoming — train:{len(X_train_ra_aug)} (MODEL+UPCOMING) | test:{len(X_test_ra)} (EVAL)")
+else:
+    print(f"    Regression A+Upcoming — not available (DATA_UPCOMING missing or incomplete)")
 print(f"    Regression B   — train:{len(X_train_rb)} (MODEL) | test:{len(X_test_rb)} (EVAL)")
 print(f"    Train balance  — PASS:{y_train_clf.sum()} | FAIL:{(y_train_clf==0).sum()}")
 print(f"    Test  balance  — PASS:{y_test_clf.sum()}  | FAIL:{(y_test_clf==0).sum()}")
@@ -302,8 +340,8 @@ reg_a = RandomForestRegressor(
     min_samples_split=5, min_samples_leaf=2,
     random_state=42
 )
-reg_a.fit(X_train_ra, y_train_ra)
-print(f"    Regression A ({len(X_train_ra)} rows, EE+MATH+ESAS+GWA) — done")
+reg_a.fit(X_train_ra_aug, y_train_ra_aug)
+print(f"    Regression A ({len(X_train_ra_aug)} rows, EE+MATH+ESAS+GWA) — done (includes DATA_UPCOMING when available)")
 
 reg_b = RandomForestRegressor(
     n_estimators=200, max_depth=10,
@@ -378,6 +416,7 @@ lines = [
     f"  Training : DATA_MODEL ({len(df_model)} rows, 2022-2024 with survey)",
     f"  Testing  : DATA_EVALUATION ({len(df_evaluation)} rows, 2025 — held-out)",
     f"  Final    : DATA_ALL ({len(df_all)} rows, 2022-2025 — production retrain)",
+    f"  Upcoming : DATA_UPCOMING ({len(df_upcoming)} rows, 2022-2025 legacy analytics)",
     f"",
     f"  Train PASS:{y_train_clf.sum()} | FAIL:{(y_train_clf==0).sum()}",
     f"  Test  PASS:{y_test_clf.sum()}  | FAIL:{(y_test_clf==0).sum()}",
@@ -572,7 +611,7 @@ print("    Saved: regression_actual_vs_predicted.png")
 print("\n[14] Saving ree_survey_model.pkl...")
 
 # Final model: train on DATA_ALL (2022-2025) for production deployment
-print(f"    Training final model on DATA_ALL ({len(df_all)} rows)...")
+print(f"    Training final classification and regression B on DATA_ALL ({len(df_all)} rows)...")
 X_final_clf = df_all[ALL_FEATURES]
 y_final_clf = df_all[TARGET_CLASS]
 final_clf = RandomForestClassifier(
@@ -582,8 +621,27 @@ final_clf = RandomForestClassifier(
 )
 final_clf.fit(X_final_clf, y_final_clf)
 
-X_final_ra = df_all[BASIC_FEATURES]
-y_final_ra = df_all[TARGET_REG]
+# Regression A is expanded with DATA_UPCOMING when available to boost sample size
+final_ra_source = "DATA_ALL"
+if not df_upcoming.empty and TARGET_REG in df_upcoming.columns:
+    df_upcoming_ra = df_upcoming[pd.notna(df_upcoming[TARGET_REG])]
+    if not df_upcoming_ra.empty:
+        df_all_ra_expanded = pd.concat([df_all, df_upcoming_ra], ignore_index=True, sort=False)
+        dedup_cols = BASIC_FEATURES + [TARGET_REG]
+        if YEAR_COL:
+            dedup_cols.append(YEAR_COL)
+        df_all_ra_expanded = df_all_ra_expanded.drop_duplicates(subset=dedup_cols, keep="last")
+        X_final_ra = df_all_ra_expanded[BASIC_FEATURES]
+        y_final_ra = df_all_ra_expanded[TARGET_REG]
+        final_ra_source = "DATA_ALL + DATA_UPCOMING"
+    else:
+        X_final_ra = df_all[BASIC_FEATURES]
+        y_final_ra = df_all[TARGET_REG]
+else:
+    X_final_ra = df_all[BASIC_FEATURES]
+    y_final_ra = df_all[TARGET_REG]
+
+print(f"    Training final regression A on {final_ra_source} ({len(X_final_ra)} rows)...")
 final_reg_a = RandomForestRegressor(
     n_estimators=200, max_depth=10,
     min_samples_split=5, min_samples_leaf=2,
@@ -599,7 +657,7 @@ final_reg_b = RandomForestRegressor(
     random_state=42
 )
 final_reg_b.fit(X_final_rb, y_final_rb)
-print(f"    Final models trained on DATA_ALL.")
+print(f"    Final models trained (clf/reg_b on DATA_ALL; reg_a on {final_ra_source}).")
 
 bundle = {
     # — Production models (trained on DATA_ALL) —
@@ -619,6 +677,7 @@ bundle = {
     "dataset_size_model":       len(df_model),        # Training set
     "dataset_size_evaluation":  len(df_evaluation),   # Test/eval set
     "dataset_size_all":         len(df_all),          # Final training set
+    "dataset_size_upcoming":    len(df_upcoming),     # Legacy analytics set (333)
     # — Class balance (from test set) —
     "pass_count":          int(y_test_clf.sum()),
     "fail_count":          int((y_test_clf == 0).sum()),
@@ -643,7 +702,7 @@ bundle = {
     "data_source": {
         "training": f"DATA_MODEL ({len(df_model)} rows, 2022-2024)",
         "evaluation": f"DATA_EVALUATION ({len(df_evaluation)} rows, 2025)",
-        "production": f"DATA_ALL ({len(df_all)} rows, 2022-2025)",
+        "production": (f"DATA_ALL ({len(df_all)} rows, 2022-2025) + DATA_UPCOMING ({len(df_upcoming)} rows)" if not df_upcoming.empty else f"DATA_ALL ({len(df_all)} rows, 2022-2025)"),
     },
 }
 

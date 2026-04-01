@@ -706,7 +706,7 @@ export default function ModelOverviewDashboard({
         </h2>
         <p className="comb-hero-sub">
           {mode === "institutional"
-            ? `Analytics: ${dataSource?.production || "DATA_ALL"} — SLSU PRC 2022-2025.`
+            ? `Analytics: ${dataSource?.upcoming || dataSource?.production || "DATA_UPCOMING"} — SLSU PRC 2022-2025.`
             : `Model (Train: ${dataSource?.training || "DATA_MODEL"} | Test: ${dataSource?.evaluation || "DATA_EVALUATION"})`}
         </p>
       </div>
@@ -747,10 +747,16 @@ export default function ModelOverviewDashboard({
           <Divider label="Key Performance Indicators — 333 Examiners (2022-2025)" icon="📌" />
           <DsTag label="DATA_UPCOMING — 333 rows, 2022-2025" />
 
+          {(!dataSource?.upcoming && dataSource?.production) && (
+            <div style={{ marginBottom: 16, border: "1px solid rgba(245,197,24,0.3)", background: "rgba(245,197,24,0.08)", color: IIEE.white, borderRadius: 10, padding: "10px 12px", fontSize: 13 }}>
+              ⚠️ DATA_UPCOMING is not available; using {dataSource.production || "production dataset"} for institutional overview. Ensure DATA_UPCOMING (333 rows) is loaded for full legacy institutional analytics.
+            </div>
+          )}
           <div className="metrics-grid" style={{ marginBottom: 28 }}>
             <KPI label="Total Examiners"   value={kpi.total_students ?? "—"}   icon="👥" color={IIEE.blue}      sub="All exam sittings 2022-2025" />
             <KPI label="Total Passers"     value={kpi.total_passers  ?? "—"}   icon="✅" color={IIEE.passGreen} />
             <KPI label="Total Failers"     value={kpi.total_failers  ?? "—"}   icon="❌" color={IIEE.failRed}   />
+            <KPI label="Legacy DATA_UPCOMING" value={dataSource?.upcoming_source ? "✓" : "–"} icon="🗂️" color={IIEE.gold} sub={dataSource?.upcoming_source || "DATA_UPCOMING not loaded"} />
             <KPI label="Overall Pass Rate" value={pct(kpi.overall_pass_rate)}  icon="📊"
               color={(kpi.overall_pass_rate ?? 0) >= 70 ? IIEE.passGreen : IIEE.amber}
               sub="PRC passing threshold = 70%" />

@@ -1053,6 +1053,18 @@ def analytics():
     except Exception as e:
         return {"error": f"Could not load dataset: {e}"}
 
+    df_upcoming = pd.DataFrame()
+    try:
+        upcoming = _load_data_file(FILE_UPCOMING)
+        if upcoming is not None:
+            upcoming.columns = upcoming.columns.str.strip()
+            upcoming = _normalise_year(upcoming)
+            upcoming = _normalise_passed(upcoming)
+            df_upcoming = upcoming
+            print(f"[analytics] Loaded DATA_UPCOMING: {len(df_upcoming)} rows (legacy 333)")
+    except Exception as e:
+        print(f"[analytics] Could not load DATA_UPCOMING: {e}")
+
     # ── survey dataframe: DATA_MODEL (123) + DATA_EVALUATION (36) = 159 rows ─────────
     # Used only for survey-based analyses (section_scores, weakest_questions).
     try:
@@ -1087,7 +1099,9 @@ def analytics():
         "avg_rating_failers": round(float(failers[COL_TOTAL_RATING].mean()), 2) if COL_TOTAL_RATING in df.columns and len(failers) else None,
         "passing_score":      70,
         "year_breakdown":     year_breakdown,
-        "data_source":        "DATA_ALL (2022-2025)",
+        "data_source":        "DATA_ALL (2022-2025)" if not df_upcoming.empty else "DATA_SYSTEM+DATA_TEST fallback",
+        "upcoming_rows":      len(df_upcoming),
+        "upcoming_source":    "DATA_UPCOMING (333 rows, 2022-2025)",
         # Survey subset info for transparency
         "survey_rows":        len(df_survey) if not df_survey.empty else 0,
         "survey_source":      "DATA_MODEL (123) + DATA_EVALUATION (36) = 159 rows",
@@ -1274,6 +1288,7 @@ def analytics():
         "data_source":            bundle.get("data_source", {}).get("production", "DATA_ALL - 2022–2025"),
         "training_source":        bundle.get("data_source", {}).get("training", "DATA_MODEL - 2022–2024"),
         "evaluation_source":      bundle.get("data_source", {}).get("evaluation", "DATA_EVALUATION - 2025"),
+        "upcoming_source":        "DATA_UPCOMING - 333 rows (legacy analytics)",
     }
 
 
