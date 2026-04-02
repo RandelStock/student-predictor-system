@@ -93,10 +93,19 @@ const styles = `
   }
   .tr-filter-label { font-size:12px; color:${IIEE.dimText}; font-family:'Inter',sans-serif; }
   .tr-filter-select {
-    background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1);
+    background:rgba(11,20,55,0.95); border:1px solid rgba(255,255,255,0.1);
     border-radius:8px; padding:6px 12px; color:${IIEE.white};
     font-size:clamp(11px, 1.5vw, 12px); cursor:pointer; font-family:'Inter',sans-serif;
     outline:none;
+  }
+  .tr-filter-select option {
+    background:#0F1C4D;
+    color:${IIEE.white};
+  }
+  .tr-filter-select option:hover,
+  .tr-filter-select option:checked {
+    background:#1a2a6c;
+    color:${IIEE.gold};
   }
   .tr-filter-input {
     background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1);
@@ -628,7 +637,11 @@ export default function ProfessorTrendsDashboard({
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
                       <XAxis dataKey="day" tick={{ fill: IIEE.dimText, fontSize: 10 }} axisLine={false} tickLine={false} />
                       <YAxis tick={{ fill: IIEE.dimText, fontSize: 10 }} axisLine={false} tickLine={false} />
-                      <Tooltip content={<CustomTooltip />} />
+                      <Tooltip
+                        content={<CustomTooltip />}
+                        cursor={{ fill: "rgba(255,255,255,0.04)" }}
+                        wrapperStyle={{ outline: "none" }}
+                      />
                       <Bar dataKey="total" name="Predictions" fill={IIEE.blue} radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
@@ -735,7 +748,11 @@ export default function ProfessorTrendsDashboard({
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
                   <XAxis dataKey="year" tick={{ fill: IIEE.dimText, fontSize: 11 }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fill: IIEE.dimText, fontSize: 11 }} axisLine={false} tickLine={false} />
-                  <Tooltip content={<CustomTooltip />} />
+                  <Tooltip
+                        content={<CustomTooltip />}
+                        cursor={{ fill: "rgba(255,255,255,0.04)" }}
+                        wrapperStyle={{ outline: "none" }}
+                      />
                   <Legend iconType="circle" iconSize={9}
                     formatter={(v) => <span style={{ color: "#94a3b8", fontSize: 12 }}>{v}</span>} />
                   <Bar dataKey="Passers" stackId="a" fill={IIEE.passGreen} radius={[0, 0, 0, 0]} />
@@ -877,7 +894,11 @@ export default function ProfessorTrendsDashboard({
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
                 <XAxis dataKey="month" tick={{ fill: IIEE.dimText, fontSize: 11 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fill: IIEE.dimText, fontSize: 11 }} axisLine={false} tickLine={false} />
-                <Tooltip content={<CustomTooltip />} />
+                <Tooltip
+                        content={<CustomTooltip />}
+                        cursor={{ fill: "rgba(255,255,255,0.04)" }}
+                        wrapperStyle={{ outline: "none" }}
+                      />
                 <Legend iconType="circle" iconSize={9}
                   formatter={(v) => <span style={{ color: "#94a3b8", fontSize: 12 }}>{v}</span>} />
                 <Bar dataKey="Passers" stackId="a" fill={IIEE.passGreen} radius={[0, 0, 0, 0]} />
