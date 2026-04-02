@@ -568,7 +568,7 @@ export default function ProfessorFeaturesDashboard({ featureImp = [], passFailCo
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
                   <XAxis type="number" tick={{ fill:IIEE.dimText, fontSize:10 }} axisLine={false} tickLine={false} />
                   <YAxis type="category" dataKey="name" tick={{ fill:IIEE.muted, fontSize:10 }} axisLine={false} tickLine={false} width={145} />
-                  <Tooltip content={<FeatTooltip formatter={(v) => v.toFixed(4)} />} />
+                  <Tooltip content={<FeatTooltip formatter={(v) => v.toFixed(4)} />} cursor={{ fill: "rgba(255,255,255,0.04)" }} wrapperStyle={{ outline: "none" }} />
                   <Bar dataKey="value" name="Importance" radius={[0,6,6,0]}>
                     {featureImp.slice(0,8).map((_, index) => (
                       <Cell

@@ -754,7 +754,7 @@ export default function ModelOverviewDashboard({
         </div>
         <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
           {[
-            { key: "institutional", label: "Institutional Dashboard" },
+            { key: "institutional", label: "PRC Result Dashboard" },
             { key: "model",         label: "Model Dashboard" },
           ].map((t) => (
             <button
@@ -773,7 +773,7 @@ export default function ModelOverviewDashboard({
         </div>
         <h2 className="comb-hero-title">
           {mode === "institutional"
-            ? <>PRC 2022-2025 <span className="ag">Institutional</span> Dashboard</>
+            ? <>PRC 2022-2025 <span className="ag">PRC Result</span> Dashboard</>
             : <>PRC 2022-2025 <span className="ab">Model</span> Dashboard</>}
         </h2>
         <p className="comb-hero-sub">
@@ -918,7 +918,7 @@ export default function ModelOverviewDashboard({
                       />
                     ))}
                   </Pie>
-                  <Tooltip content={<Tip />} />
+                  <Tooltip content={<Tip />} cursor={{ fill: "rgba(255,255,255,0.04)" }} wrapperStyle={{ outline: "none" }} />
                   <Legend
                     iconType="circle" iconSize={9}
                     formatter={(v) => <span style={{ color: IIEE.muted, fontSize: 12 }}>{v}</span>}
@@ -939,7 +939,7 @@ export default function ModelOverviewDashboard({
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(245,197,24,.12)" />
                   <XAxis dataKey="label" tick={{ fill: IIEE.dimText, fontSize: 11 }} axisLine={false} tickLine={false} />
                   <YAxis domain={[0, 100]} tick={{ fill: IIEE.dimText, fontSize: 11 }} axisLine={false} tickLine={false} unit="%" />
-                  <Tooltip content={<Tip fmt={(v) => `${v?.toFixed(1)}%`} />} />
+                  <Tooltip content={<Tip fmt={(v) => `${v?.toFixed(1)}%`} />} cursor={{ fill: "rgba(255,255,255,0.04)" }} wrapperStyle={{ outline: "none" }} />
                   <ReferenceLine y={70} stroke={IIEE.gold} strokeDasharray="5 3"
                     label={{ value: "70% threshold", position: "insideTopRight", fill: IIEE.gold, fontSize: 10 }} />
                   <Bar
@@ -965,7 +965,7 @@ export default function ModelOverviewDashboard({
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(245,197,24,.12)" />
                   <XAxis dataKey="label" tick={{ fill: IIEE.dimText, fontSize: 11 }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fill: IIEE.dimText, fontSize: 11 }} axisLine={false} tickLine={false} />
-                  <Tooltip content={<Tip />} />
+                  <Tooltip content={<Tip />} cursor={{ fill: "rgba(255,255,255,0.04)" }} wrapperStyle={{ outline: "none" }} />
                   <Legend
                     iconType="circle" iconSize={9}
                     formatter={(v) => <span style={{ color: IIEE.muted, fontSize: 12 }}>{v}</span>}
@@ -1008,7 +1008,7 @@ export default function ModelOverviewDashboard({
                 >
                   <XAxis dataKey="name" tick={{ fill: IIEE.dimText, fontSize: 11 }} axisLine={false} tickLine={false} />
                   <YAxis domain={[1.5, 2.5]} tick={{ fill: IIEE.dimText, fontSize: 11 }} axisLine={false} tickLine={false} />
-                  <Tooltip content={<Tip fmt={(v) => v?.toFixed(3)} />} />
+                  <Tooltip content={<Tip fmt={(v) => v?.toFixed(3)} />} cursor={{ fill: "rgba(255,255,255,0.04)" }} wrapperStyle={{ outline: "none" }} />
                   <Bar dataKey="value" name="Avg GWA" radius={[6,6,0,0]}>
                     <Cell fill={IIEE.passGreen} />
                     <Cell fill={IIEE.failRed} />
@@ -1070,7 +1070,8 @@ export default function ModelOverviewDashboard({
                       <BarChart data={regTrend} margin={{ top: 0, right: 8, left: -20, bottom: 0 }}>
                         <XAxis dataKey="model" tick={{ fill: IIEE.dimText, fontSize: 11 }} axisLine={false} tickLine={false} />
                         <YAxis domain={[0, 100]} tick={{ fill: IIEE.dimText, fontSize: 11 }} axisLine={false} tickLine={false} />
-                        <Tooltip content={<Tip fmt={(v) => `${v?.toFixed(1)}%`} />} />
+                        <Tooltip content={<Tip fmt={(v) => `${v?.toFixed(1)}%`} />} cursor={{ fill: "rgba(255,255,255,0.04)" }} wrapperStyle={{ outline: "none" }} />
+
                         <Bar dataKey="r2" name="R² %" radius={[4,4,0,0]}>
                           <Cell fill={IIEE.teal} />
                           <Cell fill={IIEE.indigo} />
@@ -1121,7 +1122,7 @@ export default function ModelOverviewDashboard({
               </div>
             </div>
             <div style={{ padding: "10px 14px", background: "rgba(245,197,24,0.04)", border: "1px solid rgba(245,197,24,0.15)", borderRadius: 10, fontSize: 12, color: IIEE.muted, lineHeight: 1.8 }}>
-              <strong style={{ color: IIEE.gold }}>Note on data sources:</strong> Institutional dashboard (KPIs, pass rates, counts) uses
+              <strong style={{ color: IIEE.gold }}>Note on data sources:</strong> PRC 2022-2025 dashboard (KPIs, pass rates, counts) uses
               DATA_UPCOMING (333 rows, GWA + subject scores). Model training uses DATA_MODEL (123 rows) + DATA_EVALUATION (36 rows).
               These are separate datasets — survey-based analyses use the 159-row MODEL+EVALUATION union only.
             </div>
@@ -1155,7 +1156,8 @@ export default function ModelOverviewDashboard({
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(245,197,24,.12)" />
                       <XAxis dataKey="key" tick={{ fill: IIEE.dimText, fontSize: 11 }} axisLine={false} tickLine={false} />
                       <YAxis tick={{ fill: IIEE.dimText, fontSize: 11 }} axisLine={false} tickLine={false} />
-                      <Tooltip content={<Tip fmt={(v) => `${v?.toFixed(2)} / 4`} />} />
+                      <Tooltip content={<Tip fmt={(v) => `${v?.toFixed(2)} / 4`} />} cursor={{ fill: "rgba(255,255,255,0.04)" }} wrapperStyle={{ outline: "none" }} />
+
                       <Bar dataKey="avg" name="Avg Score" fill={IIEE.failRed} radius={[4,4,0,0]}
                         activeBar={{ fill: "#ef6b6b", filter: "drop-shadow(0 0 8px rgba(239,75,75,.7))" }} />
                     </BarChart>

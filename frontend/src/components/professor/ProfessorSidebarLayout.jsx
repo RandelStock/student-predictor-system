@@ -46,7 +46,7 @@ const NAV_GROUPS = [
   {
     label: "Defense & Ops",
     items: [
-      { id: "test2025", icon: "🧪", label: "2025 Defense"        },
+      { id: "test2025", icon: "🧪", label: "2025 Evaluation"        },
       { id: "trends",   icon: "📅", label: "Trends & Monitoring" },
     ],
   },
@@ -85,61 +85,90 @@ function Sidebar({ activeTab, onTabChange, onRefresh, onLogout, collapsed, setCo
         overflowX: "hidden",
         scrollbarWidth: "none",
       }}>
-        {/* Logo / brand */}
+
+        {/* ── Logo / brand header ── */}
         <div style={{
-          padding: isCollapsed ? "14px 0" : "14px 12px",
+          padding: isCollapsed ? "14px 8px" : "16px 14px",
           borderBottom: `1px solid ${T.border}`,
           display: "flex",
           flexDirection: "column",
           alignItems: isCollapsed ? "center" : "flex-start",
-          gap: 8,
-          minHeight: isCollapsed ? 72 : "auto",
-          justifyContent: "center",
+          gap: isCollapsed ? 10 : 12,
         }}>
-          {/* Faculty Portal badge */}
+
+          {/* Faculty Portal badge — auto-width, sits at top */}
           {!isCollapsed && (
             <div style={{
-              display: "flex", alignItems: "center", gap: 7,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
               background: "rgba(139,92,246,0.12)",
               border: "1px solid rgba(139,92,246,0.28)",
               borderRadius: 999,
-              padding: "5px 10px",
-              alignSelf: "flex-start",
+              padding: "5px 12px 5px 8px",
+              alignSelf: "flex-start",   // auto-width: hugs its content
             }}>
-              <span style={{ fontSize: 11 }}>🔬</span>
-              <span style={{ fontSize: 11, fontWeight: 700, color: "#a78bfa", letterSpacing: "0.06em", fontFamily: "'Inter',sans-serif" }}>Faculty Portal</span>
+              <span style={{ fontSize: 12 }}>🔬</span>
+              <span style={{
+                fontSize: 11,
+                fontWeight: 700,
+                color: "#a78bfa",
+                letterSpacing: "0.06em",
+                fontFamily: "'Inter',sans-serif",
+                whiteSpace: "nowrap",
+              }}>
+                Faculty Portal
+              </span>
             </div>
           )}
 
-          {/* Logo circles row */}
-          <div style={{ display: "flex", gap: isCollapsed ? 0 : 5, flexShrink: 0, flexDirection: isCollapsed ? "column" : "row", alignItems: "center" }}>
+          {/* Logo circles */}
+          <div style={{
+            display: "flex",
+            flexDirection: isCollapsed ? "column" : "row",
+            alignItems: "center",
+            gap: isCollapsed ? 8 : 10,
+            alignSelf: isCollapsed ? "center" : "flex-start",
+          }}>
             {[
-              { src: "/slsulogo.png",  glow: "rgba(14,165,233,0.25)"  },
-              { src: "/slsulogo1.png", glow: "rgba(220,38,38,0.22)"   },
-              { src: "/slsulogo2.png", glow: "rgba(251,191,36,0.25)"  },
+              { src: "/slsulogo.png",  glow: "rgba(14,165,233,0.30)"  },
+              { src: "/slsulogo1.png", glow: "rgba(220,38,38,0.25)"   },
+              { src: "/slsulogo2.png", glow: "rgba(251,191,36,0.30)"  },
             ].map((logo, i) => (
               <div key={i} style={{
-                width: isCollapsed ? 32 : 26,
-                height: isCollapsed ? 32 : 26,
+                width:  isCollapsed ? 36 : 44,   // ← bigger logos
+                height: isCollapsed ? 36 : 44,
                 borderRadius: "50%",
                 background: "rgba(255,255,255,0.08)",
-                border: "1px solid rgba(255,255,255,0.13)",
-                display: "flex", alignItems: "center", justifyContent: "center",
+                border: "1.5px solid rgba(255,255,255,0.16)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
                 overflow: "hidden",
                 flexShrink: 0,
-                boxShadow: `0 0 8px ${logo.glow}`,
-                marginBottom: isCollapsed ? 4 : 0,
+                boxShadow: `0 0 10px ${logo.glow}`,
               }}>
-                <img src={logo.src} alt="" style={{ width: "85%", height: "85%", objectFit: "contain", display: "block" }} />
+                <img
+                  src={logo.src}
+                  alt=""
+                  style={{ width: "82%", height: "82%", objectFit: "contain", display: "block" }}
+                />
               </div>
             ))}
           </div>
 
-          {/* SLSU IIEE label */}
-          {!isCollapsed && (
-            <p style={{ margin: 0, fontSize: 11, color: T.dimText, textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: "'Inter',sans-serif" }}>
-              SLSU IIEE
-            </p>
+          {/* Collapsed state: small Faculty Portal icon */}
+          {isCollapsed && (
+            <div style={{
+              width: 28, height: 28,
+              borderRadius: "50%",
+              background: "rgba(139,92,246,0.15)",
+              border: "1px solid rgba(139,92,246,0.3)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 13,
+            }}>
+              🔬
+            </div>
           )}
         </div>
 
@@ -354,10 +383,8 @@ export default function ProfessorSidebarLayout({
         .hud-card { transition: border-color 0.18s, box-shadow 0.18s; }
         .hud-card:hover { border-color: rgba(245,197,24,0.25) !important; box-shadow: 0 0 0 1px rgba(245,197,24,0.1), 0 8px 24px rgba(0,0,0,0.35) !important; }
 
-        /* ── Mobile hamburger button — only visible on mobile ── */
         .hud-hamburger { display: none; }
 
-        /* ─── Mobile Responsiveness ─── */
         @media(max-width:768px){
           .hud-hamburger { display:flex !important; }
           .dash-grid { grid-template-columns:1fr !important; gap:12px; }
@@ -411,15 +438,13 @@ export default function ProfessorSidebarLayout({
         windowWidth={windowWidth}
       />
 
-      {/* Mobile-only hamburger button — floats top-left, no topbar */}
       {isMobile && (
         <button
           className="hud-hamburger"
           onClick={() => setMobileOpen(o => !o)}
           style={{
             position: "fixed",
-            top: 12,
-            left: 12,
+            top: 12, left: 12,
             zIndex: 97,
             background: T.navyMid,
             border: `1px solid ${T.borderSub}`,
@@ -441,7 +466,6 @@ export default function ProfessorSidebarLayout({
       )}
 
       <div className="hud-content" style={{ marginLeft: sidebarWidth }}>
-        {/* Dashboard content — no topbar, content starts immediately */}
         <main style={{
           padding: isMobile ? "64px 12px 80px" : "20px 28px 80px",
           maxWidth: "100%",

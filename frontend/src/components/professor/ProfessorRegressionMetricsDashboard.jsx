@@ -487,7 +487,7 @@ export default function ProfessorRegressionMetricsDashboard({ modelInfo }) {
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(245,197,24,.12)" />
                   <XAxis dataKey="name" tick={{ fill: IIEE.dimText, fontSize: 11 }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fill: IIEE.dimText, fontSize: 11 }} axisLine={false} tickLine={false} />
-                  <Tooltip content={<Tip />} />
+                  <Tooltip content={<Tip />} cursor={{ fill: "rgba(255,255,255,0.04)" }} wrapperStyle={{ outline: "none" }} />
                   <Legend iconType="circle" iconSize={9}
                     formatter={(v) => <span style={{ color: IIEE.muted, fontSize: 12 }}>Model {v}</span>} />
                   <Bar dataKey="A" name="A" fill={IIEE.teal}   radius={[4, 4, 0, 0]} />

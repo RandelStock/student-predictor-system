@@ -388,7 +388,7 @@ export default function ProfessorTest2025Dashboard({
           <span className="t25-badge teal">📅 2025 Only</span>
         </div>
         <h2 className="t25-hero-title">
-          2025 Final <span className="ac">Defense</span> Evaluation
+          2025 <span className="ac">Evaluation</span>
         </h2>
         <p className="t25-hero-sub">
           Held-out test set evaluation — <strong style={{ color: IIEE.white }}>DATA_EVALUATION.csv</strong> (2025 cohort) · Pass threshold: 70%
@@ -606,7 +606,7 @@ export default function ProfessorTest2025Dashboard({
                       <YAxis type="number" dataKey="predicted" name="Predicted" domain={[40, 100]}
                         tick={{ fill: IIEE.dimText, fontSize: 11 }} axisLine={false} tickLine={false}
                         label={{ value: "Predicted Rating", angle: -90, position: "insideLeft", fill: IIEE.muted, fontSize: 11 }} />
-                      <Tooltip content={<ScatterTooltip />} cursor={{ strokeDasharray: "3 3" }} />
+                      <Tooltip content={<ScatterTooltip />} cursor={{ strokeDasharray: "3 3"  , fill: "rgba(255,255,255,0.04)" }} wrapperStyle={{ outline: "none" }} />
                       <ReferenceLine segment={[{ x: 40, y: 40 }, { x: 100, y: 100 }]}
                         stroke="rgba(245,197,24,.35)" strokeDasharray="5 4"
                         label={{ value: "Perfect prediction", position: "insideTopLeft", fill: IIEE.gold, fontSize: 10 }} />

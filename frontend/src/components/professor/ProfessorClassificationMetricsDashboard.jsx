@@ -477,7 +477,7 @@ export default function ProfessorClassificationMetricsDashboard({ modelInfo }) {
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(245,197,24,.12)" />
                 <XAxis dataKey="name" tick={{ fill: IIEE.dimText, fontSize: 11 }} axisLine={false} tickLine={false} />
                 <YAxis domain={[0, 100]} tick={{ fill: IIEE.dimText, fontSize: 11 }} axisLine={false} tickLine={false} unit="%" />
-                <Tooltip content={<Tip />} />
+                <Tooltip content={<Tip />} cursor={{ fill: "rgba(255,255,255,0.04)" }} wrapperStyle={{ outline: "none" }} />
                 <Bar dataKey="value" name="Score" radius={[6, 6, 0, 0]}>
                   {barData.map((entry, i) => (
                     <Cell key={i} fill={entry.color} />

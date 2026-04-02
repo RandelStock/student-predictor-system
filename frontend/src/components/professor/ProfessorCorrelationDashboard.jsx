@@ -719,7 +719,7 @@ export default function ProfessorCorrelationDashboard() {
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(245,197,24,.10)" horizontal={false} />
                     <XAxis type="number" domain={[-0.70, 0.95]} tick={{ fill: IIEE.dimText, fontSize: 10 }} axisLine={false} tickLine={false} />
                     <YAxis type="category" dataKey="label" tick={{ fill: IIEE.white, fontSize: 11 }} axisLine={false} tickLine={false} width={120} />
-                    <Tooltip content={<Tip />} />
+                    <Tooltip content={<Tip />} cursor={{ fill: "rgba(255,255,255,0.04)" }} wrapperStyle={{ outline: "none" }} />
                     <ReferenceLine x={0} stroke="rgba(255,255,255,.2)" />
                     <ReferenceLine x={0.40}  stroke={IIEE.amber}     strokeDasharray="4 3" label={{ value: "0.40", position: "top", fill: IIEE.amber,     fontSize: 10 }} />
                     <ReferenceLine x={0.60}  stroke={IIEE.passGreen} strokeDasharray="4 3" label={{ value: "0.60", position: "top", fill: IIEE.passGreen, fontSize: 10 }} />

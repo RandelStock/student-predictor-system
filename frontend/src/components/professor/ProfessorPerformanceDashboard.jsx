@@ -456,7 +456,7 @@ export default function ProfessorPerformanceDashboard({
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(245,197,24,.12)" horizontal={false} />
                   <XAxis type="number" domain={[0, 100]} tick={{ fill: IIEE.dimText, fontSize: 11 }} unit="%" axisLine={false} tickLine={false} />
                   <YAxis type="category" dataKey="label" tick={{ fill: IIEE.muted, fontSize: 12 }} axisLine={false} tickLine={false} width={68} />
-                  <Tooltip content={<Tip fmt={(v) => `${v?.toFixed(1)}%`} />} />
+                  <Tooltip content={<Tip fmt={(v) => `${v?.toFixed(1)}%`} />} cursor={{ fill: "rgba(255,255,255,0.04)" }} wrapperStyle={{ outline: "none" }} />
                   <ReferenceLine x={70} stroke={IIEE.gold} strokeDasharray="4 3"
                     label={{ value: "70%", position: "insideTopLeft", fill: IIEE.gold, fontSize: 10 }} />
                   <Bar dataKey="pass_rate" name="Pass Rate" radius={[0, 6, 6, 0]}>
@@ -500,7 +500,7 @@ export default function ProfessorPerformanceDashboard({
                   <Radar name="Failers" dataKey="Failers" stroke={IIEE.failRed}   fill={IIEE.failRed}   fillOpacity={0.10} />
                   <Legend iconType="circle" iconSize={9}
                     formatter={(v) => <span style={{ color: IIEE.muted, fontSize: 12 }}>{v}</span>} />
-                  <Tooltip content={<Tip fmt={(v) => `${v}%`} />} />
+                  <Tooltip content={<Tip fmt={(v) => `${v}%`} />} cursor={{ fill: "rgba(255,255,255,0.04)" }} wrapperStyle={{ outline: "none" }} />
                 </RadarChart>
               </ResponsiveContainer>
             </Card>
@@ -515,7 +515,8 @@ export default function ProfessorPerformanceDashboard({
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(245,197,24,.12)" />
                   <XAxis dataKey="name" tick={{ fill: IIEE.dimText, fontSize: 10 }} axisLine={false} tickLine={false} />
                   <YAxis domain={[40, 100]} tick={{ fill: IIEE.dimText, fontSize: 11 }} axisLine={false} tickLine={false} unit="%" />
-                  <Tooltip content={<Tip fmt={(v) => `${v}%`} />} />
+                  <Tooltip content={<Tip fmt={(v) => `${v}%`} />} cursor={{ fill: "rgba(255,255,255,0.04)" }} wrapperStyle={{ outline: "none" }} />
+                    
                   <Legend iconType="circle" iconSize={9}
                     formatter={(v) => <span style={{ color: IIEE.muted, fontSize: 12 }}>{v}</span>} />
                   <Bar dataKey="Passers" name="Passers" fill={IIEE.passGreen} radius={[4, 4, 0, 0]} />
@@ -562,7 +563,7 @@ export default function ProfessorPerformanceDashboard({
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(245,197,24,.12)" />
                     <XAxis dataKey="year" tick={{ fill: IIEE.dimText, fontSize: 11 }} axisLine={false} tickLine={false} />
                     <YAxis domain={[55, 85]} tick={{ fill: IIEE.dimText, fontSize: 11 }} axisLine={false} tickLine={false} />
-                    <Tooltip content={<Tip />} />
+                    <Tooltip content={<Tip />} cursor={{ fill: "rgba(255,255,255,0.04)" }} wrapperStyle={{ outline: "none" }} />
                     <ReferenceLine y={70} stroke={IIEE.gold} strokeDasharray="5 3"
                       label={{ value: "70% threshold", position: "insideTopRight", fill: IIEE.gold, fontSize: 10 }} />
                     <Legend iconType="circle" iconSize={9}

@@ -513,7 +513,7 @@ export default function ProfessorCurriculumDashboard({
                   <PolarAngleAxis dataKey="subject" tick={{ fill: IIEE.muted, fontSize: 10 }} />
                   <PolarRadiusAxis angle={30} domain={[2, 3.2]} tick={{ fill: IIEE.dimText, fontSize: 9 }} axisLine={false} />
                   <Radar name="Avg Score" dataKey="score" stroke={IIEE.failRed} fill={IIEE.failRed} fillOpacity={0.18} dot={{ fill: IIEE.failRed, r: 3 }} />
-                  <Tooltip content={<Tip fmt={(v) => `${v}/4`} />} />
+                  <Tooltip content={<Tip fmt={(v) => `${v}/4`} />} cursor={{ fill: "rgba(255,255,255,0.04)" }} wrapperStyle={{ outline: "none" }} />
                 </RadarChart>
               </ResponsiveContainer>
             </Card>
@@ -700,7 +700,7 @@ export default function ProfessorCurriculumDashboard({
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(245,197,24,.12)" />
                   <XAxis dataKey="label" tick={{ fill: IIEE.dimText, fontSize: 11 }} axisLine={false} tickLine={false} />
                   <YAxis domain={[2, 3.2]} tick={{ fill: IIEE.dimText, fontSize: 11 }} axisLine={false} tickLine={false} />
-                  <Tooltip content={<Tip fmt={(v) => `${v?.toFixed(2)}/4`} />} />
+                  <Tooltip content={<Tip fmt={(v) => `${v?.toFixed(2)}/4`} />} cursor={{ fill: "rgba(255,255,255,0.04)" }} wrapperStyle={{ outline: "none" }} />
                   <ReferenceLine y={2.5}  stroke={IIEE.gold}    strokeDasharray="4 3" label={{ value: "2.5 concern",  position: "insideTopRight", fill: IIEE.gold,    fontSize: 9 }} />
                   <ReferenceLine y={2.7}  stroke={IIEE.failRed} strokeDasharray="4 3" label={{ value: "2.7 critical", position: "insideTopRight", fill: IIEE.failRed, fontSize: 9 }} />
                   <Bar dataKey="avg" name="Avg Score" radius={[6,6,0,0]}
