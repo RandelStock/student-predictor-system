@@ -14,7 +14,7 @@
  */
 
 import { useState } from "react";
-import ResultCard from "../ResultCard";
+import ResultCard from "./ResultCard";
 
 // ─── Design Tokens (mirrors ModelOverviewDashboard, StudentPage, ResultCard) ──
 const IIEE = {
