@@ -1,13 +1,34 @@
 import { useState } from "react";
 import API_BASE_URL from "../apiBase";
 
-// ── Section definitions ────────────────────────────────────────────────────────
+// ─── Design Tokens (mirrors ModelOverviewDashboard & StudentPage) ─────────────
+const IIEE = {
+  navy:       "#0B1437",
+  navyMid:    "#0F1C4D",
+  gold:       "#F5C518",
+  goldGlow:   "rgba(245,197,24,0.18)",
+  goldBorder: "rgba(245,197,24,0.35)",
+  white:      "#F8FAFC",
+  muted:      "#94A3B8",
+  dimText:    "#64748B",
+  cardBg:     "rgba(15,28,77,0.72)",
+  cardBorder: "rgba(245,197,24,0.18)",
+  passGreen:  "#22C55E",
+  failRed:    "#EF4444",
+  amber:      "#F59E0B",
+  blue:       "#38BDF8",
+  teal:       "#2DD4BF",
+  indigo:     "#818CF8",
+  orange:     "#FB923C",
+};
+
+// ─── Section Definitions ──────────────────────────────────────────────────────
 const SECTIONS = [
   {
     id: "knowledge",
     label: "Knowledge Self-Assessment",
     icon: "📚",
-    color: { accent: "#3b82f6", bg: "rgba(59,130,246,0.07)", border: "rgba(59,130,246,0.2)", text: "#93c5fd", bar: "#3b82f6" },
+    color: { accent: "#3b82f6", bg: "rgba(59,130,246,0.07)", border: "rgba(59,130,246,0.2)", text: "#93c5fd" },
     fields: [
       { key: "KN1",  label: "Strong math foundation for EE" },
       { key: "KN2",  label: "Circuit analysis & network theorems" },
@@ -27,7 +48,7 @@ const SECTIONS = [
     id: "problem_solving",
     label: "Problem Solving Confidence",
     icon: "🧠",
-    color: { accent: "#8b5cf6", bg: "rgba(139,92,246,0.07)", border: "rgba(139,92,246,0.2)", text: "#c4b5fd", bar: "#8b5cf6" },
+    color: { accent: "#8b5cf6", bg: "rgba(139,92,246,0.07)", border: "rgba(139,92,246,0.2)", text: "#c4b5fd" },
     fields: [
       { key: "PS1",  label: "Analyze complex EE problems" },
       { key: "PS2",  label: "Identify most efficient solution method" },
@@ -47,7 +68,7 @@ const SECTIONS = [
     id: "motivation",
     label: "Motivation & Study Discipline",
     icon: "🔥",
-    color: { accent: "#f59e0b", bg: "rgba(245,158,11,0.07)", border: "rgba(245,158,11,0.2)", text: "#fcd34d", bar: "#f59e0b" },
+    color: { accent: "#f59e0b", bg: "rgba(245,158,11,0.07)", border: "rgba(245,158,11,0.2)", text: "#fcd34d" },
     fields: [
       { key: "MT1", label: "Motivated to pass the EE exam" },
       { key: "MT2", label: "Clear goal for passing" },
@@ -63,7 +84,7 @@ const SECTIONS = [
     id: "mental_health",
     label: "Mental Health & Wellbeing",
     icon: "🧘",
-    color: { accent: "#10b981", bg: "rgba(16,185,129,0.07)", border: "rgba(16,185,129,0.2)", text: "#6ee7b7", bar: "#10b981" },
+    color: { accent: "#10b981", bg: "rgba(16,185,129,0.07)", border: "rgba(16,185,129,0.2)", text: "#6ee7b7" },
     fields: [
       { key: "MH1", label: "Manages stress effectively" },
       { key: "MH2", label: "Mentally prepared for exam challenges" },
@@ -79,7 +100,7 @@ const SECTIONS = [
     id: "support",
     label: "Support System",
     icon: "🤝",
-    color: { accent: "#ec4899", bg: "rgba(236,72,153,0.07)", border: "rgba(236,72,153,0.2)", text: "#f9a8d4", bar: "#ec4899" },
+    color: { accent: "#ec4899", bg: "rgba(236,72,153,0.07)", border: "rgba(236,72,153,0.2)", text: "#f9a8d4" },
     fields: [
       { key: "SS1", label: "Family supports exam preparation" },
       { key: "SS2", label: "Family encourages motivation" },
@@ -95,7 +116,7 @@ const SECTIONS = [
     id: "curriculum",
     label: "Curriculum & Faculty",
     icon: "🎓",
-    color: { accent: "#06b6d4", bg: "rgba(6,182,212,0.07)", border: "rgba(6,182,212,0.2)", text: "#67e8f9", bar: "#06b6d4" },
+    color: { accent: "#06b6d4", bg: "rgba(6,182,212,0.07)", border: "rgba(6,182,212,0.2)", text: "#67e8f9" },
     fields: [
       { key: "CU1", label: "Curriculum prepared me for board exam" },
       { key: "CU2", label: "Core subjects covered key EE topics" },
@@ -113,7 +134,7 @@ const SECTIONS = [
     id: "institutional",
     label: "Dept Review & Institution",
     icon: "🏫",
-    color: { accent: "#f97316", bg: "rgba(249,115,22,0.07)", border: "rgba(249,115,22,0.2)", text: "#fdba74", bar: "#f97316" },
+    color: { accent: "#f97316", bg: "rgba(249,115,22,0.07)", border: "rgba(249,115,22,0.2)", text: "#fdba74" },
     fields: [
       { key: "DR1", label: "Dept conducted review programs" },
       { key: "DR2", label: "Review sessions reinforced key concepts" },
@@ -134,7 +155,353 @@ const SECTIONS = [
   },
 ];
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// ─── Global Styles ────────────────────────────────────────────────────────────
+const STYLES = `
+  @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Inter:wght@300;400;500;600&family=DM+Sans:wght@300;400;500;700&display=swap');
+
+  .rc-root *, .rc-root *::before, .rc-root *::after { box-sizing: border-box; }
+  .rc-root {
+    font-family: 'Inter', sans-serif;
+    color: ${IIEE.white};
+    font-size: clamp(13px, 1.2vw, 14px);
+    line-height: 1.6;
+  }
+  .rc-root p { margin: 0; }
+
+  /* Verdict banner */
+  .rc-verdict {
+    border-radius: 18px;
+    padding: clamp(16px, 3vw, 24px);
+    margin-bottom: clamp(12px, 2.5vw, 18px);
+    position: relative; overflow: hidden;
+  }
+  .rc-verdict-top {
+    display: flex; align-items: center;
+    justify-content: space-between;
+    gap: 12px; margin-bottom: clamp(12px, 2.5vw, 18px);
+    flex-wrap: wrap;
+  }
+  .rc-verdict-left { display: flex; align-items: center; gap: clamp(10px, 2.5vw, 16px); }
+  .rc-verdict-icon {
+    width: clamp(44px, 7vw, 54px); height: clamp(44px, 7vw, 54px);
+    border-radius: 13px; display: flex; align-items: center; justify-content: center;
+    font-size: clamp(20px, 4vw, 26px); flex-shrink: 0;
+  }
+  .rc-label {
+    font-size: clamp(9px, 1.2vw, 11px); color: ${IIEE.dimText};
+    text-transform: uppercase; letter-spacing: 0.12em; font-weight: 600;
+    font-family: 'Montserrat', sans-serif; margin-bottom: 4px;
+  }
+  .rc-verdict-text {
+    font-family: 'Montserrat', sans-serif;
+    font-size: clamp(26px, 6vw, 38px); font-weight: 800;
+    letter-spacing: -0.02em; line-height: 1;
+  }
+
+  /* Confidence ring container */
+  .rc-ring-wrap {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 3px; flex-shrink: 0;
+  }
+  .rc-ring-sub {
+    font-size: clamp(8px, 1.1vw, 10px); color: ${IIEE.dimText};
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  /* Summary box */
+  .rc-summary {
+    border-radius: 11px; padding: clamp(10px, 2vw, 13px) clamp(12px, 2.5vw, 16px);
+    font-size: clamp(11px, 1.4vw, 13px); line-height: 1.65;
+    margin-bottom: clamp(12px, 2.5vw, 16px);
+  }
+
+  /* Prob bar */
+  .rc-prob-row {
+    display: flex; justify-content: space-between; margin-bottom: 5px;
+  }
+  .rc-prob-label { font-size: clamp(10px, 1.3vw, 12px); font-weight: 700; }
+  .rc-bar-track {
+    height: 8px; background: rgba(255,255,255,0.06);
+    border-radius: 99px; overflow: hidden; margin-bottom: clamp(10px, 2vw, 14px);
+  }
+  .rc-bar-fill {
+    height: 100%; border-radius: 99px;
+    transition: width 0.9s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  /* Prob chips */
+  .rc-prob-chips {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: clamp(6px, 1.5vw, 10px); margin-bottom: clamp(10px, 2vw, 13px);
+  }
+  .rc-prob-chip {
+    background: rgba(0,0,0,0.22); border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 11px; padding: clamp(10px, 2vw, 13px) clamp(10px, 2vw, 14px);
+  }
+  .rc-prob-chip-row { display: flex; align-items: center; gap: 5px; margin-bottom: 4px; }
+  .rc-prob-chip-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .rc-prob-chip-label { font-size: clamp(9px, 1.2vw, 11px); color: ${IIEE.dimText}; font-weight: 500; }
+  .rc-prob-chip-val {
+    font-family: 'Montserrat', sans-serif;
+    font-size: clamp(18px, 3.5vw, 22px); font-weight: 800;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Reliability */
+  .rc-reliability {
+    font-size: clamp(10px, 1.3vw, 12px); color: ${IIEE.dimText};
+    margin-top: 6px; line-height: 1.6;
+  }
+
+  /* Overall survey bar */
+  .rc-overall {
+    background: rgba(0,0,0,0.22); border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 11px; padding: clamp(10px, 2vw, 13px) clamp(10px, 2vw, 14px);
+    margin-top: clamp(10px, 2vw, 13px);
+  }
+  .rc-overall-row {
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 7px;
+  }
+  .rc-overall-label { font-size: clamp(10px, 1.3vw, 12px); font-weight: 600; color: ${IIEE.muted}; }
+  .rc-overall-val {
+    font-family: 'Montserrat', sans-serif;
+    font-size: clamp(13px, 2vw, 15px); font-weight: 800;
+  }
+
+  /* Rating section */
+  .rc-rating-card {
+    background: ${IIEE.cardBg}; border: 1px solid ${IIEE.cardBorder};
+    border-radius: 18px; padding: clamp(14px, 3vw, 20px);
+    margin-bottom: clamp(12px, 2.5vw, 18px); overflow: hidden;
+  }
+  .rc-rating-head {
+    display: flex; align-items: center; gap: 10px; margin-bottom: clamp(12px, 2.5vw, 16px);
+    padding-bottom: clamp(10px, 2vw, 14px); border-bottom: 1px solid rgba(245,197,24,0.12);
+  }
+  .rc-rating-icon {
+    width: clamp(28px, 5vw, 36px); height: clamp(28px, 5vw, 36px);
+    border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    font-size: clamp(13px, 2.2vw, 16px);
+    background: ${IIEE.goldGlow}; border: 1px solid ${IIEE.goldBorder}; flex-shrink: 0;
+  }
+  .rc-rating-title {
+    font-family: 'Montserrat', sans-serif;
+    font-size: clamp(13px, 2vw, 15px); font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em; color: ${IIEE.white}; margin: 0;
+  }
+  .rc-rating-sub { font-size: clamp(10px, 1.3vw, 12px); color: ${IIEE.dimText}; margin: 0; }
+  .rc-rating-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: clamp(8px, 2vw, 12px); margin-bottom: clamp(10px, 2vw, 14px);
+  }
+  .rc-rating-box {
+    border-radius: 13px; padding: clamp(12px, 2.5vw, 16px);
+    transition: transform 0.18s;
+  }
+  .rc-rating-box:hover { transform: translateY(-2px); }
+  .rc-rating-box-label {
+    font-size: clamp(8px, 1.1vw, 10px); color: ${IIEE.dimText};
+    font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+    font-family: 'Montserrat', sans-serif; margin-bottom: 5px;
+  }
+  .rc-rating-val {
+    font-family: 'Montserrat', sans-serif;
+    font-size: clamp(28px, 6vw, 36px); font-weight: 800; line-height: 1; margin-bottom: 8px;
+  }
+  .rc-rating-val-unit { font-size: clamp(11px, 1.5vw, 13px); color: ${IIEE.dimText}; margin-left: 2px; }
+  .rc-rating-prog {
+    height: 5px; background: rgba(255,255,255,0.07);
+    border-radius: 99px; overflow: hidden; margin-bottom: 8px;
+  }
+  .rc-rating-prog-fill { height: 100%; border-radius: 99px; transition: width 1s ease; }
+  .rc-rating-footer { display: flex; align-items: center; justify-content: space-between; }
+  .rc-rating-badge {
+    font-size: clamp(9px, 1.2vw, 10px); font-weight: 700;
+    padding: 2px 8px; border-radius: 999px;
+  }
+  .rc-rating-verdict { font-size: clamp(9px, 1.2vw, 10px); font-weight: 700; }
+
+  /* Subject scores */
+  .rc-subjects {
+    background: rgba(0,0,0,0.25); border-radius: 11px;
+    padding: clamp(10px, 2vw, 13px) clamp(12px, 2.5vw, 16px); margin-bottom: 10px;
+  }
+  .rc-subjects-label {
+    font-size: clamp(9px, 1.2vw, 11px); font-weight: 700; color: ${IIEE.dimText};
+    text-transform: uppercase; letter-spacing: 0.08em;
+    font-family: 'Montserrat', sans-serif; margin-bottom: 10px;
+  }
+  .rc-subjects-grid { display: grid; gap: 7px; }
+  .rc-subject-box {
+    border-radius: 10px; padding: clamp(8px, 1.5vw, 10px) clamp(10px, 2vw, 13px); text-align: center;
+    transition: transform 0.15s;
+  }
+  .rc-subject-box:hover { transform: translateY(-1px); }
+  .rc-subject-name {
+    font-size: clamp(8px, 1.1vw, 10px); font-weight: 700; color: ${IIEE.dimText};
+    text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 3px;
+  }
+  .rc-subject-score {
+    font-family: 'Montserrat', sans-serif;
+    font-size: clamp(18px, 4vw, 24px); font-weight: 800; line-height: 1; margin-bottom: 5px;
+  }
+  .rc-subject-status {
+    font-size: clamp(8px, 1.1vw, 9px); font-weight: 700;
+    padding: 1px 6px; border-radius: 999px;
+  }
+
+  /* Model note */
+  .rc-model-note {
+    font-size: clamp(10px, 1.3vw, 11.5px); color: ${IIEE.dimText}; line-height: 1.65;
+    border-left: 2px solid ${IIEE.goldBorder};
+    background: linear-gradient(90deg, rgba(245,197,24,0.04) 0%, transparent 100%);
+    border-radius: 0 8px 8px 0;
+    padding: clamp(8px, 1.5vw, 10px) clamp(10px, 2vw, 14px);
+  }
+  .rc-model-note strong { color: ${IIEE.gold}; font-family: 'Montserrat', sans-serif; }
+
+  /* Divider */
+  .rc-divider {
+    display: flex; align-items: center; gap: 10px;
+    margin: clamp(16px, 3vw, 24px) 0 clamp(10px, 2vw, 16px);
+  }
+  .rc-divider-line {
+    flex: 1; height: 1px;
+    background: linear-gradient(90deg, ${IIEE.goldBorder} 0%, transparent 100%);
+  }
+  .rc-divider-line.rev {
+    background: linear-gradient(90deg, transparent 0%, ${IIEE.goldBorder} 100%);
+  }
+  .rc-divider-label {
+    font-family: 'Montserrat', sans-serif;
+    font-size: clamp(9px, 1.2vw, 11px); font-weight: 700;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    color: ${IIEE.gold}; white-space: nowrap;
+  }
+
+  /* Section card */
+  .rc-section-card {
+    border-radius: 14px; overflow: hidden;
+    transition: border-color 0.22s, box-shadow 0.22s;
+    margin-bottom: 8px;
+  }
+  .rc-section-btn {
+    width: 100%; padding: clamp(12px, 2.5vw, 16px);
+    display: flex; align-items: center; gap: clamp(10px, 2vw, 13px);
+    background: transparent; border: none; cursor: pointer; text-align: left;
+  }
+  .rc-section-icon { font-size: clamp(17px, 3vw, 21px); flex-shrink: 0; }
+  .rc-section-info { flex: 1; min-width: 0; }
+  .rc-section-top {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; gap: 8px;
+  }
+  .rc-section-name {
+    color: ${IIEE.white}; font-weight: 700;
+    font-size: clamp(12px, 1.8vw, 14px);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 58%;
+  }
+  .rc-section-badges { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+  .rc-section-score-tag {
+    font-size: clamp(9px, 1.2vw, 10px); font-weight: 700;
+    padding: 2px 8px; border-radius: 999px;
+  }
+  .rc-section-pct {
+    font-family: 'Montserrat', sans-serif;
+    font-size: clamp(14px, 2.5vw, 17px); font-weight: 800;
+  }
+  .rc-section-bar-track {
+    height: 4px; background: rgba(255,255,255,0.06);
+    border-radius: 99px; overflow: hidden; margin-bottom: 4px;
+  }
+  .rc-section-bar-fill { height: 100%; border-radius: 99px; transition: width 0.8s cubic-bezier(0.4,0,0.2,1); }
+  .rc-section-hint { font-size: clamp(9px, 1.2vw, 10px); font-family: 'Inter', sans-serif; }
+  .rc-section-arrow {
+    font-size: clamp(11px, 1.5vw, 13px); flex-shrink: 0;
+    transition: transform 0.25s ease;
+  }
+
+  /* Expanded panel */
+  .rc-expanded {
+    display: grid; grid-template-columns: 1fr 1fr;
+    border-top-style: solid; border-top-width: 1px;
+  }
+  .rc-items-panel {
+    padding: clamp(12px, 2.5vw, 16px);
+    max-height: 340px; overflow-y: auto;
+    border-right-style: solid; border-right-width: 1px;
+  }
+  .rc-items-heading {
+    font-size: clamp(9px, 1.2vw, 10px); font-weight: 700;
+    color: ${IIEE.dimText}; text-transform: uppercase; letter-spacing: 0.08em;
+    font-family: 'Montserrat', sans-serif; margin: 0 0 10px;
+  }
+  .rc-item-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .rc-item-row:last-child { border-bottom: none; }
+  .rc-item-key {
+    font-size: clamp(8px, 1.1vw, 9px); font-weight: 700; flex-shrink: 0; width: 28px;
+  }
+  .rc-item-label { flex: 1; font-size: clamp(9px, 1.2vw, 11px); line-height: 1.35; }
+  .rc-item-bar-track {
+    width: 38px; height: 3px; background: rgba(255,255,255,0.08);
+    border-radius: 99px; overflow: hidden;
+  }
+  .rc-item-bar-fill { height: 100%; border-radius: 99px; }
+  .rc-item-val { font-size: clamp(9px, 1.2vw, 11px); font-weight: 700; width: 12px; text-align: right; }
+
+  /* AI panel */
+  .rc-ai-panel {
+    padding: clamp(12px, 2.5vw, 16px); display: flex; flex-direction: column;
+  }
+  .rc-ai-head { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; }
+  .rc-ai-label {
+    font-size: clamp(9px, 1.2vw, 10px); font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    font-family: 'Montserrat', sans-serif;
+  }
+  .rc-ai-spinner {
+    width: 13px; height: 13px; border-radius: 50%;
+    border-width: 2px; border-style: solid;
+    border-top-color: transparent;
+    animation: rcSpin 0.8s linear infinite; flex-shrink: 0;
+  }
+  .rc-ai-loading { display: flex; align-items: center; gap: 9px; padding: 10px 0; }
+  .rc-ai-loading-text { font-size: clamp(10px, 1.3vw, 12px); color: ${IIEE.dimText}; }
+  .rc-ai-content { overflow-y: auto; max-height: 300px; }
+  .rc-ai-line { font-size: clamp(10px, 1.4vw, 12px); line-height: 1.65; margin-bottom: 5px; }
+  .rc-ai-placeholder { font-size: clamp(10px, 1.3vw, 12px); color: ${IIEE.dimText}; line-height: 1.6; }
+
+  /* Footer note */
+  .rc-footer-note {
+    background: ${IIEE.cardBg}; border: 1px solid ${IIEE.cardBorder};
+    border-radius: 12px; padding: clamp(10px, 2vw, 14px) clamp(12px, 2.5vw, 16px);
+    font-size: clamp(10px, 1.3vw, 12px); color: ${IIEE.dimText}; line-height: 1.7;
+  }
+  .rc-footer-note strong { color: ${IIEE.gold}; font-family: 'Montserrat', sans-serif; }
+
+  /* Animations */
+  @keyframes rcFadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes rcSpin   { to{transform:rotate(360deg)} }
+  .rc-fadein { animation: rcFadeUp 0.35s ease both; }
+
+  /* Scrollbar */
+  .rc-root ::-webkit-scrollbar { width: 4px; height: 4px; }
+  .rc-root ::-webkit-scrollbar-thumb { background: rgba(245,197,24,0.2); border-radius: 99px; }
+
+  /* Responsive */
+  @media (max-width: 600px) {
+    .rc-expanded { grid-template-columns: 1fr !important; }
+    .rc-items-panel { border-right: none !important; border-bottom: 1px solid rgba(255,255,255,0.07); max-height: 200px !important; }
+    .rc-rating-grid { grid-template-columns: 1fr !important; }
+  }
+  @media (max-width: 480px) {
+    .rc-prob-chips { grid-template-columns: 1fr !important; }
+  }
+`;
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 function computeScore(keys, answers) {
   const vals = keys.map(k => Number(answers[k])).filter(v => v >= 1 && v <= 4);
   if (!vals.length) return null;
@@ -143,42 +510,47 @@ function computeScore(keys, answers) {
 }
 
 function getScoreLabel(score) {
-  if (score >= 80) return { label: "Excellent",  color: "#34d399" };
-  if (score >= 65) return { label: "Good",        color: "#60a5fa" };
-  if (score >= 50) return { label: "Fair",        color: "#fbbf24" };
-  return              { label: "Needs Work",   color: "#f87171" };
+  if (score >= 80) return { label: "Excellent",   color: IIEE.passGreen };
+  if (score >= 65) return { label: "Good",         color: IIEE.blue };
+  if (score >= 50) return { label: "Fair",         color: IIEE.amber };
+  return              { label: "Needs Work",    color: IIEE.failRed };
 }
 
 function getRatingColor(score) {
-  if (score >= 85) return "#34d399";
-  if (score >= 78) return "#60a5fa";
-  if (score >= 70) return "#fbbf24";
-  if (score >= 60) return "#f97316";
-  return "#f87171";
+  if (score >= 85) return IIEE.passGreen;
+  if (score >= 78) return IIEE.blue;
+  if (score >= 70) return IIEE.amber;
+  if (score >= 60) return IIEE.orange;
+  return IIEE.failRed;
 }
 
-// ── AI Recommendation ─────────────────────────────────────────────────────────
 async function fetchAIRecommendation(section, answers, score, passed, attempt_id) {
-  const questions = section.fields.map(f => ({
-    key: f.key, label: f.label, value: Number(answers[f.key]),
-  }));
+  const questions = section.fields.map(f => ({ key: f.key, label: f.label, value: Number(answers[f.key]) }));
   const token = localStorage.getItem("token");
-  const response = await fetch(`${API_BASE_URL}/ai-recommend`, {
+  const res = await fetch(`${API_BASE_URL}/ai-recommend`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
     body: JSON.stringify({ section_label: section.label, score, passed, questions, attempt_id }),
   });
-  if (!response.ok) throw new Error("Server error");
-  const data = await response.json();
+  if (!res.ok) throw new Error("Server error");
+  const data = await res.json();
   return data.recommendation;
 }
 
-// ── Section Card — split-panel layout ────────────────────────────────────────
+// ─── Divider ──────────────────────────────────────────────────────────────────
+function Divider({ label }) {
+  return (
+    <div className="rc-divider">
+      <div className="rc-divider-line" />
+      <div className="rc-divider-label">{label}</div>
+      <div className="rc-divider-line rev" />
+    </div>
+  );
+}
+
+// ─── Section Card ─────────────────────────────────────────────────────────────
 function SectionCard({ section, answers, passed, isActive, onToggle, attempt_id }) {
-  const [rec, setRec]     = useState(null);
+  const [rec, setRec] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -205,130 +577,92 @@ function SectionCard({ section, answers, passed, isActive, onToggle, attempt_id 
   };
 
   return (
-    <div style={{
-      border: `1px solid ${isActive ? c.accent + "60" : c.border}`,
-      borderRadius: "14px",
-      overflow: "hidden",
-      transition: "all 0.25s ease",
-      background: isActive ? c.bg : "rgba(15,23,42,0.5)",
-    }}>
-      {/* ── Header row (always visible) ── */}
-      <button onClick={handleToggle} style={{
-        width: "100%", padding: "14px 16px",
-        display: "flex", alignItems: "center", gap: "12px",
-        background: "transparent", border: "none", cursor: "pointer", textAlign: "left",
-      }}>
-        <span style={{ fontSize: "20px", flexShrink: 0 }}>{section.icon}</span>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "5px" }}>
-            <span style={{ color: "#f1f5f9", fontWeight: 700, fontSize: "13px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "60%" }}>
-              {section.label}
-            </span>
-            <div style={{ display: "flex", alignItems: "center", gap: "7px", flexShrink: 0 }}>
-              <span style={{
-                fontSize: "10px", fontWeight: 700, padding: "2px 7px",
-                borderRadius: "999px", background: `${scoreLabelColor}20`,
-                color: scoreLabelColor, border: `1px solid ${scoreLabelColor}40`,
-              }}>{scoreLabel}</span>
-              <span style={{ color: c.text, fontWeight: 800, fontSize: "15px" }}>{score}%</span>
+    <div
+      className="rc-section-card"
+      style={{
+        border: `1px solid ${isActive ? c.accent + "65" : c.border}`,
+        background: isActive ? c.bg : "rgba(11,20,55,0.55)",
+        boxShadow: isActive ? `0 4px 20px ${c.accent}18` : "none",
+      }}
+    >
+      {/* ── Header ── */}
+      <button className="rc-section-btn" onClick={handleToggle}>
+        <span className="rc-section-icon">{section.icon}</span>
+        <div className="rc-section-info">
+          <div className="rc-section-top">
+            <span className="rc-section-name">{section.label}</span>
+            <div className="rc-section-badges">
+              <span
+                className="rc-section-score-tag"
+                style={{ background: `${scoreLabelColor}20`, color: scoreLabelColor, border: `1px solid ${scoreLabelColor}40` }}
+              >{scoreLabel}</span>
+              <span className="rc-section-pct" style={{ color: c.text }}>{score}%</span>
             </div>
           </div>
-          <div style={{ height: "4px", background: "rgba(255,255,255,0.06)", borderRadius: "99px", overflow: "hidden" }}>
-            <div style={{
-              height: "100%", width: `${score}%`, background: c.accent,
-              borderRadius: "99px", transition: "width 0.8s cubic-bezier(0.4,0,0.2,1)",
-            }} />
+          <div className="rc-section-bar-track">
+            <div className="rc-section-bar-fill" style={{ width: `${score}%`, background: c.accent }} />
           </div>
-          <p style={{ margin: "4px 0 0", fontSize: "clamp(9px, 1.3vw, 10px)", color: weakItems.length > 0 ? "#94a3b8" : "#6ee7b7", fontFamily: "'Inter', sans-serif" }}>
+          <p className="rc-section-hint" style={{ color: weakItems.length > 0 ? IIEE.muted : IIEE.teal }}>
             {weakItems.length > 0
               ? `${weakItems.length} area${weakItems.length > 1 ? "s" : ""} to improve · ${strongItems.length} strong`
-              : `All ${section.fields.length} areas answered positively ✓`}
+              : `All ${section.fields.length} areas positive ✓`}
           </p>
         </div>
-        <span style={{
-          color: isActive ? c.text : "#64748b",
-          fontSize: "14px", flexShrink: 0,
-          transform: isActive ? "rotate(90deg)" : "rotate(0deg)",
-          transition: "transform 0.25s ease",
-        }}>▶</span>
+        <span className="rc-section-arrow" style={{ color: isActive ? c.text : IIEE.dimText, transform: isActive ? "rotate(90deg)" : "none" }}>▶</span>
       </button>
 
-      {/* ── Expanded: two-column split ── */}
+      {/* ── Expanded ── */}
       {isActive && (
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: "0",
-          borderTop: `1px solid ${c.border}`,
-        }}
-          className="section-expanded"
-        >
-          {/* LEFT — item breakdown */}
-          <div style={{
-            padding: "14px 16px",
-            borderRight: `1px solid ${c.border}`,
-            maxHeight: "340px",
-            overflowY: "auto",
-          }}>
-            <p style={{ margin: "0 0 10px", fontSize: "clamp(9px, 1.2vw, 10px)", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "'Montserrat', sans-serif" }}>
-              Item Breakdown
-            </p>
+        <div className="rc-expanded" style={{ borderTopColor: c.border }}>
+
+          {/* Left: item breakdown */}
+          <div className="rc-items-panel" style={{ borderRightColor: c.border }}>
+            <p className="rc-items-heading">Item Breakdown</p>
             {section.fields.map((f, i) => {
               const val = Number(answers[f.key]);
               const isWeak = val >= 3;
               const barW = ((4 - val) / 3) * 100;
               return (
-                <div key={f.key} style={{
-                  display: "flex", alignItems: "center", gap: "8px",
-                  padding: "7px 0",
-                  borderBottom: i < section.fields.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none",
-                  background: isWeak ? "rgba(239,68,68,0.04)" : "transparent",
-                }}>
-                  <span style={{ fontSize: "9px", fontWeight: 700, color: isWeak ? "#f87171" : "#6ee7b7", flexShrink: 0, width: "26px" }}>{f.key}</span>
-                  <span style={{ flex: 1, fontSize: "10px", color: isWeak ? "#fca5a5" : "#94a3b8", lineHeight: 1.35 }}>{f.label}</span>
-                  <div style={{ display: "flex", alignItems: "center", gap: "5px", flexShrink: 0 }}>
-                    <div style={{ width: "40px", height: "3px", background: "rgba(255,255,255,0.08)", borderRadius: "99px", overflow: "hidden" }}>
-                      <div style={{ height: "100%", width: `${barW}%`, background: isWeak ? "#f87171" : c.accent, borderRadius: "99px" }} />
-                    </div>
-                    <span style={{ fontSize: "10px", fontWeight: 700, color: isWeak ? "#f87171" : c.text, width: "12px", textAlign: "right" }}>{val}</span>
+                <div
+                  key={f.key} className="rc-item-row"
+                  style={{ background: isWeak ? "rgba(239,68,68,0.04)" : "transparent" }}
+                >
+                  <span className="rc-item-key" style={{ color: isWeak ? IIEE.failRed : IIEE.passGreen }}>{f.key}</span>
+                  <span className="rc-item-label" style={{ color: isWeak ? "#fca5a5" : IIEE.muted }}>{f.label}</span>
+                  <div className="rc-item-bar-track">
+                    <div className="rc-item-bar-fill" style={{ width: `${barW}%`, background: isWeak ? IIEE.failRed : c.accent }} />
                   </div>
+                  <span className="rc-item-val" style={{ color: isWeak ? IIEE.failRed : c.text }}>{val}</span>
                 </div>
               );
             })}
           </div>
 
-          {/* RIGHT — AI recommendations */}
-          <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "10px" }}>
-              <span style={{ fontSize: "13px" }}>✨</span>
-              <span style={{ fontSize: "clamp(9px, 1.2vw, 10px)", fontWeight: 700, color: c.text, textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "'Montserrat', sans-serif" }}>
-                AI Recommendations
-              </span>
+          {/* Right: AI recommendations */}
+          <div className="rc-ai-panel">
+            <div className="rc-ai-head">
+              <span style={{ fontSize: 14 }}>✨</span>
+              <span className="rc-ai-label" style={{ color: c.text }}>AI Recommendations</span>
             </div>
+
             {loading && (
-              <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 0" }}>
-                <div style={{
-                  width: "14px", height: "14px", borderRadius: "50%",
-                  border: `2px solid ${c.accent}40`, borderTopColor: c.accent,
-                  animation: "spin 0.8s linear infinite", flexShrink: 0,
-                }} />
-                <span style={{ fontSize: "11px", color: "#64748b" }}>Analyzing…</span>
+              <div className="rc-ai-loading">
+                <div className="rc-ai-spinner" style={{ borderColor: `${c.accent}40`, borderTopColor: c.accent }} />
+                <span className="rc-ai-loading-text">Analyzing your responses…</span>
               </div>
             )}
-            {error && <p style={{ fontSize: "11px", color: "#f87171", lineHeight: 1.6 }}>{error}</p>}
+
+            {error && (
+              <p style={{ fontSize: "clamp(10px,1.3vw,12px)", color: IIEE.failRed, lineHeight: 1.6 }}>{error}</p>
+            )}
+
             {rec && (
-              <div style={{ overflowY: "auto", maxHeight: "300px" }}>
+              <div className="rc-ai-content">
                 {rec.split("\n").filter(l => l.trim()).map((line, i) => {
-                  const isNumbered = /^\d+\./.test(line.trim());
+                  const isNum = /^\d+\./.test(line.trim());
                   return (
-                    <p key={i} style={{
-                      fontSize: "clamp(10px, 1.5vw, 11px)", lineHeight: 1.65,
-                      margin: isNumbered ? "5px 0" : "0 0 8px",
-                      color: isNumbered ? "#cbd5e1" : "#94a3b8",
-                      fontWeight: isNumbered ? 500 : 400,
-                      fontFamily: isNumbered ? "'Inter', sans-serif" : "'Inter', sans-serif",
-                    }}>
-                      {isNumbered
+                    <p key={i} className="rc-ai-line" style={{ color: isNum ? "#cbd5e1" : IIEE.muted, fontWeight: isNum ? 500 : 400 }}>
+                      {isNum
                         ? <><span style={{ color: c.text, fontWeight: 700 }}>{line.match(/^\d+/)[0]}.</span>{line.replace(/^\d+\./, "")}</>
                         : line}
                     </p>
@@ -336,10 +670,9 @@ function SectionCard({ section, answers, passed, isActive, onToggle, attempt_id 
                 })}
               </div>
             )}
+
             {!loading && !rec && !error && (
-              <p style={{ fontSize: "11px", color: "#475569", lineHeight: 1.6 }}>
-                Loading AI analysis for this section…
-              </p>
+              <p className="rc-ai-placeholder">Loading AI analysis for this section…</p>
             )}
           </div>
         </div>
@@ -348,52 +681,46 @@ function SectionCard({ section, answers, passed, isActive, onToggle, attempt_id 
   );
 }
 
-// ── Predicted Rating Section ──────────────────────────────────────────────────
+// ─── Predicted Rating Section ─────────────────────────────────────────────────
 function PredictedRatingSection({ result }) {
-  const ratingA = result.predicted_rating_a;
-  const ratingB = result.predicted_rating_b;
-  const labelA  = result.rating_label_a;
-  const labelB  = result.rating_label_b;
-  const colorA  = getRatingColor(ratingA);
-  const colorB  = getRatingColor(ratingB);
-  const passing = result.passing_score ?? 70;
+  const ratingA  = result.predicted_rating_a;
+  const ratingB  = result.predicted_rating_b;
+  const labelA   = result.rating_label_a;
+  const labelB   = result.rating_label_b;
+  const colorA   = getRatingColor(ratingA);
+  const colorB   = getRatingColor(ratingB);
+  const passing  = result.passing_score ?? 70;
   const subjects = result.subject_status ? Object.entries(result.subject_status) : [];
 
   return (
-    <div style={{
-      background: "rgba(15,23,42,0.7)",
-      border: "1px solid rgba(255,255,255,0.08)",
-      borderRadius: "16px", padding: "18px", marginBottom: "18px",
-    }}>
-      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "14px" }}>
-        <span style={{ fontSize: "16px" }}>📊</span>
-        <span style={{ fontSize: "12px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.1em" }}>
-          Predicted PRC Rating
-        </span>
-        <div style={{ flex: 1, height: "1px", background: "rgba(255,255,255,0.06)" }} />
-        <span style={{ fontSize: "10px", color: "#475569" }}>Passing ≥ {passing}</span>
+    <div className="rc-rating-card">
+      <div className="rc-rating-head">
+        <div className="rc-rating-icon">📊</div>
+        <div>
+          <p className="rc-rating-title">Predicted PRC Rating</p>
+          <p className="rc-rating-sub">Passing threshold ≥ {passing} — two model variants</p>
+        </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "14px" }}>
+      <div className="rc-rating-grid">
         {[
           { label: "With Subject Scores", rating: ratingA, color: colorA, badge: labelA },
           { label: "GWA + Survey Only",   rating: ratingB, color: colorB, badge: labelB },
         ].map(({ label, rating, color, badge }) => (
-          <div key={label} style={{
-            background: `${color}10`, border: `1px solid ${color}30`,
-            borderRadius: "12px", padding: "14px",
-          }}>
-            <p style={{ margin: "0 0 3px", fontSize: "9px", color: "#64748b", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em" }}>{label}</p>
-            <div style={{ display: "flex", alignItems: "flex-end", gap: "4px", marginBottom: "7px" }}>
-              <span style={{ fontSize: "32px", fontWeight: 800, color, lineHeight: 1 }}>{rating != null ? rating.toFixed(1) : "—"}</span>
-              <span style={{ fontSize: "12px", color: "#64748b", marginBottom: "3px" }}>/100</span>
+          <div key={label} className="rc-rating-box" style={{ background: `${color}10`, border: `1px solid ${color}30` }}>
+            <p className="rc-rating-box-label">{label}</p>
+            <div>
+              <span className="rc-rating-val" style={{ color }}>
+                {rating != null ? rating.toFixed(1) : "—"}
+                <span className="rc-rating-val-unit">/100</span>
+              </span>
             </div>
-            <div style={{ height: "5px", background: "rgba(255,255,255,0.06)", borderRadius: "99px", overflow: "hidden", marginBottom: "7px" }}>
-              <div style={{ height: "100%", width: `${rating ?? 0}%`, background: color, borderRadius: "99px", transition: "width 1s ease" }} />
+            <div className="rc-rating-prog">
+              <div className="rc-rating-prog-fill" style={{ width: `${rating ?? 0}%`, background: color }} />
             </div>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <span style={{ fontSize: "10px", fontWeight: 700, padding: "2px 7px", borderRadius: "999px", background: `${color}20`, color, border: `1px solid ${color}40` }}>{badge}</span>
-              <span style={{ fontSize: "9px", fontWeight: 600, color: rating >= passing ? "#34d399" : "#f87171" }}>
+            <div className="rc-rating-footer">
+              <span className="rc-rating-badge" style={{ background: `${color}20`, color, border: `1px solid ${color}40` }}>{badge}</span>
+              <span className="rc-rating-verdict" style={{ color: rating >= passing ? IIEE.passGreen : IIEE.failRed }}>
                 {rating >= passing ? "▲ PASS" : "▼ FAIL"}
               </span>
             </div>
@@ -402,36 +729,40 @@ function PredictedRatingSection({ result }) {
       </div>
 
       {subjects.length > 0 && (
-        <div style={{ background: "rgba(0,0,0,0.25)", borderRadius: "10px", padding: "10px 14px", marginBottom: "10px" }}>
-          <p style={{ margin: "0 0 8px", fontSize: "10px", fontWeight: 600, color: "#475569", textTransform: "uppercase", letterSpacing: "0.08em" }}>Subject Scores</p>
-          <div style={{ display: "grid", gridTemplateColumns: `repeat(${subjects.length}, 1fr)`, gap: "7px" }}>
+        <div className="rc-subjects">
+          <p className="rc-subjects-label">Subject Scores</p>
+          <div className="rc-subjects-grid" style={{ gridTemplateColumns: `repeat(${Math.min(subjects.length, 4)}, 1fr)` }}>
             {subjects.map(([subj, info]) => (
-              <div key={subj} style={{
-                background: info.passed ? "rgba(52,211,153,0.08)" : "rgba(248,113,113,0.08)",
-                border: `1px solid ${info.passed ? "rgba(52,211,153,0.2)" : "rgba(248,113,113,0.2)"}`,
-                borderRadius: "9px", padding: "8px 10px", textAlign: "center",
-              }}>
-                <p style={{ margin: "0 0 1px", fontSize: "9px", fontWeight: 600, color: "#64748b", textTransform: "uppercase" }}>{subj}</p>
-                <p style={{ margin: "0 0 3px", fontSize: "20px", fontWeight: 800, color: info.passed ? "#34d399" : "#f87171" }}>{info.score}</p>
-                <span style={{ fontSize: "8px", fontWeight: 700, padding: "1px 5px", borderRadius: "999px",
-                  background: info.passed ? "rgba(52,211,153,0.15)" : "rgba(248,113,113,0.15)",
-                  color: info.passed ? "#34d399" : "#f87171",
-                }}>{info.passed ? `✓ ≥${passing}` : `✗ <${passing}`}</span>
+              <div
+                key={subj} className="rc-subject-box"
+                style={{
+                  background: info.passed ? "rgba(34,197,94,0.08)"  : "rgba(239,68,68,0.08)",
+                  border:     `1px solid ${info.passed ? "rgba(34,197,94,0.22)" : "rgba(239,68,68,0.22)"}`,
+                }}
+              >
+                <p className="rc-subject-name">{subj}</p>
+                <p className="rc-subject-score" style={{ color: info.passed ? IIEE.passGreen : IIEE.failRed }}>{info.score}</p>
+                <span
+                  className="rc-subject-status"
+                  style={{
+                    background: info.passed ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.15)",
+                    color:      info.passed ? IIEE.passGreen : IIEE.failRed,
+                  }}
+                >{info.passed ? `✓ ≥${passing}` : `✗ <${passing}`}</span>
               </div>
             ))}
           </div>
         </div>
       )}
 
-      <p style={{ margin: 0, fontSize: "10px", color: "#475569", lineHeight: 1.6 }}>
-        💡 <strong style={{ color: "#64748b" }}>Model A</strong> uses subject scores + GWA + survey (R² = 0.97).{" "}
-        <strong style={{ color: "#64748b" }}>Model B</strong> uses only GWA + survey — useful for early readiness assessment (R² = 0.90).
+      <p className="rc-model-note">
+        💡 <strong>Model A</strong> uses subject scores + GWA + survey (R² = 0.97). <strong>Model B</strong> uses only GWA + survey — useful for early readiness assessment (R² = 0.90).
       </p>
     </div>
   );
 }
 
-// ── Main ResultCard ───────────────────────────────────────────────────────────
+// ─── Main ResultCard ──────────────────────────────────────────────────────────
 export default function ResultCard({ result }) {
   const [activeSection, setActiveSection] = useState(null);
 
@@ -443,191 +774,134 @@ export default function ResultCard({ result }) {
   const attempt_id  = result.attempt_id;
 
   const reliability = result.reliability_score;
-  const reliabilityLabel = result.reliability_category
-    ?? (
-      reliability == null
-        ? "—"
-        : reliability >= 80
-          ? "Highly consistent answers"
-          : reliability >= 60
-            ? "Moderate consistency"
-            : "Potential random responses"
-    );
+  const reliabilityLabel = result.reliability_category ?? (
+    reliability == null ? "—"
+    : reliability >= 80 ? "Highly consistent answers"
+    : reliability >= 60 ? "Moderate consistency"
+    : "Potential random responses"
+  );
+  const reliabilityColor = reliability == null ? IIEE.dimText
+    : reliability >= 80 ? IIEE.passGreen
+    : reliability >= 60 ? IIEE.amber : IIEE.orange;
 
   const allKeys      = SECTIONS.flatMap(s => s.fields.map(f => f.key));
   const overallScore = computeScore(allKeys, answers);
+  const { color: overallColor } = getScoreLabel(overallScore ?? 0);
 
-  const handleToggle = (id) => {
-    setActiveSection(prev => prev === id ? null : id);
-  };
+  const passColor = passed ? IIEE.passGreen : IIEE.failRed;
 
   return (
-    <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", color: "#f1f5f9" }}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&display=swap');
-        @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
-        .result-section { animation: fadeUp 0.35s ease forwards; }
+    <div className="rc-root">
+      <style>{STYLES}</style>
 
-        /* Responsive: stack split panel on small screens */
-        @media (max-width: 600px) {
-          .section-expanded {
-            grid-template-columns: 1fr !important;
-          }
-          .section-expanded > div:first-child {
-            border-right: none !important;
-            border-bottom: 1px solid rgba(255,255,255,0.07);
-            max-height: 220px !important;
-          }
-        }
-
-        /* Scrollbar styling */
-        ::-webkit-scrollbar { width: 4px; height: 4px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 99px; }
-      `}</style>
-
-      {/* ── Verdict banner ── */}
-      <div style={{
-        background: passed
-          ? "linear-gradient(135deg, rgba(16,185,129,0.12), rgba(5,150,105,0.06))"
-          : "linear-gradient(135deg, rgba(239,68,68,0.12), rgba(220,38,38,0.06))",
-        border: `1px solid ${passed ? "rgba(52,211,153,0.3)" : "rgba(248,113,113,0.3)"}`,
-        borderRadius: "20px", padding: "22px", marginBottom: "18px",
-      }}>
-        {/* Top row */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px", gap: "12px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
-            <div style={{
-              width: "52px", height: "52px", borderRadius: "14px",
-              background: passed ? "rgba(52,211,153,0.15)" : "rgba(248,113,113,0.15)",
-              border: `1px solid ${passed ? "rgba(52,211,153,0.25)" : "rgba(248,113,113,0.25)"}`,
-              display: "flex", alignItems: "center", justifyContent: "center", fontSize: "24px", flexShrink: 0,
-            }}>
+      {/* ── Verdict Banner ── */}
+      <div
+        className="rc-verdict"
+        style={{
+          background: passed
+            ? "linear-gradient(135deg, rgba(16,185,129,0.12), rgba(5,150,105,0.05))"
+            : "linear-gradient(135deg, rgba(239,68,68,0.12), rgba(220,38,38,0.05))",
+          border: `1px solid ${passColor}45`,
+        }}
+      >
+        <div className="rc-verdict-top">
+          <div className="rc-verdict-left">
+            <div
+              className="rc-verdict-icon"
+              style={{ background: `${passColor}18`, border: `1px solid ${passColor}28` }}
+            >
               {passed ? "🎓" : "📋"}
             </div>
             <div>
-              <p style={{ margin: 0, fontSize: "10px", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.12em", fontWeight: 600, marginBottom: "3px" }}>
-                Prediction Result
-              </p>
-              <p style={{ margin: 0, fontSize: "34px", fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1, color: passed ? "#34d399" : "#f87171" }}>
+              <p className="rc-label">Prediction Result</p>
+              <p className="rc-verdict-text" style={{ color: passColor }}>
                 {passed ? "PASSED" : "FAILED"}
               </p>
             </div>
           </div>
 
           {/* Confidence ring */}
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "2px", flexShrink: 0 }}>
-            <div style={{ position: "relative", width: "60px", height: "60px" }}>
-              <svg width="60" height="60" viewBox="0 0 60 60" style={{ transform: "rotate(-90deg)" }}>
-                <circle cx="30" cy="30" r="24" fill="none" stroke="#1e293b" strokeWidth="5" />
-                <circle cx="30" cy="30" r="24" fill="none"
-                  stroke={passed ? "#34d399" : "#f87171"} strokeWidth="5" strokeLinecap="round"
-                  strokeDasharray={`${2 * Math.PI * 24}`}
-                  strokeDashoffset={`${2 * Math.PI * 24 * (1 - confidence / 100)}`}
+          <div className="rc-ring-wrap">
+            <div style={{ position: "relative", width: "clamp(52px,9vw,62px)", height: "clamp(52px,9vw,62px)" }}>
+              <svg width="62" height="62" viewBox="0 0 62 62" style={{ transform: "rotate(-90deg)" }}>
+                <circle cx="31" cy="31" r="25" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="5" />
+                <circle
+                  cx="31" cy="31" r="25" fill="none"
+                  stroke={passColor} strokeWidth="5" strokeLinecap="round"
+                  strokeDasharray={`${2 * Math.PI * 25}`}
+                  strokeDashoffset={`${2 * Math.PI * 25 * (1 - confidence / 100)}`}
                   style={{ transition: "stroke-dashoffset 1s cubic-bezier(0.4,0,0.2,1)" }}
                 />
               </svg>
               <span style={{
                 position: "absolute", top: "50%", left: "50%",
-                transform: "translate(-50%, -50%)",
-                fontSize: "12px", fontWeight: 800, color: passed ? "#34d399" : "#f87171",
+                transform: "translate(-50%,-50%)",
+                fontSize: "clamp(11px,2vw,13px)", fontWeight: 800,
+                color: passColor, fontFamily: "'Montserrat',sans-serif",
               }}>{confidence}%</span>
             </div>
-            <span style={{ fontSize: "9px", color: "#475569" }}>confidence</span>
+            <span className="rc-ring-sub">confidence</span>
           </div>
         </div>
 
         {/* Summary */}
-        <div style={{
-          background: passed ? "rgba(52,211,153,0.06)" : "rgba(248,113,113,0.06)",
-          border: `1px solid ${passed ? "rgba(52,211,153,0.15)" : "rgba(248,113,113,0.15)"}`,
-          borderRadius: "10px", padding: "10px 14px",
-          fontSize: "12px", color: passed ? "rgba(167,243,208,0.85)" : "rgba(252,165,165,0.85)",
-          lineHeight: 1.6, marginBottom: "16px",
-        }}>
+        <div
+          className="rc-summary"
+          style={{
+            background: `${passColor}09`,
+            border: `1px solid ${passColor}20`,
+            color: passed ? "rgba(167,243,208,0.88)" : "rgba(252,165,165,0.88)",
+          }}
+        >
           {passed
             ? "🎉 Based on your profile, you are likely to pass the EE Licensure Exam. Explore each section below to push your readiness to 100%."
             : "📚 Additional preparation is recommended. Review the AI analysis for each section below — every improvement brings you closer to passing."}
         </div>
 
         {/* Probability bar */}
-        <div style={{ marginBottom: "6px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "5px" }}>
-            <span style={{ fontSize: "11px", fontWeight: 700, color: "#34d399" }}>Pass {passPercent}%</span>
-            <span style={{ fontSize: "11px", fontWeight: 700, color: "#f87171" }}>Fail {failPercent}%</span>
-          </div>
-          <div style={{ height: "8px", background: "rgba(255,255,255,0.06)", borderRadius: "99px", overflow: "hidden" }}>
-            <div style={{
-              height: "100%", width: `${passPercent}%`,
-              background: "linear-gradient(90deg, #34d399, #14b8a6)",
-              borderRadius: "99px", transition: "width 0.8s cubic-bezier(0.4,0,0.2,1)",
-            }} />
-          </div>
+        <div className="rc-prob-row">
+          <span className="rc-prob-label" style={{ color: IIEE.passGreen }}>Pass {passPercent}%</span>
+          <span className="rc-prob-label" style={{ color: IIEE.failRed }}>Fail {failPercent}%</span>
+        </div>
+        <div className="rc-bar-track">
+          <div
+            className="rc-bar-fill"
+            style={{ width: `${passPercent}%`, background: `linear-gradient(90deg, ${IIEE.passGreen}, ${IIEE.teal})` }}
+          />
         </div>
 
-        {/* Probability chips */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginTop: "12px" }}>
+        {/* Prob chips */}
+        <div className="rc-prob-chips">
           {[
-            { label: "Pass Probability", val: result.probability_pass.toFixed(4), color: "#34d399" },
-            { label: "Fail Probability", val: result.probability_fail.toFixed(4), color: "#f87171" },
+            { label: "Pass Probability", val: result.probability_pass.toFixed(4), color: IIEE.passGreen },
+            { label: "Fail Probability", val: result.probability_fail.toFixed(4), color: IIEE.failRed },
           ].map(({ label, val, color }) => (
-            <div key={label} style={{
-              background: "rgba(0,0,0,0.2)", borderRadius: "10px", padding: "12px 14px",
-              border: "1px solid rgba(255,255,255,0.06)",
-            }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "5px", marginBottom: "3px" }}>
-                <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: color, flexShrink: 0 }} />
-                <span style={{ fontSize: "10px", color: "#64748b", fontWeight: 500 }}>{label}</span>
+            <div key={label} className="rc-prob-chip">
+              <div className="rc-prob-chip-row">
+                <span className="rc-prob-chip-dot" style={{ background: color }} />
+                <span className="rc-prob-chip-label">{label}</span>
               </div>
-              <p style={{ margin: 0, fontSize: "20px", fontWeight: 800, color, fontVariantNumeric: "tabular-nums" }}>{val}</p>
+              <p className="rc-prob-chip-val" style={{ color }}>{val}</p>
             </div>
           ))}
         </div>
 
-        <p
-          style={{
-            margin: "8px 0 0",
-            fontSize: "11px",
-            color: "#64748b",
-            fontFamily: "'DM Sans', sans-serif",
-            lineHeight: 1.6,
-          }}
-        >
+        {/* Reliability */}
+        <p className="rc-reliability">
           Response reliability:{" "}
-          <span
-            style={{
-              fontWeight: 700,
-              color:
-                reliability == null
-                  ? "#e5e7eb"
-                  : reliability >= 80
-                  ? "#22c55e"
-                  : reliability >= 60
-                  ? "#eab308"
-                  : "#f97316",
-            }}
-          >
-            {reliability != null ? `${reliability.toFixed(1)}%` : "—"}
-          </span>
-          <span style={{ marginLeft: 8, fontSize: 10, color: "#94a3b8" }}>
-            ({reliabilityLabel})
-          </span>
+          <strong style={{ color: reliabilityColor }}>{reliability != null ? `${reliability.toFixed(1)}%` : "—"}</strong>
+          <span style={{ marginLeft: 8, fontSize: "clamp(9px,1.2vw,10px)", color: IIEE.dimText }}>({reliabilityLabel})</span>
         </p>
 
-        {/* Overall survey score */}
+        {/* Overall survey bar */}
         {overallScore !== null && (
-          <div style={{ marginTop: "12px", background: "rgba(0,0,0,0.2)", borderRadius: "10px", padding: "12px 14px", border: "1px solid rgba(255,255,255,0.06)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "7px" }}>
-              <span style={{ fontSize: "11px", fontWeight: 600, color: "#94a3b8" }}>Overall Survey Readiness</span>
-              <span style={{ fontSize: "13px", fontWeight: 800, color: getScoreLabel(overallScore).color }}>{overallScore}%</span>
+          <div className="rc-overall">
+            <div className="rc-overall-row">
+              <span className="rc-overall-label">Overall Survey Readiness</span>
+              <span className="rc-overall-val" style={{ color: overallColor }}>{overallScore}%</span>
             </div>
-            <div style={{ height: "5px", background: "rgba(255,255,255,0.06)", borderRadius: "99px", overflow: "hidden" }}>
-              <div style={{
-                height: "100%", width: `${overallScore}%`,
-                background: `linear-gradient(90deg, ${getScoreLabel(overallScore).color}, ${getScoreLabel(overallScore).color}aa)`,
-                borderRadius: "99px", transition: "width 1s ease",
-              }} />
+            <div className="rc-bar-track" style={{ marginBottom: 0 }}>
+              <div className="rc-bar-fill" style={{ width: `${overallScore}%`, background: overallColor }} />
             </div>
           </div>
         )}
@@ -636,39 +910,27 @@ export default function ResultCard({ result }) {
       {/* ── Predicted PRC Rating ── */}
       <PredictedRatingSection result={result} />
 
-      {/* ── Section breakdown ── */}
-      <div style={{ marginBottom: "14px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
-          <span style={{ fontSize: "11px", fontWeight: 700, color: "#475569", textTransform: "uppercase", letterSpacing: "0.1em" }}>
-            Detailed Section Analysis
-          </span>
-          <div style={{ flex: 1, height: "1px", background: "rgba(255,255,255,0.06)" }} />
-          <span style={{ fontSize: "10px", color: "#475569" }}>Click to expand side-by-side</span>
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-          {SECTIONS.map((section, i) => (
-            <div key={section.id} className="result-section" style={{ animationDelay: `${i * 0.04}s` }}>
-              <SectionCard
-                section={section}
-                answers={answers}
-                passed={passed}
-                isActive={activeSection === section.id}
-                onToggle={() => handleToggle(section.id)}
-                attempt_id={attempt_id}
-              />
-            </div>
-          ))}
-        </div>
+      {/* ── Section Analysis ── */}
+      <Divider label="📋 Detailed Section Analysis — Click to Expand" />
+
+      <div>
+        {SECTIONS.map((section, i) => (
+          <div key={section.id} className="rc-fadein" style={{ animationDelay: `${i * 0.04}s` }}>
+            <SectionCard
+              section={section}
+              answers={answers}
+              passed={passed}
+              isActive={activeSection === section.id}
+              onToggle={() => setActiveSection(prev => prev === section.id ? null : section.id)}
+              attempt_id={attempt_id}
+            />
+          </div>
+        ))}
       </div>
 
       {/* ── Footer ── */}
-      <div style={{
-        background: "rgba(15,23,42,0.6)", border: "1px solid rgba(255,255,255,0.06)",
-        borderRadius: "10px", padding: "12px 14px",
-      }}>
-        <p style={{ margin: 0, fontSize: "10px", color: "#475569", lineHeight: 1.7 }}>
-          💬 <strong style={{ color: "#64748b" }}>Note:</strong> AI recommendations are personalized based on your survey answers. Each section targets your specific weak points while affirming strengths. Retake the mock exam after improving flagged areas to see your updated prediction.
-        </p>
+      <div className="rc-footer-note" style={{ marginTop: 16 }}>
+        💬 <strong>Note:</strong> AI recommendations are personalized based on your survey answers. Each section targets your specific weak points while affirming strengths. Retake the mock exam after improving flagged areas to see your updated prediction.
       </div>
     </div>
   );

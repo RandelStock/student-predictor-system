@@ -3,565 +3,801 @@ import PredictorForm from "./PredictorForm";
 import ResultCard from "./ResultCard";
 import API_BASE_URL from "../apiBase";
 
-// ── helpers ───────────────────────────────────────────────────────────────────
-const STORAGE_KEY = "ee_predictor_history";
+// ─── Design Tokens (mirrors ModelOverviewDashboard) ───────────────────────────
+const IIEE = {
+  navy:       "#0B1437",
+  navyMid:    "#0F1C4D",
+  gold:       "#F5C518",
+  goldGlow:   "rgba(245,197,24,0.18)",
+  goldBorder: "rgba(245,197,24,0.35)",
+  white:      "#F8FAFC",
+  muted:      "#94A3B8",
+  dimText:    "#64748B",
+  cardBg:     "rgba(15,28,77,0.72)",
+  cardBorder: "rgba(245,197,24,0.18)",
+  passGreen:  "#22C55E",
+  failRed:    "#EF4444",
+  amber:      "#F59E0B",
+  blue:       "#38BDF8",
+  teal:       "#2DD4BF",
+  indigo:     "#818CF8",
+  orange:     "#FB923C",
+};
 
-function loadHistory() {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-  } catch {
-    return [];
+// ─── Global Styles ────────────────────────────────────────────────────────────
+const STYLES = `
+  @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Inter:wght@300;400;500;600&family=DM+Sans:wght@300;400;500;700&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  .sp-root {
+    font-family: 'Inter', sans-serif;
+    background: ${IIEE.navy};
+    min-height: 100vh;
+    color: ${IIEE.white};
+    font-size: clamp(13px, 1.2vw, 14px);
+    line-height: 1.6;
   }
-}
 
+  /* ── Nav ── */
+  .sp-nav {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(11,20,55,0.96);
+    backdrop-filter: blur(18px);
+    border-bottom: 1px solid ${IIEE.goldBorder};
+    padding: 0 clamp(14px, 4vw, 32px);
+    display: flex; align-items: center; justify-content: space-between;
+    height: clamp(58px, 8vw, 72px);
+    gap: 12px;
+  }
+  .sp-nav-brand {
+    display: flex; align-items: center; gap: clamp(8px, 2vw, 12px);
+    min-width: 0;
+  }
+  .sp-nav-logos {
+    display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+  }
+  .sp-nav-logos img {
+    width: clamp(22px, 3.5vw, 30px);
+    height: clamp(22px, 3.5vw, 30px);
+    object-fit: contain; opacity: 0.95;
+  }
+  .sp-nav-divider {
+    width: 1px; height: 32px;
+    background: rgba(255,255,255,0.1);
+    flex-shrink: 0;
+  }
+  .sp-nav-title {
+    font-family: 'Montserrat', sans-serif;
+    font-size: clamp(12px, 2vw, 15px); font-weight: 800;
+    color: ${IIEE.white}; letter-spacing: 0.01em;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .sp-nav-subtitle {
+    font-size: clamp(9px, 1.2vw, 10px); color: ${IIEE.muted};
+    text-transform: uppercase; letter-spacing: 0.08em;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .sp-nav-actions {
+    display: flex; align-items: center; gap: clamp(6px, 1.5vw, 10px);
+    flex-shrink: 0;
+  }
+  .sp-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    border-radius: 4px; padding: 3px 10px;
+    font-size: clamp(9px, 1.2vw, 11px); font-weight: 700;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    font-family: 'Montserrat', sans-serif;
+  }
+  .sp-badge.gold {
+    background: ${IIEE.goldGlow}; border: 1px solid ${IIEE.goldBorder}; color: ${IIEE.gold};
+  }
+  .sp-badge.blue {
+    background: rgba(56,189,248,0.12); border: 1px solid rgba(56,189,248,0.3); color: ${IIEE.blue};
+  }
+  .sp-btn {
+    border-radius: 8px; padding: clamp(6px, 1.2vw, 8px) clamp(10px, 2vw, 16px);
+    font-size: clamp(10px, 1.3vw, 12px); font-weight: 700;
+    font-family: 'DM Sans', sans-serif; cursor: pointer;
+    transition: all 0.18s; border: 1px solid transparent;
+    white-space: nowrap;
+  }
+  .sp-btn.ghost {
+    background: rgba(255,255,255,0.04);
+    border-color: rgba(255,255,255,0.09);
+    color: ${IIEE.muted};
+  }
+  .sp-btn.ghost:hover { color: ${IIEE.white}; border-color: rgba(255,255,255,0.2); }
+  .sp-btn.danger:hover { color: #f87171; border-color: rgba(248,113,113,0.3); }
+  .sp-btn.primary {
+    background: linear-gradient(135deg, rgba(14,165,233,0.2), rgba(99,102,241,0.2));
+    border-color: rgba(14,165,233,0.35);
+    color: ${IIEE.blue};
+  }
+  .sp-btn.primary:hover {
+    background: linear-gradient(135deg, rgba(14,165,233,0.32), rgba(99,102,241,0.32));
+    box-shadow: 0 4px 16px rgba(14,165,233,0.2);
+  }
+  .sp-btn.cta {
+    background: linear-gradient(135deg, #0ea5e9, #6366f1);
+    color: #fff; border: none;
+    box-shadow: 0 6px 20px rgba(14,165,233,0.3);
+    padding: clamp(10px, 2vw, 13px) clamp(20px, 4vw, 30px);
+    font-size: clamp(11px, 1.5vw, 13px);
+  }
+  .sp-btn.cta:hover { opacity: 0.88; transform: translateY(-1px); box-shadow: 0 10px 28px rgba(14,165,233,0.4); }
+  .sp-btn.outline-blue {
+    background: rgba(56,189,248,0.06); border-color: rgba(56,189,248,0.28); color: ${IIEE.blue};
+  }
+  .sp-btn.outline-blue:hover { background: rgba(56,189,248,0.14); box-shadow: 0 4px 14px rgba(56,189,248,0.15); }
+
+  /* ── Body ── */
+  .sp-body {
+    max-width: 900px; margin: 0 auto;
+    padding: clamp(20px, 4vw, 40px) clamp(12px, 4vw, 24px) 80px;
+  }
+
+  /* ── Hero divider (same pattern) ── */
+  .sp-divider {
+    display: flex; align-items: center; gap: 10px;
+    margin: clamp(18px, 3vw, 28px) 0 clamp(10px, 2vw, 16px);
+  }
+  .sp-divider-line {
+    flex: 1; height: 1px;
+    background: linear-gradient(90deg, ${IIEE.goldBorder} 0%, transparent 100%);
+  }
+  .sp-divider-line.rev {
+    background: linear-gradient(90deg, transparent 0%, ${IIEE.goldBorder} 100%);
+  }
+  .sp-divider-label {
+    font-family: 'Montserrat', sans-serif;
+    font-size: clamp(10px, 1.3vw, 12px); font-weight: 700;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    color: ${IIEE.gold}; white-space: nowrap;
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  /* ── Page hero header ── */
+  .sp-hero {
+    background: linear-gradient(135deg, ${IIEE.navyMid} 0%, #1a1060 55%, rgba(245,197,24,0.06) 100%);
+    border: 1px solid ${IIEE.goldBorder};
+    border-radius: 18px;
+    padding: clamp(18px, 4vw, 28px) clamp(16px, 4vw, 28px) clamp(16px, 3vw, 22px);
+    position: relative; overflow: hidden;
+    margin-bottom: clamp(18px, 3vw, 24px);
+  }
+  .sp-hero::before {
+    content: ''; position: absolute; top: -60px; right: -60px;
+    width: 260px; height: 260px;
+    background: radial-gradient(circle, rgba(245,197,24,0.09) 0%, transparent 65%);
+    pointer-events: none;
+  }
+  .sp-hero-badges { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+  .sp-hero-title {
+    font-family: 'Montserrat', sans-serif;
+    font-size: clamp(20px, 4.5vw, 30px); font-weight: 800;
+    text-transform: uppercase; letter-spacing: 0.03em;
+    color: ${IIEE.white}; margin: 0 0 6px; line-height: 1.1;
+  }
+  .sp-hero-title .gold { color: ${IIEE.gold}; }
+  .sp-hero-title .blue { color: ${IIEE.blue}; }
+  .sp-hero-sub {
+    font-size: clamp(12px, 1.6vw, 14px); color: ${IIEE.muted};
+    margin: 0; font-family: 'DM Sans', sans-serif;
+  }
+
+  /* ── KPI grid ── */
+  .sp-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(clamp(120px, 20vw, 155px), 1fr));
+    gap: clamp(8px, 2vw, 12px);
+    margin-bottom: clamp(16px, 3vw, 22px);
+  }
+  .sp-kpi {
+    background: ${IIEE.cardBg}; border: 1px solid ${IIEE.cardBorder};
+    border-radius: 14px; padding: clamp(12px, 2.5vw, 18px) clamp(10px, 2vw, 16px) clamp(10px, 2vw, 14px);
+    position: relative; overflow: hidden;
+    transition: transform 0.18s, border-color 0.18s, box-shadow 0.18s;
+    cursor: default;
+  }
+  .sp-kpi:hover {
+    transform: translateY(-2px); border-color: ${IIEE.gold};
+    box-shadow: 0 8px 28px rgba(245,197,24,0.12);
+  }
+  .sp-kpi::after {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: var(--ac, ${IIEE.gold}); opacity: 0.85;
+  }
+  .sp-kpi-icon { font-size: clamp(15px, 2.5vw, 18px); margin-bottom: 8px; display: block; }
+  .sp-kpi-label {
+    font-size: clamp(9px, 1.3vw, 11px); font-weight: 700; letter-spacing: 0.1em;
+    text-transform: uppercase; color: ${IIEE.muted}; margin-bottom: 5px;
+    font-family: 'Montserrat', sans-serif;
+  }
+  .sp-kpi-value {
+    font-family: 'Montserrat', sans-serif;
+    font-size: clamp(22px, 4.5vw, 32px); font-weight: 700; line-height: 1;
+    color: var(--ac, ${IIEE.gold});
+  }
+  .sp-kpi-sub { font-size: clamp(9px, 1.2vw, 11px); color: ${IIEE.dimText}; margin-top: 4px; font-family: 'Inter', sans-serif; }
+
+  /* ── Cards ── */
+  .sp-card {
+    background: ${IIEE.cardBg}; border: 1px solid ${IIEE.cardBorder};
+    border-radius: 16px; overflow: hidden;
+    transition: border-color 0.18s;
+    margin-bottom: clamp(12px, 2.5vw, 18px);
+  }
+  .sp-card:hover { border-color: rgba(245,197,24,0.35); }
+  .sp-card-head {
+    display: flex; align-items: flex-start; gap: clamp(10px, 2vw, 14px);
+    padding: clamp(12px, 2vw, 18px) clamp(14px, 3vw, 20px) clamp(10px, 2vw, 14px);
+    border-bottom: 1px solid rgba(245,197,24,0.1);
+    background: linear-gradient(90deg, rgba(245,197,24,0.04) 0%, transparent 100%);
+  }
+  .sp-card-icon {
+    width: clamp(30px, 5vw, 38px); height: clamp(30px, 5vw, 38px);
+    border-radius: 9px; display: flex; align-items: center; justify-content: center;
+    font-size: clamp(14px, 2.5vw, 16px);
+    background: ${IIEE.goldGlow}; border: 1px solid ${IIEE.goldBorder};
+    flex-shrink: 0;
+  }
+  .sp-card-icon.blue { background: rgba(56,189,248,0.1); border-color: rgba(56,189,248,0.25); }
+  .sp-card-title {
+    font-family: 'Montserrat', sans-serif;
+    font-size: clamp(13px, 2vw, 16px); font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.05em;
+    color: ${IIEE.white}; margin: 0 0 2px;
+  }
+  .sp-card-sub { font-size: clamp(10px, 1.4vw, 12px); color: ${IIEE.dimText}; margin: 0; font-family: 'Inter', sans-serif; }
+  .sp-card-body { padding: clamp(12px, 2vw, 18px) clamp(14px, 3vw, 20px); }
+
+  /* ── Latest result card ── */
+  .sp-latest {
+    background: linear-gradient(135deg, rgba(15,28,77,0.85), rgba(26,16,96,0.7));
+    border: 1px solid ${IIEE.goldBorder};
+    border-radius: 18px;
+    padding: clamp(14px, 3vw, 22px) clamp(14px, 3vw, 22px);
+    margin-bottom: clamp(16px, 3vw, 22px);
+    position: relative; overflow: hidden;
+  }
+  .sp-latest::before {
+    content: ''; position: absolute; top: -40px; right: -40px;
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, rgba(245,197,24,0.07) 0%, transparent 65%);
+    pointer-events: none;
+  }
+  .sp-latest-top {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 12px; margin-bottom: clamp(12px, 2.5vw, 18px); flex-wrap: wrap;
+  }
+  .sp-latest-verdict {
+    font-family: 'Montserrat', sans-serif;
+    font-size: clamp(26px, 6vw, 36px); font-weight: 800; line-height: 1;
+  }
+  .sp-latest-meta { display: flex; gap: 8px; flex-wrap: wrap; }
+  .sp-mini-stats {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: clamp(6px, 1.5vw, 10px);
+  }
+  .sp-mini-stat {
+    background: rgba(0,0,0,0.22); border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px; padding: clamp(8px, 1.5vw, 12px) clamp(8px, 1.5vw, 12px);
+  }
+  .sp-mini-stat-label {
+    font-size: clamp(8px, 1.1vw, 10px); color: ${IIEE.dimText};
+    text-transform: uppercase; letter-spacing: 0.07em;
+    font-family: 'DM Sans', sans-serif; margin-bottom: 4px;
+  }
+  .sp-mini-stat-val {
+    font-family: 'Montserrat', sans-serif;
+    font-size: clamp(18px, 4vw, 24px); font-weight: 800; line-height: 1;
+  }
+
+  /* ── History row ── */
+  .sp-history-row {
+    display: flex; align-items: center; gap: clamp(8px, 2vw, 14px);
+    padding: clamp(10px, 2vw, 14px) clamp(12px, 2.5vw, 16px);
+    border-radius: 12px; cursor: pointer;
+    transition: background 0.18s, transform 0.15s;
+    border: 1px solid rgba(255,255,255,0.06);
+    margin-bottom: 6px;
+  }
+  .sp-history-row:hover { background: rgba(255,255,255,0.04); transform: translateX(2px); }
+  .sp-history-row.latest { background: rgba(56,189,248,0.04); border-color: rgba(56,189,248,0.15); }
+  .sp-history-row.latest:hover { background: rgba(56,189,248,0.08); }
+  .sp-history-badge {
+    width: 36px; height: 36px; border-radius: 9px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: 16px;
+  }
+  .sp-history-info { flex: 1; min-width: 0; }
+  .sp-history-tags { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; flex-wrap: wrap; }
+  .sp-history-tag {
+    font-size: clamp(8px, 1.1vw, 10px); font-weight: 700;
+    padding: 2px 8px; border-radius: 999px; white-space: nowrap;
+  }
+  .sp-history-meta { display: flex; gap: clamp(8px, 2vw, 14px); align-items: center; flex-wrap: wrap; }
+  .sp-history-stat {
+    font-size: clamp(10px, 1.3vw, 12px); color: ${IIEE.dimText};
+    font-family: 'DM Sans', sans-serif;
+  }
+  .sp-history-stat strong { font-weight: 700; }
+
+  /* ── Empty state ── */
+  .sp-empty {
+    background: rgba(255,255,255,0.015); border: 1px dashed rgba(245,197,24,0.2);
+    border-radius: 18px; padding: clamp(30px, 6vw, 50px) 24px;
+    text-align: center; margin-bottom: 20px;
+  }
+  .sp-empty-icon { font-size: clamp(36px, 7vw, 48px); margin-bottom: 14px; }
+  .sp-empty-title {
+    font-family: 'Montserrat', sans-serif; font-size: clamp(14px, 2.5vw, 17px);
+    font-weight: 700; color: ${IIEE.white}; margin: 0 0 8px;
+  }
+  .sp-empty-sub { font-size: clamp(11px, 1.5vw, 13px); color: ${IIEE.dimText}; margin: 0 0 22px; line-height: 1.6; }
+
+  /* ── Review compare cards ── */
+  .sp-review-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr);
+    gap: clamp(8px, 2vw, 12px); margin-bottom: clamp(10px, 2vw, 14px);
+  }
+  .sp-review-pill {
+    border-radius: 12px; padding: clamp(10px, 2vw, 14px) clamp(12px, 2.5vw, 16px);
+    border: 1px solid;
+  }
+  .sp-review-pill-label { font-size: clamp(9px, 1.2vw, 11px); font-weight: 600; margin-bottom: 4px; }
+  .sp-review-pill-val {
+    font-family: 'Montserrat', sans-serif;
+    font-size: clamp(20px, 4vw, 26px); font-weight: 800; line-height: 1;
+    color: ${IIEE.white};
+  }
+
+  /* ── Filter pills ── */
+  .sp-filter-strip {
+    display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px;
+  }
+  .sp-filter-btn {
+    padding: 5px 12px; border-radius: 999px;
+    font-size: clamp(10px, 1.3vw, 12px); font-weight: 700;
+    cursor: pointer; transition: all 0.18s;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  /* ── Info note ── */
+  .sp-note {
+    border-left: 3px solid ${IIEE.goldBorder};
+    background: linear-gradient(90deg, rgba(245,197,24,0.06) 0%, transparent 100%);
+    border-radius: 0 10px 10px 0;
+    padding: clamp(8px, 1.5vw, 12px) clamp(12px, 2vw, 16px);
+    font-size: clamp(10px, 1.3vw, 12px); color: ${IIEE.muted}; line-height: 1.7;
+    font-family: 'Inter', sans-serif; margin-top: clamp(14px, 2.5vw, 20px);
+  }
+  .sp-note strong { color: ${IIEE.gold}; font-family: 'Montserrat', sans-serif; }
+
+  /* ── Section view header ── */
+  .sp-section-num {
+    font-family: 'Montserrat', sans-serif; font-size: clamp(9px, 1.2vw, 11px);
+    font-weight: 700; color: ${IIEE.gold}; letter-spacing: 0.1em;
+    text-transform: uppercase; margin-bottom: 2px;
+  }
+
+  /* ── Fade animation ── */
+  .sp-fade { animation: spFadeUp 0.35s ease both; }
+  @keyframes spFadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+
+  /* ── Scrollbar ── */
+  .sp-root ::-webkit-scrollbar { width: 4px; }
+  .sp-root ::-webkit-scrollbar-thumb { background: rgba(245,197,24,0.2); border-radius: 99px; }
+
+  /* ── Responsive ── */
+  @media (max-width: 640px) {
+    .sp-mini-stats { grid-template-columns: 1fr 1fr; }
+    .sp-mini-stats > :nth-child(3) { grid-column: 1 / -1; }
+    .sp-review-grid { grid-template-columns: 1fr; }
+    .sp-nav-logos img { width: 20px; height: 20px; }
+  }
+  @media (max-width: 480px) {
+    .sp-kpi-grid { grid-template-columns: 1fr 1fr; }
+    .sp-history-meta { gap: 6px; }
+    .sp-mini-stats { grid-template-columns: 1fr; }
+    .sp-mini-stats > :nth-child(3) { grid-column: auto; }
+  }
+`;
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+const STORAGE_KEY = "ee_predictor_history";
+function loadHistory() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); } catch { return []; }
+}
 function saveHistory(history) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
 }
-
-async function fetchDbHistory({ token, pageSize = 20 }) {
+async function fetchDbHistory({ token, pageSize = 50 }) {
   if (!token) throw new Error("Missing auth token");
-
   const res = await fetch(`${API_BASE_URL}/student/attempts?page_size=${pageSize}`, {
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${token}`,
-    },
+    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
   });
-
   if (!res.ok) {
     let msg = "Failed to load DB history.";
-    try {
-      const e = await res.json();
-      msg = e.detail || JSON.stringify(e);
-    } catch {}
+    try { const e = await res.json(); msg = e.detail || JSON.stringify(e); } catch {}
     throw new Error(msg);
   }
-
   const data = await res.json();
   return data?.items || [];
 }
-
 function formatDate(iso) {
   return new Date(iso).toLocaleDateString("en-PH", {
     year: "numeric", month: "short", day: "numeric",
     hour: "2-digit", minute: "2-digit",
   });
 }
-
 function getRatingColor(score) {
-  if (score >= 85) return "#34d399";
-  if (score >= 78) return "#60a5fa";
-  if (score >= 70) return "#fbbf24";
-  if (score >= 60) return "#f97316";
-  return "#f87171";
+  if (score >= 85) return IIEE.passGreen;
+  if (score >= 78) return IIEE.blue;
+  if (score >= 70) return IIEE.amber;
+  if (score >= 60) return IIEE.orange;
+  return IIEE.failRed;
 }
+function pct(v) { return v != null ? `${Number(v).toFixed(1)}%` : "—"; }
 
-// ── tiny stat chip ─────────────────────────────────────────────────────────────
-function StatChip({ label, value, color }) {
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+function Divider({ label, icon }) {
   return (
-    <div style={{
-      background: `${color}10`, border: `1px solid ${color}25`,
-      borderRadius: "12px", padding: "12px 14px",
-    }}>
-      <p style={{ margin: "0 0 2px", fontSize: "clamp(8px, 1.2vw, 9px)", color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.09em", fontFamily: "'Inter',sans-serif" }}>{label}</p>
-      <p style={{ margin: 0, fontSize: "clamp(20px, 5vw, 22px)", fontWeight: 700, color, fontFamily: "'Montserrat',sans-serif", lineHeight: 1 }}>{value}</p>
+    <div className="sp-divider">
+      <div className="sp-divider-line" />
+      <div className="sp-divider-label">{icon && <span>{icon}</span>}{label}</div>
+      <div className="sp-divider-line rev" />
     </div>
   );
 }
 
-// ── history result row ────────────────────────────────────────────────────────
+function KPI({ label, value, icon, color = IIEE.gold, sub }) {
+  return (
+    <div className="sp-kpi" style={{ "--ac": color }}>
+      <span className="sp-kpi-icon">{icon}</span>
+      <div className="sp-kpi-label">{label}</div>
+      <div className="sp-kpi-value">{value ?? "—"}</div>
+      {sub && <div className="sp-kpi-sub">{sub}</div>}
+    </div>
+  );
+}
+
 function HistoryRow({ entry, index, onView }) {
-  const passed     = entry.prediction === 1;
-  const passColor  = passed ? "#34d399" : "#f87171";
-  const ratingColor = getRatingColor(entry.predicted_rating_a);
-  const reliability  = entry.reliability_score;
-  const reliabilityColor =
-    reliability == null
-      ? "#94a3b8"
-      : reliability >= 80
-        ? "#22c55e"
-        : reliability >= 60
-          ? "#eab308"
-          : "#f97316";
-  const reliabilityText = entry.reliability_category ?? (reliability != null ? `${reliability.toFixed(1)}%` : "—");
-  const reliabilityBg = `${reliabilityColor}18`;
-  const reliabilityBorder = `${reliabilityColor}35`;
-  const isRecent   = index === 0;
+  const passed = entry.prediction === 1;
+  const passColor = passed ? IIEE.passGreen : IIEE.failRed;
+  const rColor = getRatingColor(entry.predicted_rating_a);
+  const reliability = entry.reliability_score;
+  const rCat = entry.reliability_category;
+  const relColor = reliability == null ? IIEE.muted
+    : reliability >= 80 ? IIEE.passGreen
+    : reliability >= 60 ? IIEE.amber : IIEE.orange;
   const attendedReview = entry?.answers?.Review_Program || entry?.attended_formal_review || "—";
+  const isLatest = index === 0;
 
   return (
-    <div style={{
-      display: "flex", alignItems: "center", gap: "12px",
-      padding: "clamp(10px, 2vw, 16px)",
-      background: isRecent ? "rgba(56,189,248,0.04)" : "rgba(255,255,255,0.015)",
-      border: `1px solid ${isRecent ? "rgba(56,189,248,0.15)" : "rgba(255,255,255,0.06)"}`,
-      borderRadius: "12px",
-      transition: "all 0.2s",
-      cursor: "pointer",
-    }}
-      onClick={onView}
-      onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.04)"}
-      onMouseLeave={e => e.currentTarget.style.background = isRecent ? "rgba(56,189,248,0.04)" : "rgba(255,255,255,0.015)"}
-    >
-      {/* Result badge */}
-      <div style={{
-        width: "38px", height: "38px", borderRadius: "10px", flexShrink: 0,
-        background: `${passColor}15`, border: `1px solid ${passColor}30`,
-        display: "flex", alignItems: "center", justifyContent: "center",
-        fontSize: "18px",
-      }}>
+    <div className={`sp-history-row${isLatest ? " latest" : ""}`} onClick={onView}>
+      {/* Badge */}
+      <div
+        className="sp-history-badge"
+        style={{ background: `${passColor}18`, border: `1px solid ${passColor}30` }}
+      >
         {passed ? "🎓" : "📋"}
       </div>
 
       {/* Info */}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "7px", marginBottom: "3px", flexWrap: "wrap" }}>
-          <span style={{
-            fontSize: "10px", fontWeight: 700, padding: "2px 8px", borderRadius: "999px",
-            background: `${passColor}20`, color: passColor, border: `1px solid ${passColor}35`,
-          }}>{passed ? "PASSED" : "FAILED"}</span>
-          {isRecent && (
-            <span style={{ fontSize: "9px", fontWeight: 700, padding: "2px 7px", borderRadius: "999px", background: "rgba(56,189,248,0.12)", color: "#38bdf8", border: "1px solid rgba(56,189,248,0.25)" }}>
-              Latest
-            </span>
-          )}
-          <span style={{ fontSize: "10px", color: "#475569", fontFamily: "'DM Sans',sans-serif" }}>{formatDate(entry.date)}</span>
-        </div>
-        <div style={{ display: "flex", gap: "14px", alignItems: "center" }}>
-          <span style={{ fontSize: "11px", color: "#64748b", fontFamily: "'DM Sans',sans-serif" }}>
-            Pass prob: <strong style={{ color: passColor }}>{(entry.probability_pass * 100).toFixed(1)}%</strong>
-          </span>
-          <span style={{ fontSize: "11px", color: "#64748b", fontFamily: "'DM Sans',sans-serif" }}>
-            Rating A: <strong style={{ color: ratingColor }}>{entry.predicted_rating_a?.toFixed(1)}</strong>
-          </span>
-          <span style={{ fontSize: "11px", color: "#64748b", fontFamily: "'DM Sans',sans-serif" }}>
-            Rating B: <strong style={{ color: getRatingColor(entry.predicted_rating_b) }}>{entry.predicted_rating_b?.toFixed(1)}</strong>
-          </span>
+      <div className="sp-history-info">
+        <div className="sp-history-tags">
           <span
-            style={{
-              fontSize: "10px",
-              fontWeight: 700,
-              padding: "2px 8px",
-              borderRadius: "999px",
-              background: reliabilityBg,
-              color: reliabilityColor,
-              border: `1px solid ${reliabilityBorder}`,
-              lineHeight: 1.3,
-              whiteSpace: "nowrap",
-            }}
-            title={reliabilityText}
-          >
-            {entry.reliability_category ? entry.reliability_category : reliabilityText}
+            className="sp-history-tag"
+            style={{ background: `${passColor}20`, color: passColor, border: `1px solid ${passColor}35` }}
+          >{passed ? "PASSED" : "FAILED"}</span>
+          {isLatest && (
+            <span
+              className="sp-history-tag"
+              style={{ background: "rgba(56,189,248,0.12)", color: IIEE.blue, border: "1px solid rgba(56,189,248,0.25)" }}
+            >Latest</span>
+          )}
+          <span style={{ fontSize: "clamp(9px,1.2vw,11px)", color: IIEE.dimText, fontFamily: "'DM Sans',sans-serif" }}>
+            {formatDate(entry.date)}
           </span>
-          <span style={{ fontSize: "10px", color: attendedReview === "Yes" ? "#34d399" : "#fbbf24" }}>
+        </div>
+        <div className="sp-history-meta">
+          <span className="sp-history-stat">
+            Pass prob: <strong style={{ color: passColor }}>{pct(entry.probability_pass * 100)}</strong>
+          </span>
+          <span className="sp-history-stat">
+            Rtg A: <strong style={{ color: rColor }}>{entry.predicted_rating_a?.toFixed(1) ?? "—"}</strong>
+          </span>
+          <span className="sp-history-stat">
+            Rtg B: <strong style={{ color: getRatingColor(entry.predicted_rating_b) }}>{entry.predicted_rating_b?.toFixed(1) ?? "—"}</strong>
+          </span>
+          {(rCat || reliability != null) && (
+            <span
+              className="sp-history-tag"
+              style={{ background: `${relColor}18`, color: relColor, border: `1px solid ${relColor}35` }}
+            >{rCat ?? `${reliability?.toFixed(1)}%`}</span>
+          )}
+          <span style={{ fontSize: "clamp(9px,1.2vw,11px)", color: attendedReview === "Yes" ? IIEE.passGreen : IIEE.amber }}>
             Review: {attendedReview}
           </span>
         </div>
       </div>
 
-      {/* View arrow */}
-      <span style={{ fontSize: "12px", color: "#334155", flexShrink: 0 }}>→</span>
+      <span style={{ fontSize: 12, color: IIEE.dimText, flexShrink: 0 }}>→</span>
     </div>
   );
 }
 
-// ── main StudentPage ──────────────────────────────────────────────────────────
+// ─── Main Component ───────────────────────────────────────────────────────────
 export default function StudentPage({ onLogout }) {
-  const [view, setView]           = useState("dashboard"); // "dashboard" | "predictor" | "result"
-  const [historyFilter, setHistoryFilter] = useState("all"); // all | yes | no
-  const [history, setHistory]     = useState([]);
+  const [view, setView] = useState("dashboard");
+  const [historyFilter, setHistoryFilter] = useState("all");
+  const [history, setHistory] = useState([]);
   const [viewingEntry, setViewingEntry] = useState(null);
   const [pendingResult, setPendingResult] = useState(null);
 
   const token = localStorage.getItem("token");
 
-  // Load history on mount (DB-based if available)
   useEffect(() => {
     let cancelled = false;
-    const run = async () => {
+    (async () => {
       try {
         const items = await fetchDbHistory({ token, pageSize: 50 });
         if (!cancelled) setHistory(items);
-      } catch (e) {
-        // Fallback: local history (for thesis demo environments where DB isn't set up)
+      } catch {
         if (!cancelled) setHistory(loadHistory());
-      } finally {
-        if (!cancelled) ;
       }
-    };
-    run();
+    })();
     return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Called by PredictorForm when a result comes back
+  const refreshHistory = async () => {
+    try {
+      const items = await fetchDbHistory({ token, pageSize: 50 });
+      setHistory(items);
+      saveHistory(items);
+    } catch {
+      setHistory(loadHistory());
+    }
+  };
+
   const handleResult = (result) => {
-    const entry = {
-      ...result,
-      date: new Date().toISOString(),
-      id: Date.now(),
-    };
-    // Optimistically show result immediately; DB history refresh below.
+    const entry = { ...result, date: new Date().toISOString(), id: Date.now() };
     setHistory([entry, ...history]);
     setPendingResult(result);
     setView("result");
-
-    // Refresh DB history so the history table is account-based
-    (async () => {
-      try {
-        const items = await fetchDbHistory({ token, pageSize: 50 });
-        setHistory(items);
-        // Keep local cache in sync for fallback mode
-        saveHistory(items);
-      } catch {
-        // ignore; local optimistic state remains
-      }
-    })();
+    refreshHistory();
   };
 
-  const handleViewEntry = (entry) => {
-    setViewingEntry(entry);
-    setView("result");
-  };
-
+  const handleViewEntry = (entry) => { setViewingEntry(entry); setView("result"); };
   const handleBackToDashboard = () => {
-    setViewingEntry(null);
-    setPendingResult(null);
-    setView("dashboard");
-    // Refresh DB view (fallback happens inside StudentPage mount/fetchDbHistory)
-    (async () => {
-      try {
-        const items = await fetchDbHistory({ token, pageSize: 50 });
-        setHistory(items);
-        saveHistory(items);
-      } catch {
-        setHistory(loadHistory());
-      } finally {
-        ;
-      }
-    })();
+    setViewingEntry(null); setPendingResult(null); setView("dashboard");
+    refreshHistory();
   };
 
-  // Summary stats from history
+  // Stats
   const totalAttempts = history.length;
-  const passCount     = history.filter(h => h.prediction === 1).length;
-  const latestEntry   = history[0] || null;
-  const bestRating    = history.length
-    ? Math.max(...history.map(h => h.predicted_rating_a || 0)).toFixed(1)
-    : "—";
+  const passCount = history.filter(h => h.prediction === 1).length;
+  const latestEntry = history[0] || null;
+  const bestRating = history.length
+    ? Math.max(...history.map(h => h.predicted_rating_a || 0)).toFixed(1) : null;
 
-  const displayedResult = viewingEntry || pendingResult;
-  const reviewYesHistory = history.filter((h) => (h?.answers?.Review_Program || h?.attended_formal_review) === "Yes");
-  const reviewNoHistory = history.filter((h) => (h?.answers?.Review_Program || h?.attended_formal_review) === "No");
-  const filteredHistory = history.filter((h) => {
-    const review = h?.answers?.Review_Program || h?.attended_formal_review;
-    if (historyFilter === "yes") return review === "Yes";
-    if (historyFilter === "no") return review === "No";
-    return true;
-  });
+  // Review breakdown
+  const reviewYes = history.filter(h => (h?.answers?.Review_Program || h?.attended_formal_review) === "Yes");
+  const reviewNo = history.filter(h => (h?.answers?.Review_Program || h?.attended_formal_review) === "No");
   const avgPassProb = (arr) => {
     if (!arr.length) return null;
-    const total = arr.reduce((acc, cur) => acc + Number(cur?.probability_pass || 0), 0);
-    return (total / arr.length) * 100;
+    return (arr.reduce((a, c) => a + Number(c?.probability_pass || 0), 0) / arr.length) * 100;
   };
-  const yesAvgProb = avgPassProb(reviewYesHistory);
-  const noAvgProb = avgPassProb(reviewNoHistory);
+
+  const filteredHistory = history.filter(h => {
+    const rev = h?.answers?.Review_Program || h?.attended_formal_review;
+    if (historyFilter === "yes") return rev === "Yes";
+    if (historyFilter === "no") return rev === "No";
+    return true;
+  });
+
+  const displayedResult = viewingEntry || pendingResult;
 
   return (
-    <div className="student-ui" style={{
-      minHeight: "100vh",
-      background: "#060b14",
-      fontFamily: "'DM Sans', system-ui, sans-serif",
-      color: "#f8fafc",
-    }}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Inter:wght@300;400;500;700&display=swap&family=DM+Sans:wght@300;400;500;700&display=swap');
-        @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
-        @keyframes spin   { to{transform:rotate(360deg)} }
-        .student-fade { animation: fadeUp 0.35s ease forwards; }
-        ::-webkit-scrollbar{width:4px} ::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:99px}
-        .student-ui p { color: #dbeafe; font-size: 14px; line-height: 1.55; }
-        .student-ui td, .student-ui th { color: #dbeafe; font-size: 12px; }
-        .student-ui label { color: #cbd5e1; font-size: 12px; }
-        .student-ui button { font-size: 13px; }
-      `}</style>
+    <div className="sp-root">
+      <style>{STYLES}</style>
 
-      {/* ══ TOP NAV ══ */}
-      <nav style={{
-        position: "sticky", top: 0, zIndex: 50,
-        background: "rgba(6,11,20,0.94)", backdropFilter: "blur(16px)",
-        borderBottom: "1px solid rgba(255,255,255,0.07)",
-        padding: "0 32px",
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        height: "76px",
-      }}>
-        {/* Left */}
-        <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            {["/slsulogo.png", "/slsulogo1.png", "/slsulogo2.png"].map((src, idx) => (
-              <img key={src} src={src} alt={`Logo ${idx + 1}`} style={{ width: "30px", height: "30px", objectFit: "contain", opacity: 0.95 }} />
+      {/* ══ NAV ══ */}
+      <nav className="sp-nav">
+        <div className="sp-nav-brand">
+          <div className="sp-nav-logos">
+            {["/slsulogo.png", "/slsulogo1.png", "/slsulogo2.png"].map((src, i) => (
+              <img key={src} src={src} alt={`Logo ${i + 1}`} />
             ))}
           </div>
-          <div style={{ borderLeft: "1px solid rgba(255,255,255,0.08)", paddingLeft: "14px" }}>
-            <p style={{ margin: 0, fontSize: "15px", fontWeight: 800, color: "#f1f5f9", letterSpacing: "0.01em", fontFamily: "'Montserrat',sans-serif" }}>EE Licensure Predictor</p>
-            <p style={{ margin: 0, fontSize: "10px", color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.07em", fontFamily: "'DM Sans',sans-serif" }}>Student Portal · SLSU IIEE</p>
+          <div className="sp-nav-divider" />
+          <div>
+            <div className="sp-nav-title">EE Licensure Predictor</div>
+            <div className="sp-nav-subtitle">Student Portal · SLSU IIEE</div>
           </div>
         </div>
 
-        {/* Right */}
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          {/* Nav buttons */}
+        <div className="sp-nav-actions">
           {view !== "dashboard" && (
-            <button onClick={handleBackToDashboard} style={{
-              background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.09)",
-              borderRadius: "10px", padding: "8px 14px", color: "#94a3b8",
-              fontSize: "12px", fontFamily: "'DM Sans',sans-serif", cursor: "pointer", transition: "all 0.2s",
-            }}
-              onMouseEnter={e => e.currentTarget.style.color = "#38bdf8"}
-              onMouseLeave={e => e.currentTarget.style.color = "#94a3b8"}
-            >← Dashboard</button>
+            <button className="sp-btn ghost" onClick={handleBackToDashboard}>← Dashboard</button>
           )}
           {view === "dashboard" && (
-            <button onClick={() => setView("predictor")} style={{
-              background: "linear-gradient(135deg, rgba(14,165,233,0.2), rgba(99,102,241,0.2))",
-              border: "1px solid rgba(14,165,233,0.3)",
-              borderRadius: "10px", padding: "8px 16px",
-              color: "#38bdf8", fontSize: "12px", fontWeight: 700,
-              fontFamily: "'DM Sans',sans-serif", cursor: "pointer", transition: "all 0.2s",
-            }}
-              onMouseEnter={e => e.currentTarget.style.background = "linear-gradient(135deg, rgba(14,165,233,0.3), rgba(99,102,241,0.3))"}
-              onMouseLeave={e => e.currentTarget.style.background = "linear-gradient(135deg, rgba(14,165,233,0.2), rgba(99,102,241,0.2))"}
-            >+ Take Prediction</button>
+            <button className="sp-btn primary" onClick={() => setView("predictor")}>+ Take Prediction</button>
           )}
-          <div style={{ display: "flex", alignItems: "center", gap: "7px", background: "rgba(14,165,233,0.08)", border: "1px solid rgba(14,165,233,0.2)", borderRadius: "999px", padding: "6px 14px" }}>
-            <span style={{ fontSize: "13px" }}>🎓</span>
-            <span style={{ fontSize: "12px", fontWeight: 700, color: "#38bdf8", fontFamily: "'DM Sans',sans-serif" }}>Student</span>
-          </div>
-          <button onClick={onLogout} style={{
-            background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.09)",
-            borderRadius: "10px", padding: "8px 18px", color: "#64748b",
-            fontSize: "12px", fontFamily: "'DM Sans',sans-serif", cursor: "pointer", transition: "all 0.2s",
-          }}
-            onMouseEnter={e => { e.currentTarget.style.color = "#f87171"; e.currentTarget.style.borderColor = "rgba(248,113,113,0.25)"; }}
-            onMouseLeave={e => { e.currentTarget.style.color = "#64748b"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.09)"; }}
-          >Sign Out</button>
+          <span className="sp-badge gold">🎓 Student</span>
+          <button className="sp-btn ghost danger" onClick={onLogout}>Sign Out</button>
         </div>
       </nav>
 
-      {/* ══ MAIN CONTENT ══ */}
-      <main style={{ maxWidth: "860px", margin: "0 auto", padding: "36px 16px 80px" }}>
+      {/* ══ BODY ══ */}
+      <main className="sp-body">
 
-        {/* ── DASHBOARD VIEW ── */}
+        {/* ── DASHBOARD ── */}
         {view === "dashboard" && (
-          <div className="student-fade">
+          <div className="sp-fade">
 
-            {/* Header */}
-            <div style={{ marginBottom: "28px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "8px" }}>
-                <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#34d399", boxShadow: "0 0 8px #34d399" }} />
-                <span style={{ fontSize: "11px", fontWeight: 700, color: "#34d399", textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: "'DM Sans',sans-serif" }}>Student Dashboard</span>
+            {/* Hero */}
+            <div className="sp-hero">
+              <div className="sp-hero-badges">
+                <span className="sp-badge gold">📊 Dashboard</span>
+                <span className="sp-badge blue">🎓 Student Portal</span>
               </div>
-              <h1 style={{ margin: "0 0 6px", fontSize: "31px", fontWeight: 800, color: "#f8fafc", fontFamily: "'Montserrat',sans-serif", letterSpacing: "-0.02em" }}>
-                Your Readiness Overview
+              <h1 className="sp-hero-title">
+                Your <span className="gold">Readiness</span> Overview
               </h1>
-            <p style={{ margin: 0, fontSize: "14px", color: "#cbd5e1", fontFamily: "'DM Sans',sans-serif" }}>
-                Track your board exam predictions and review past results to monitor your progress.
+              <p className="sp-hero-sub">
+                Track your board exam predictions and monitor your readiness progress across attempts.
               </p>
             </div>
 
-            {/* Stats row */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px,1fr))", gap: "10px", marginBottom: "24px" }}>
-              <StatChip label="Total Attempts"  value={totalAttempts || "—"} color="#38bdf8" />
-              <StatChip label="Predicted Pass"  value={passCount || "—"}     color="#34d399" />
-              <StatChip label="Best Rating A"   value={bestRating}            color="#fbbf24" />
-              <StatChip
-                label="Latest Result"
+            {/* KPIs */}
+            <Divider label={`Key Indicators — ${totalAttempts} Attempt${totalAttempts !== 1 ? "s" : ""}`} icon="📌" />
+            <div className="sp-kpi-grid">
+              <KPI label="Total Attempts"  value={totalAttempts || "—"} icon="📋" color={IIEE.blue}  sub="All prediction runs" />
+              <KPI label="Predicted Pass"  value={passCount || "—"}     icon="✅" color={IIEE.passGreen} sub="Board pass predictions" />
+              <KPI label="Best Rating A"   value={bestRating ?? "—"}    icon="🏆" color={IIEE.amber} sub="Highest predicted Rating A" />
+              <KPI
+                label="Latest Verdict"
                 value={latestEntry ? (latestEntry.prediction === 1 ? "PASS" : "FAIL") : "—"}
-                color={latestEntry ? (latestEntry.prediction === 1 ? "#34d399" : "#f87171") : "#475569"}
+                icon={latestEntry ? (latestEntry.prediction === 1 ? "🎓" : "📉") : "📊"}
+                color={latestEntry ? (latestEntry.prediction === 1 ? IIEE.passGreen : IIEE.failRed) : IIEE.dimText}
+                sub={latestEntry ? `${pct(latestEntry.probability_pass * 100)} pass probability` : "No attempts yet"}
               />
             </div>
 
-            {/* Latest result preview */}
+            {/* Latest result */}
             {latestEntry && (
-              <div style={{
-                background: "linear-gradient(135deg, rgba(14,165,233,0.06), rgba(99,102,241,0.04))",
-                border: "1px solid rgba(14,165,233,0.18)",
-                borderRadius: "16px", padding: "18px 20px", marginBottom: "20px",
-              }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px", gap: "12px", flexWrap: "wrap" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                    <span style={{ fontSize: "20px" }}>{latestEntry.prediction === 1 ? "🎓" : "📋"}</span>
+              <>
+                <Divider label="Latest Prediction" icon="🔍" />
+                <div className="sp-latest">
+                  <div className="sp-latest-top">
                     <div>
-                      <p style={{ margin: "0 0 2px", fontSize: "10px", color: "#475569", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "'DM Sans',sans-serif" }}>Latest Prediction</p>
-                      <p style={{ margin: 0, fontSize: "22px", fontWeight: 800, color: latestEntry.prediction === 1 ? "#34d399" : "#f87171", fontFamily: "'Montserrat',sans-serif", lineHeight: 1 }}>
+                      <div style={{ fontSize: "clamp(9px,1.2vw,11px)", color: IIEE.dimText, textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "'DM Sans',sans-serif", marginBottom: 6 }}>
+                        Most Recent · {formatDate(latestEntry.date)}
+                      </div>
+                      <div className="sp-latest-verdict" style={{ color: latestEntry.prediction === 1 ? IIEE.passGreen : IIEE.failRed }}>
                         {latestEntry.prediction === 1 ? "PASSED" : "FAILED"}
-                      </p>
+                      </div>
+                    </div>
+                    <div className="sp-latest-meta">
+                      <button className="sp-btn outline-blue" onClick={() => handleViewEntry(latestEntry)}>View Full Result →</button>
+                      <button className="sp-btn ghost" onClick={() => setView("predictor")}>↻ Retake</button>
                     </div>
                   </div>
-                  <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                    <button onClick={() => handleViewEntry(latestEntry)} style={{
-                      background: "rgba(56,189,248,0.1)", border: "1px solid rgba(56,189,248,0.25)",
-                      borderRadius: "10px", padding: "8px 16px", color: "#38bdf8",
-                      fontSize: "12px", fontWeight: 700, fontFamily: "'DM Sans',sans-serif", cursor: "pointer", transition: "all 0.2s",
-                    }}
-                      onMouseEnter={e => e.currentTarget.style.background = "rgba(56,189,248,0.18)"}
-                      onMouseLeave={e => e.currentTarget.style.background = "rgba(56,189,248,0.1)"}
-                    >View Full Result →</button>
-                    <button onClick={() => setView("predictor")} style={{
-                      background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)",
-                      borderRadius: "10px", padding: "8px 16px", color: "#94a3b8",
-                      fontSize: "12px", fontFamily: "'DM Sans',sans-serif", cursor: "pointer", transition: "all 0.2s",
-                    }}
-                      onMouseEnter={e => e.currentTarget.style.color = "#f1f5f9"}
-                      onMouseLeave={e => e.currentTarget.style.color = "#94a3b8"}
-                    >↻ Retake</button>
+                  <div className="sp-mini-stats">
+                    {[
+                      { label: "Pass Probability", val: pct(latestEntry.probability_pass * 100), color: latestEntry.prediction === 1 ? IIEE.passGreen : IIEE.failRed },
+                      { label: "Predicted Rating A", val: latestEntry.predicted_rating_a?.toFixed(1) ?? "—", color: getRatingColor(latestEntry.predicted_rating_a) },
+                      { label: "Predicted Rating B", val: latestEntry.predicted_rating_b?.toFixed(1) ?? "—", color: getRatingColor(latestEntry.predicted_rating_b) },
+                    ].map((item, i) => (
+                      <div key={i} className="sp-mini-stat">
+                        <div className="sp-mini-stat-label">{item.label}</div>
+                        <div className="sp-mini-stat-val" style={{ color: item.color }}>{item.val}</div>
+                      </div>
+                    ))}
                   </div>
                 </div>
-
-                {/* Mini stats */}
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px" }}>
-                  {[
-                    { label: "Pass Probability", val: `${(latestEntry.probability_pass * 100).toFixed(1)}%`, color: latestEntry.prediction === 1 ? "#34d399" : "#f87171" },
-                    { label: "Predicted Rating A", val: latestEntry.predicted_rating_a?.toFixed(1), color: getRatingColor(latestEntry.predicted_rating_a) },
-                    { label: "Predicted Rating B", val: latestEntry.predicted_rating_b?.toFixed(1), color: getRatingColor(latestEntry.predicted_rating_b) },
-                  ].map((item, i) => (
-                    <div key={i} style={{ background: "rgba(0,0,0,0.2)", borderRadius: "10px", padding: "10px 12px", border: "1px solid rgba(255,255,255,0.05)" }}>
-                      <p style={{ margin: "0 0 2px", fontSize: "9px", color: "#475569", textTransform: "uppercase", letterSpacing: "0.07em", fontFamily: "'DM Sans',sans-serif" }}>{item.label}</p>
-                      <p style={{ margin: 0, fontSize: "18px", fontWeight: 800, color: item.color, fontFamily: "'Montserrat',sans-serif" }}>{item.val}</p>
-                    </div>
-                  ))}
-                </div>
-                <p style={{ margin: "10px 0 0", fontSize: "10px", color: "#334155", fontFamily: "'DM Sans',sans-serif" }}>
-                  Taken on {formatDate(latestEntry.date)}
-                </p>
-              </div>
+              </>
             )}
 
-            {/* No history CTA */}
+            {/* No history empty state */}
             {history.length === 0 && (
-              <div style={{
-                background: "rgba(255,255,255,0.02)", border: "1px dashed rgba(255,255,255,0.1)",
-                borderRadius: "16px", padding: "40px 24px", textAlign: "center", marginBottom: "20px",
-              }}>
-                <p style={{ fontSize: "36px", marginBottom: "12px" }}>📋</p>
-                <p style={{ margin: "0 0 6px", fontSize: "15px", fontWeight: 700, color: "#f1f5f9", fontFamily: "'Montserrat',sans-serif" }}>No predictions yet</p>
-                <p style={{ margin: "0 0 20px", fontSize: "12px", color: "#475569", fontFamily: "'DM Sans',sans-serif" }}>Take your first EE board exam readiness prediction to get started.</p>
-                <button onClick={() => setView("predictor")} style={{
-                  background: "linear-gradient(135deg, #0ea5e9, #6366f1)",
-                  border: "none", borderRadius: "12px", padding: "12px 28px",
-                  color: "#fff", fontSize: "13px", fontWeight: 700,
-                  fontFamily: "'DM Sans',sans-serif", cursor: "pointer",
-                  boxShadow: "0 8px 24px rgba(14,165,233,0.3)", transition: "opacity 0.2s",
-                }}
-                  onMouseEnter={e => e.currentTarget.style.opacity = "0.85"}
-                  onMouseLeave={e => e.currentTarget.style.opacity = "1"}
-                >Start Prediction →</button>
+              <div className="sp-empty">
+                <div className="sp-empty-icon">📋</div>
+                <p className="sp-empty-title">No predictions yet</p>
+                <p className="sp-empty-sub">
+                  Take your first EE board exam readiness prediction to see your results here.
+                  <br />Your history will be saved to your account.
+                </p>
+                <button className="sp-btn cta" onClick={() => setView("predictor")}>Start Prediction →</button>
               </div>
             )}
 
-            {/* History list */}
+            {/* History */}
             {history.length > 0 && (
-              <div>
-                <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
-                  <span style={{ fontSize: "11px", fontWeight: 700, color: "#475569", textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: "'DM Sans',sans-serif" }}>
-                    Prediction History
-                  </span>
-                  <div style={{ flex: 1, height: "1px", background: "rgba(255,255,255,0.06)" }} />
-                  <span style={{ fontSize: "10px", color: "#334155", fontFamily: "'DM Sans',sans-serif" }}>{history.length} attempt{history.length !== 1 ? "s" : ""}</span>
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0,1fr))", gap: "8px", marginBottom: "10px" }}>
-                  <div style={{ background: "rgba(52,211,153,0.08)", border: "1px solid rgba(52,211,153,0.2)", borderRadius: "10px", padding: "10px 12px" }}>
-                    <p style={{ margin: 0, fontSize: "10px", color: "#34d399" }}>With Formal Review</p>
-                    <p style={{ margin: "3px 0 0", fontSize: "18px", color: "#e2e8f0", fontWeight: 800 }}>{reviewYesHistory.length}</p>
+              <>
+                <Divider label="Prediction History" icon="📅" />
+
+                {/* Review comparison */}
+                <div className="sp-review-grid" style={{ marginBottom: 14 }}>
+                  <div className="sp-review-pill" style={{ background: "rgba(34,197,94,0.07)", borderColor: "rgba(34,197,94,0.22)" }}>
+                    <div className="sp-review-pill-label" style={{ color: IIEE.passGreen }}>With Formal Review</div>
+                    <div className="sp-review-pill-val">{reviewYes.length}</div>
+                    <div style={{ fontSize: "clamp(9px,1.2vw,11px)", color: IIEE.dimText, marginTop: 3 }}>
+                      Avg pass prob: <strong style={{ color: IIEE.passGreen }}>{avgPassProb(reviewYes) != null ? pct(avgPassProb(reviewYes)) : "—"}</strong>
+                    </div>
                   </div>
-                  <div style={{ background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.2)", borderRadius: "10px", padding: "10px 12px" }}>
-                    <p style={{ margin: 0, fontSize: "10px", color: "#fbbf24" }}>Without Formal Review</p>
-                    <p style={{ margin: "3px 0 0", fontSize: "18px", color: "#e2e8f0", fontWeight: 800 }}>{reviewNoHistory.length}</p>
-                  </div>
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0,1fr))", gap: "8px", marginBottom: "10px" }}>
-                  <div style={{ background: "rgba(52,211,153,0.05)", border: "1px solid rgba(52,211,153,0.18)", borderRadius: "10px", padding: "10px 12px" }}>
-                    <p style={{ margin: 0, fontSize: "10px", color: "#86efac" }}>Avg Pass Prob. (With Review)</p>
-                    <p style={{ margin: "3px 0 0", fontSize: "17px", color: "#f8fafc", fontWeight: 800 }}>
-                      {yesAvgProb != null ? `${yesAvgProb.toFixed(1)}%` : "—"}
-                    </p>
-                  </div>
-                  <div style={{ background: "rgba(251,191,36,0.05)", border: "1px solid rgba(251,191,36,0.18)", borderRadius: "10px", padding: "10px 12px" }}>
-                    <p style={{ margin: 0, fontSize: "10px", color: "#fde68a" }}>Avg Pass Prob. (No Review)</p>
-                    <p style={{ margin: "3px 0 0", fontSize: "17px", color: "#f8fafc", fontWeight: 800 }}>
-                      {noAvgProb != null ? `${noAvgProb.toFixed(1)}%` : "—"}
-                    </p>
+                  <div className="sp-review-pill" style={{ background: "rgba(251,191,36,0.07)", borderColor: "rgba(251,191,36,0.22)" }}>
+                    <div className="sp-review-pill-label" style={{ color: IIEE.amber }}>Without Formal Review</div>
+                    <div className="sp-review-pill-val">{reviewNo.length}</div>
+                    <div style={{ fontSize: "clamp(9px,1.2vw,11px)", color: IIEE.dimText, marginTop: 3 }}>
+                      Avg pass prob: <strong style={{ color: IIEE.amber }}>{avgPassProb(reviewNo) != null ? pct(avgPassProb(reviewNo)) : "—"}</strong>
+                    </div>
                   </div>
                 </div>
-                <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "10px" }}>
+
+                {/* Filter pills */}
+                <div className="sp-filter-strip">
                   {[
                     { id: "all", label: `All (${history.length})` },
-                    { id: "yes", label: `With Review (${reviewYesHistory.length})` },
-                    { id: "no", label: `No Review (${reviewNoHistory.length})` },
-                  ].map((opt) => (
+                    { id: "yes", label: `With Review (${reviewYes.length})` },
+                    { id: "no",  label: `No Review (${reviewNo.length})` },
+                  ].map(opt => (
                     <button
                       key={opt.id}
+                      className="sp-filter-btn"
                       onClick={() => setHistoryFilter(opt.id)}
                       style={{
                         background: historyFilter === opt.id ? "rgba(56,189,248,0.14)" : "rgba(255,255,255,0.04)",
-                        border: historyFilter === opt.id ? "1px solid rgba(56,189,248,0.3)" : "1px solid rgba(255,255,255,0.1)",
-                        borderRadius: "999px",
-                        color: historyFilter === opt.id ? "#38bdf8" : "#94a3b8",
-                        padding: "5px 12px",
-                        fontSize: "11px",
-                        fontWeight: 700,
-                        cursor: "pointer",
+                        border: `1px solid ${historyFilter === opt.id ? "rgba(56,189,248,0.35)" : "rgba(255,255,255,0.1)"}`,
+                        color: historyFilter === opt.id ? IIEE.blue : IIEE.muted,
                       }}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                  {filteredHistory.map((entry, i) => (
-                    <HistoryRow key={entry.id || entry.attempt_id || i} entry={entry} index={i} onView={() => handleViewEntry(entry)} />
+                    >{opt.label}</button>
                   ))}
                 </div>
 
-                {/* Retake CTA */}
-                <div style={{ marginTop: "20px", textAlign: "center" }}>
-                  <button onClick={() => setView("predictor")} style={{
-                    background: "transparent",
-                    border: "1px solid rgba(56,189,248,0.25)",
-                    borderRadius: "12px", padding: "12px 32px",
-                    color: "#38bdf8", fontSize: "13px", fontWeight: 700,
-                    fontFamily: "'DM Sans',sans-serif", cursor: "pointer", transition: "all 0.2s",
-                  }}
-                    onMouseEnter={e => { e.currentTarget.style.background = "rgba(56,189,248,0.08)"; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
-                  >↻ Take a New Prediction</button>
+                <div>
+                  {filteredHistory.map((entry, i) => (
+                    <HistoryRow
+                      key={entry.id || entry.attempt_id || i}
+                      entry={entry} index={i}
+                      onView={() => handleViewEntry(entry)}
+                    />
+                  ))}
                 </div>
-              </div>
+
+                <div style={{ marginTop: 20, textAlign: "center" }}>
+                  <button className="sp-btn outline-blue" style={{ padding: "10px 28px", fontSize: "clamp(11px,1.4vw,13px)" }} onClick={() => setView("predictor")}>
+                    ↻ Take a New Prediction
+                  </button>
+                </div>
+              </>
             )}
 
-            {/* Info footer */}
-            <div style={{
-              marginTop: "28px", background: "rgba(255,255,255,0.02)",
-              border: "1px solid rgba(255,255,255,0.05)",
-              borderRadius: "12px", padding: "12px 16px",
-            }}>
-              <p style={{ margin: 0, fontSize: "10px", color: "#334155", lineHeight: 1.7, fontFamily: "'DM Sans',sans-serif" }}>
-                💡 <strong style={{ color: "#475569" }}>Tip:</strong> Retake the prediction after improving your weak areas to see your updated score. Your attempts are stored to your account (DB-based) when configured.
-              </p>
+            {/* Info note */}
+            <div className="sp-note">
+              💡 <strong>Tip:</strong> Retake the prediction after improving your weak areas to see your updated score.
+              Attempts are saved to your account when the backend is configured.
             </div>
           </div>
         )}
 
         {/* ── PREDICTOR VIEW ── */}
         {view === "predictor" && (
-          <div className="student-fade">
-            <div style={{ marginBottom: "20px" }}>
-              <p style={{ margin: "0 0 4px", fontSize: "10px", color: "#475569", textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: "'DM Sans',sans-serif" }}>
-                New Prediction
-              </p>
-              <h2 style={{ margin: 0, fontSize: "22px", fontWeight: 800, color: "#f1f5f9", fontFamily: "'Montserrat',sans-serif" }}>
-                EE Board Exam Readiness Survey
+          <div className="sp-fade">
+            <div className="sp-hero">
+              <div className="sp-hero-badges">
+                <span className="sp-badge gold">📝 New Prediction</span>
+              </div>
+              <h2 className="sp-hero-title">
+                EE Board Exam <span className="blue">Readiness</span> Survey
               </h2>
+              <p className="sp-hero-sub">
+                Answer all questions honestly for the most accurate board exam readiness prediction.
+              </p>
             </div>
             <PredictorForm onResult={handleResult} />
           </div>
@@ -569,36 +805,27 @@ export default function StudentPage({ onLogout }) {
 
         {/* ── RESULT VIEW ── */}
         {view === "result" && displayedResult && (
-          <div className="student-fade">
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px", gap: "12px", flexWrap: "wrap" }}>
-              <div>
-                <p style={{ margin: "0 0 2px", fontSize: "10px", color: "#475569", textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: "'DM Sans',sans-serif" }}>
-                  {viewingEntry ? `Result from ${formatDate(viewingEntry.date)}` : "Your Prediction Result"}
-                  {displayedResult?.attempt_id ? ` · Attempt ${displayedResult.attempt_id.slice(0, 8)}` : ""}
-                </p>
-                <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 800, color: "#f1f5f9", fontFamily: "'Montserrat',sans-serif" }}>
-                  {viewingEntry ? "Past Result Review" : "Your Result"}
-                </h2>
+          <div className="sp-fade">
+            <div className="sp-hero">
+              <div className="sp-hero-badges">
+                <span className="sp-badge gold">🔍 Result</span>
+                {displayedResult?.attempt_id && (
+                  <span className="sp-badge blue">Attempt {String(displayedResult.attempt_id).slice(0, 8)}</span>
+                )}
               </div>
-              <div style={{ display: "flex", gap: "8px" }}>
-                <button onClick={() => setView("predictor")} style={{
-                  background: "rgba(56,189,248,0.08)", border: "1px solid rgba(56,189,248,0.2)",
-                  borderRadius: "10px", padding: "8px 16px", color: "#38bdf8",
-                  fontSize: "12px", fontWeight: 700, fontFamily: "'DM Sans',sans-serif", cursor: "pointer", transition: "all 0.2s",
-                }}
-                  onMouseEnter={e => e.currentTarget.style.background = "rgba(56,189,248,0.15)"}
-                  onMouseLeave={e => e.currentTarget.style.background = "rgba(56,189,248,0.08)"}
-                >↻ Retake</button>
-                <button onClick={handleBackToDashboard} style={{
-                  background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.09)",
-                  borderRadius: "10px", padding: "8px 16px", color: "#94a3b8",
-                  fontSize: "12px", fontFamily: "'DM Sans',sans-serif", cursor: "pointer", transition: "all 0.2s",
-                }}
-                  onMouseEnter={e => e.currentTarget.style.color = "#f1f5f9"}
-                  onMouseLeave={e => e.currentTarget.style.color = "#94a3b8"}
-                >← Dashboard</button>
-              </div>
+              <h2 className="sp-hero-title">
+                {viewingEntry ? <>Past <span className="gold">Result</span> Review</> : <>Your <span className="gold">Prediction</span> Result</>}
+              </h2>
+              <p className="sp-hero-sub">
+                {viewingEntry ? `Result from ${formatDate(viewingEntry.date)}` : "Your latest board exam readiness prediction"}
+              </p>
             </div>
+
+            <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
+              <button className="sp-btn outline-blue" onClick={() => setView("predictor")}>↻ Retake Prediction</button>
+              <button className="sp-btn ghost" onClick={handleBackToDashboard}>← Back to Dashboard</button>
+            </div>
+
             <ResultCard result={displayedResult} />
           </div>
         )}
