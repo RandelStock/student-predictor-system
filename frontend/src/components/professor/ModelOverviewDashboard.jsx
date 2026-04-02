@@ -754,7 +754,7 @@ export default function ModelOverviewDashboard({
         </div>
         <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
           {[
-            { key: "institutional", label: "PRC Result Dashboard" },
+            { key: "institutional", label: "Result Dashboard" },
             { key: "model",         label: "Model Dashboard" },
           ].map((t) => (
             <button

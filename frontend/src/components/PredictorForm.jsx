@@ -8,12 +8,12 @@ const STRAND_OPTIONS = ["STEM", "GAS", "TVL", "HUMSS", "ABM"];
 
 const LIKERT_LABELS = ["Strongly Agree", "Agree", "Disagree", "Strongly Disagree"];
 const QUESTION_TIME_RULES = {
-  knowledge: [5, 10],
-  problem_solving: [10, 20],
-  motivation: [5, 12],
-  mental_health: [5, 12],
-  support: [5, 12],
-  institutional: [8, 18],
+  knowledge: [2, 5],
+  problem_solving: [6, 8],
+  motivation: [2, 5],
+  mental_health: [2, 5],
+  support: [2, 5],
+  institutional: [2, 5],
 };
 
 const STEPS = [
@@ -392,9 +392,8 @@ function LikertRow({ label, fieldKey, value, onChange, hasError, displayIndex })
 }
 
 function resolveExpectedTime(stepId, displayIndex) {
-  const [baseMin, baseMax] = QUESTION_TIME_RULES[stepId] || [5, 12];
-  const add = Math.floor((displayIndex - 1) / 4);
-  return { min: baseMin + add, max: baseMax + add };
+  const [baseMin, baseMax] = QUESTION_TIME_RULES[stepId] || [2, 5];
+  return { min: baseMin, max: baseMax };
 }
 
 // ── Step indicator ────────────────────────────────────────────────────────────
