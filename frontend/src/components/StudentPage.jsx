@@ -632,7 +632,6 @@ export default function StudentPage({ onLogout }) {
   const [viewingEntry, setViewingEntry] = useState(null);
   const [pendingResult, setPendingResult] = useState(null);
 
-  const token = localStorage.getItem("token");
 
   useEffect(() => {
     let cancelled = false;

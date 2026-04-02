@@ -17,8 +17,6 @@ const CONFIG = {
 // ─── Global State ───────────────────────────────────────────────────────────
 let backendHealthy = true;
 let lastHealthCheckTime = 0;
-let requestQueue = [];
-let isProcessingQueue = false;
 
 // ─── Health Check (runs in background) ────────────────────────────────────
 async function checkBackendHealth() {
@@ -119,8 +117,9 @@ export async function apiCall(endpoint, options = {}) {
         `Request failed (attempt ${attempt + 1}/${retries + 1}): ${err.message}. Retrying in ${delay}ms...`
       );
 
-      await new Promise(resolve => setTimeout(resolve, delay));
-      delay *= CONFIG.RETRY_BACKOFF;
+      const currentDelay = delay;
+        delay *= CONFIG.RETRY_BACKOFF;
+        await new Promise(resolve => setTimeout(resolve, currentDelay));
     }
   }
 

@@ -25,7 +25,6 @@ import {
   apiTest2025,
   apiTest2025Records,
   apiTest2025Predict,
-  apiSpecificAttempt,
 } from "../api-service";
 import ProfessorSidebarLayout from "./professor/ProfessorSidebarLayout";
 import ProfessorTimingModal from "./professor/ProfessorTimingModal";
