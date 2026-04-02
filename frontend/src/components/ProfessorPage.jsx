@@ -58,7 +58,8 @@ export default function ProfessorPage({ onLogout }) {
   const [trendInsights, setTrendInsights] = useState(null);
   const [selectedYear, setSelectedYear]   = useState(new Date().getFullYear());
   const [attPage, setAttPage]             = useState(1);
-  const [attFilter, setAttFilter]         = useState({ year: "", month: "" });
+  const [attFilter, setAttFilter] = useState({ year: "", review_program: "", review_duration: "", pageSize: 25 });
+
   const [insightsLoading, setInsightsLoading] = useState(false);
   const [usageSummary, setUsageSummary]   = useState(null);
   const [usageLoading, setUsageLoading]   = useState(false);
@@ -112,7 +113,7 @@ export default function ProfessorPage({ onLogout }) {
   const fetchAdminFromDb = useCallback(async () => {
     try {
       const [attResult, yResult] = await Promise.all([
-        apiAdminAttempts(attPage, 20, attFilter)
+        apiAdminAttempts(attPage, attFilter.pageSize ?? 25, attFilter)
           .catch(err => { console.warn("Admin attempts error:", err); return { success: false }; }),
         apiPassFailByYear()
           .catch(err => { console.warn("Pass/fail by year error:", err); return { success: false }; }),
@@ -256,7 +257,8 @@ export default function ProfessorPage({ onLogout }) {
     (async () => {
       setTest2025RunLoading(true); setTest2025Run(null);
       try {
-        const payload = await apiTest2025Predict(selectedTestIdx);
+        const result = await apiTest2025Predict(selectedTestIdx);
+        const payload = result.success ? result.data : { error: "Could not load prediction." };
         if (!cancelled) setTest2025Run(payload.error ? { error: payload.error } : payload);
       } catch { if (!cancelled) setTest2025Run({ error: "Could not load prediction." }); }
       finally { if (!cancelled) setTest2025RunLoading(false); }

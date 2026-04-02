@@ -1374,24 +1374,43 @@ def correlation():
 @app.get("/admin/attempts")
 def admin_attempts(
     year: Optional[int] = None,
-    month: Optional[int] = None,
+    review_program: Optional[str] = None,   # "Yes" | "No"
+    review_duration: Optional[int] = None,  # 0=none, 1=3mo, 2=6mo
     page: int = 1,
     page_size: int = 20,
     db: Session = Depends(get_db),
 ):
-    # Join with User table to get email
     q = db.query(PredictionAttempt, User.email).outerjoin(User, PredictionAttempt.user_id == User.id)
     if year is not None:
         q = q.filter(extract("year", PredictionAttempt.created_at) == year)
-    if month is not None:
-        q = q.filter(extract("month", PredictionAttempt.created_at) == month)
-    total = q.count()
-    rows = (
-        q.order_by(PredictionAttempt.created_at.desc())
-        .offset((page - 1) * page_size)
-        .limit(page_size)
-        .all()
-    )
+
+    # Fetch all matching rows for year filter, then Python-filter on input_json fields
+    rows_all = q.order_by(PredictionAttempt.created_at.desc()).all()
+
+    # Python-side filter on review_program / review_duration stored in input_json
+    def _matches(r) -> bool:
+        if review_program is None and review_duration is None:
+            return True
+        try:
+            payload = json.loads(r.PredictionAttempt.input_json or "{}")
+        except Exception:
+            return review_program is None and review_duration is None
+        if review_program is not None:
+            rp = str(payload.get("Review_Program", "")).strip()
+            if rp != review_program:
+                return False
+        if review_duration is not None:
+            rd = payload.get("Review_Duration")
+            try:
+                if int(rd) != review_duration:
+                    return False
+            except Exception:
+                return False
+        return True
+
+    filtered = [r for r in rows_all if _matches(r)]
+    total = len(filtered)
+    rows = filtered[(page - 1) * page_size : page * page_size]
 
     def build_attempt_payload(r, email=None):
         answers = {}

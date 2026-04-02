@@ -176,13 +176,13 @@ export async function apiStudentAttempts(pageSize = 50) {
 /**
  * Professor/Admin endpoints
  */
-export async function apiAdminAttempts(page = 1, pageSize = 20, filters = {}) {
-  const yearParam = filters.year ? `&year=${filters.year}` : "";
-  const monthParam = filters.month ? `&month=${filters.month}` : "";
-  return apiCall(
-    `/admin/attempts?page=${page}&page_size=${pageSize}${yearParam}${monthParam}`,
-    { method: "GET" }
-  );
+export async function apiAdminAttempts(page = 1, pageSize = 25, filters = {}) {
+  const params = new URLSearchParams({ page, page_size: pageSize });
+  if (filters.year)                          params.set("year", filters.year);
+  if (filters.review_program)                params.set("review_program", filters.review_program);
+  if (filters.review_duration !== "" && filters.review_duration != null)
+                                             params.set("review_duration", filters.review_duration);
+  return apiCall(`/admin/attempts?${params.toString()}`, { method: "GET" });
 }
 
 export async function apiAnalytics() {

@@ -910,18 +910,43 @@ export default function ProfessorTrendsDashboard({
               onChange={(e) => { setAttFilter((f) => ({ ...f, year: e.target.value })); setAttPage(1); }}
               style={{ width: 90 }}
             />
-            <span className="tr-filter-label">Month:</span>
-            <input
-              className="tr-filter-input"
-              type="number"
-              placeholder="1–12"
-              min="1"
-              max="12"
-              value={attFilter.month}
-              onChange={(e) => { setAttFilter((f) => ({ ...f, month: e.target.value })); setAttPage(1); }}
-              style={{ width: 70 }}
-            />
-            <button className="tr-filter-btn" onClick={() => { setAttFilter({ year: "", month: "" }); setAttPage(1); }}>Clear</button>
+            <span className="tr-filter-label">Formal Review:</span>
+            <select
+              className="tr-filter-select"
+              value={attFilter.review_program}
+              onChange={(e) => { setAttFilter((f) => ({ ...f, review_program: e.target.value })); setAttPage(1); }}
+            >
+              <option value="">All</option>
+              <option value="Yes">✅ Attended</option>
+              <option value="No">⚠️ No Review</option>
+            </select>
+            <span className="tr-filter-label">Duration:</span>
+            <select
+              className="tr-filter-select"
+              value={attFilter.review_duration}
+              onChange={(e) => { setAttFilter((f) => ({ ...f, review_duration: e.target.value })); setAttPage(1); }}
+            >
+              <option value="">All</option>
+              <option value="0">No Review</option>
+              <option value="1">~3 Months</option>
+              <option value="2">~6 Months</option>
+            </select>
+            <span className="tr-filter-label">Show:</span>
+            <select
+              className="tr-filter-select"
+              value={attFilter.pageSize}
+              onChange={(e) => { setAttFilter((f) => ({ ...f, pageSize: Number(e.target.value) })); setAttPage(1); }}
+            >
+              <option value={10}>10</option>
+              <option value={25}>25</option>
+              <option value={100}>100</option>
+            </select>
+            <button
+              className="tr-filter-btn"
+              onClick={() => { setAttFilter({ year: "", review_program: "", review_duration: "", pageSize: 25 }); setAttPage(1); }}
+            >
+              Clear
+            </button>
             {attempts && (
               <span style={{ fontSize: 12, color: IIEE.dimText, marginLeft: "auto" }}>
                 {attempts.total} total · Page {attPage}
@@ -995,12 +1020,12 @@ export default function ProfessorTrendsDashboard({
                   ← Prev
                 </button>
                 <span style={{ fontSize: 12, color: IIEE.dimText }}>
-                  {attPage} / {Math.ceil((attempts.total || 1) / 20)}
+                  {attPage} / {Math.ceil((attempts.total || 1) / (attFilter.pageSize || 25))}
                 </span>
                 <button
                   className="tr-page-btn"
                   onClick={() => setAttPage((p) => p + 1)}
-                  disabled={attPage >= Math.ceil((attempts.total || 1) / 20)}
+                  disabled={attPage >= Math.ceil((attempts.total || 1) / (attFilter.pageSize || 25))}
                 >
                   Next →
                 </button>

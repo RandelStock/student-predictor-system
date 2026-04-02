@@ -14,6 +14,7 @@
  */
 
 import { useState } from "react";
+import ResultCard from "../ResultCard";
 
 // ─── Design Tokens (mirrors ModelOverviewDashboard, StudentPage, ResultCard) ──
 const IIEE = {
@@ -597,8 +598,33 @@ export default function ExamineeDetailPanel({ records, selectedIdx, onSelect, ru
           </div>
 
           {/* Section overview */}
-          {hasAnswers && (
+          {/* Full Result Card */}
+          {hasAnswers && predicted && actual && (
             <>
+              <Divider label="📋 Full Prediction Result" />
+              <ResultCard result={{
+                prediction:         predicted.label === "PASSED" ? 1 : 0,
+                label:              predicted.label,
+                probability_pass:   predicted.probability_pass ?? 0,
+                probability_fail:   predicted.probability_fail ?? 0,
+                predicted_rating_a: predicted.predicted_rating_a,
+                predicted_rating_b: predicted.predicted_rating_b,
+                rating_label_a:     predicted.predicted_rating_a >= 85 ? "Excellent"
+                                    : predicted.predicted_rating_a >= 78 ? "Very Good"
+                                    : predicted.predicted_rating_a >= 70 ? "Passing"
+                                    : predicted.predicted_rating_a >= 60 ? "At Risk" : "Critical",
+                rating_label_b:     predicted.predicted_rating_b >= 85 ? "Excellent"
+                                    : predicted.predicted_rating_b >= 78 ? "Very Good"
+                                    : predicted.predicted_rating_b >= 70 ? "Passing"
+                                    : predicted.predicted_rating_b >= 60 ? "At Risk" : "Critical",
+                passing_score:      70,
+                subject_status:     null,
+                reliability_score:  null,
+                reliability_category: null,
+                answers,
+                attempt_id:         null,
+              }} />
+
               <Divider label="📋 Survey Section Overview" />
               <div className="edp-overview-card edp-fade">
                 {sectionScores.map(s => (
@@ -615,7 +641,6 @@ export default function ExamineeDetailPanel({ records, selectedIdx, onSelect, ru
                 ))}
               </div>
 
-              {/* Survey detail toggle */}
               <button
                 className="edp-toggle-btn"
                 onClick={() => setShowSurvey(o => !o)}
@@ -654,6 +679,7 @@ export default function ExamineeDetailPanel({ records, selectedIdx, onSelect, ru
               <code style={{ color: IIEE.gold, fontFamily: "monospace" }}>/defense/test-2025-predict</code>.
             </div>
           )}
+
         </div>
       )}
 
