@@ -257,9 +257,7 @@ export default function ProfessorPage({ onLogout }) {
     (async () => {
       setTest2025RunLoading(true); setTest2025Run(null);
       try {
-        const res = await fetch(`${API_BASE_URL}/defense/test-2025-predict?idx=${selectedTestIdx}`);
-        if (!res.ok) throw new Error("Server error");
-        const payload = await res.json();
+        const payload = await apiTest2025Predict(selectedTestIdx);
         if (!cancelled) setTest2025Run(payload.error ? { error: payload.error } : payload);
       } catch { if (!cancelled) setTest2025Run({ error: "Could not load prediction." }); }
       finally { if (!cancelled) setTest2025RunLoading(false); }
