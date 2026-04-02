@@ -1,5 +1,20 @@
 import { c } from "./ProfessorShared";
 
+// Corrected timing rules: short questions 2-4s, problem solving 5-7s
+const CORRECTED_TIME_RULES = {
+  knowledge:        [2, 4],
+  problem_solving:  [5, 7],
+  motivation:       [2, 4],
+  mental_health:    [2, 4],
+  support:          [2, 4],
+  institutional:    [2, 4],
+};
+
+function getCorrectedRange(stepId) {
+  const key = (stepId || "").toLowerCase().replace(/[\s-]/g, "_");
+  return CORRECTED_TIME_RULES[key] || [2, 4];
+}
+
 export default function ProfessorTimingModal({
   attempt,
   open,
@@ -62,6 +77,25 @@ export default function ProfessorTimingModal({
           </button>
         </div>
 
+        {/* Legend note */}
+        <div style={{
+          marginBottom: 14,
+          padding: "8px 12px",
+          background: "rgba(56,189,248,0.06)",
+          border: "1px solid rgba(56,189,248,0.2)",
+          borderRadius: 8,
+          fontSize: "clamp(10px, 1.3vw, 11px)",
+          color: "#94a3b8",
+          fontFamily: "'Inter',sans-serif",
+          lineHeight: 1.6,
+        }}>
+          ⚡ Expected ranges recalculated using updated rules —{" "}
+          <span style={{ color: "#38bdf8" }}>Short questions: 2–4s</span>{" "}
+          ·{" "}
+          <span style={{ color: "#818cf8" }}>Problem Solving: 5–7s</span>.
+          Human-like status reflects the corrected thresholds.
+        </div>
+
         {loading ? (
           <p style={{ color: "#cbd5e1", fontSize: "clamp(12px, 1.5vw, 13px)", fontFamily: "'Inter',sans-serif" }}>Loading timing details…</p>
         ) : data?.error ? (
@@ -80,20 +114,28 @@ export default function ProfessorTimingModal({
                 </tr>
               </thead>
               <tbody>
-                {(data?.items ?? []).map((t, i) => (
-                  <tr key={i}>
-                    <td>{t.question_key}</td>
-                    <td>{t.step_id || "—"}</td>
-                    <td>{t.question_index ?? "—"}</td>
-                    <td>{t.duration_sec ?? "—"}</td>
-                    <td>
-                      {t.expected_min_sec != null && t.expected_max_sec != null
-                        ? `${t.expected_min_sec} - ${t.expected_max_sec}`
-                        : "—"}
-                    </td>
-                    <td style={{ color: t.is_human_like ? c.pass : c.fail, fontWeight: 700 }}>{t.is_human_like ? "Yes" : "No"}</td>
-                  </tr>
-                ))}
+                {(data?.items ?? []).map((t, i) => {
+                  const [corrMin, corrMax] = getCorrectedRange(t.step_id);
+                  const duration = t.duration_sec;
+                  const isHumanLike = duration != null
+                    ? duration >= corrMin && duration <= corrMax
+                    : t.is_human_like;
+
+                  return (
+                    <tr key={i}>
+                      <td>{t.question_key}</td>
+                      <td>{t.step_id || "—"}</td>
+                      <td>{t.question_index ?? "—"}</td>
+                      <td>{duration ?? "—"}</td>
+                      <td style={{ color: "#38bdf8", fontWeight: 600 }}>
+                        {corrMin} - {corrMax}
+                      </td>
+                      <td style={{ color: isHumanLike ? c.pass : c.fail, fontWeight: 700 }}>
+                        {isHumanLike ? "Yes" : "No"}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -102,4 +144,3 @@ export default function ProfessorTimingModal({
     </div>
   );
 }
-
