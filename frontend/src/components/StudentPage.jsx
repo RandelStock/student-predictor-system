@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import PredictorForm from "./PredictorForm";
 import ResultCard from "./ResultCard";
-import API_BASE_URL from "../apiBase";
+import { apiStudentAttempts } from "../api-service";
 
 // ─── Design Tokens (mirrors ModelOverviewDashboard) ───────────────────────────
 const IIEE = {
@@ -390,13 +390,112 @@ const STYLES = `
   .sp-root ::-webkit-scrollbar-thumb { background: rgba(245,197,24,0.2); border-radius: 99px; }
 
   /* ── Responsive ── */
+  @media (max-width: 768px) {
+    .sp-nav {
+      padding: 0 clamp(10px, 3vw, 20px);
+      gap: 8px;
+    }
+    .sp-nav-title {
+      font-size: clamp(11px, 1.8vw, 14px);
+    }
+    .sp-nav-subtitle {
+      font-size: clamp(8px, 1vw, 9px);
+    }
+    .sp-nav-actions {
+      gap: clamp(4px, 1vw, 8px);
+    }
+    .sp-badge {
+      padding: 2px 8px;
+      font-size: clamp(8px, 1vw, 10px);
+    }
+    .sp-btn {
+      padding: clamp(5px, 0.8vw, 7px) clamp(8px, 1.5vw, 12px);
+      font-size: clamp(9px, 1.1vw, 11px);
+    }
+  }
+
   @media (max-width: 640px) {
+    .sp-nav {
+      flex-wrap: wrap;
+      height: auto;
+      padding: clamp(10px, 3vw, 16px);
+      gap: 6px;
+    }
+    .sp-nav-brand {
+      width: 100%;
+      gap: clamp(6px, 1.5vw, 10px);
+      margin-bottom: 6px;
+    }
+    .sp-nav-logos img { 
+      width: 18px; 
+      height: 18px; 
+    }
+    .sp-nav-title {
+      font-size: clamp(10px, 1.5vw, 12px);
+    }
+    .sp-nav-subtitle {
+      font-size: clamp(7px, 0.9vw, 8px);
+      display: none;
+    }
+    .sp-nav-divider {
+      display: none;
+    }
+    .sp-nav-actions {
+      width: 100%;
+      justify-content: flex-start;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+    .sp-badge {
+      padding: 2px 6px;
+      font-size: clamp(7px, 0.9vw, 9px);
+    }
+    .sp-btn {
+      padding: clamp(4px, 0.7vw, 6px) clamp(6px, 1vw, 10px);
+      font-size: clamp(8px, 1vw, 10px);
+    }
     .sp-mini-stats { grid-template-columns: 1fr 1fr; }
     .sp-mini-stats > :nth-child(3) { grid-column: 1 / -1; }
     .sp-review-grid { grid-template-columns: 1fr; }
-    .sp-nav-logos img { width: 20px; height: 20px; }
   }
+
   @media (max-width: 480px) {
+    .sp-nav {
+      padding: clamp(8px, 2vw, 12px);
+      height: auto;
+    }
+    .sp-nav-brand {
+      width: 100%;
+      margin-bottom: 4px;
+      gap: clamp(4px, 1vw, 8px);
+    }
+    .sp-nav-logos {
+      gap: 4px;
+    }
+    .sp-nav-logos img { 
+      width: 16px; 
+      height: 16px; 
+    }
+    .sp-nav-title {
+      font-size: clamp(9px, 1.3vw, 11px);
+      font-weight: 700;
+    }
+    .sp-nav-actions {
+      width: 100%;
+      gap: 3px;
+      justify-content: space-between;
+    }
+    .sp-badge {
+      padding: 2px 5px;
+      font-size: clamp(7px, 0.8vw, 8px);
+    }
+    .sp-btn {
+      padding: clamp(3px, 0.5vw, 5px) clamp(5px, 0.8vw, 8px);
+      font-size: clamp(7px, 0.9vw, 9px);
+    }
+    .sp-btn:has-text:not(:first-child) {
+      display: none;
+    }
     .sp-kpi-grid { grid-template-columns: 1fr 1fr; }
     .sp-history-meta { gap: 6px; }
     .sp-mini-stats { grid-template-columns: 1fr; }
@@ -412,18 +511,14 @@ function loadHistory() {
 function saveHistory(history) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
 }
-async function fetchDbHistory({ token, pageSize = 50 }) {
-  if (!token) throw new Error("Missing auth token");
-  const res = await fetch(`${API_BASE_URL}/student/attempts?page_size=${pageSize}`, {
-    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-  });
-  if (!res.ok) {
-    let msg = "Failed to load DB history.";
-    try { const e = await res.json(); msg = e.detail || JSON.stringify(e); } catch {}
-    throw new Error(msg);
+async function fetchDbHistory({ pageSize = 50 }) {
+  try {
+    const result = await apiStudentAttempts(pageSize);
+    return result.data?.items || [];
+  } catch (err) {
+    console.error("Failed to load DB history:", err);
+    throw new Error(err.message || "Failed to load prediction history. Please try again.");
   }
-  const data = await res.json();
-  return data?.items || [];
 }
 function formatDate(iso) {
   return new Date(iso).toLocaleDateString("en-PH", {
@@ -543,9 +638,10 @@ export default function StudentPage({ onLogout }) {
     let cancelled = false;
     (async () => {
       try {
-        const items = await fetchDbHistory({ token, pageSize: 50 });
+        const items = await fetchDbHistory({ pageSize: 50 });
         if (!cancelled) setHistory(items);
-      } catch {
+      } catch (err) {
+        console.error("Error fetching history:", err);
         if (!cancelled) setHistory(loadHistory());
       }
     })();
@@ -555,10 +651,11 @@ export default function StudentPage({ onLogout }) {
 
   const refreshHistory = async () => {
     try {
-      const items = await fetchDbHistory({ token, pageSize: 50 });
+      const items = await fetchDbHistory({ pageSize: 50 });
       setHistory(items);
       saveHistory(items);
-    } catch {
+    } catch (err) {
+      console.error("Error refreshing history:", err);
       setHistory(loadHistory());
     }
   };

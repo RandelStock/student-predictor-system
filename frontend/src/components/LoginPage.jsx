@@ -1,5 +1,5 @@
 import { useState } from "react";
-import API_BASE_URL from "../apiBase";
+import { apiCall, setAuthToken } from "../api-service";
 
 // ─── SLSU IIEE Design Tokens (matches ProfessorSidebarLayout exactly) ─────────
 const T = {
@@ -118,18 +118,14 @@ export default function LoginPage({ role, onSuccess, onBack }) {
           }
         : { email, password };
 
-      const res = await fetch(`${API_BASE_URL}${endpoint}`, {
-        method:  "POST",
-        headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify(payload),
+      // Use new apiCall with retry logic
+      const result = await apiCall(endpoint, {
+        method: "POST",
+        body: payload,
+        noRetry: true, // Auth requests should not retry
       });
 
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.detail || "Unable to sign in. Please try again.");
-      }
-
-      const data = await res.json();
+      const data = result.data;
 
       // Role mismatch guard
       if (data.role && data.role !== role) {
@@ -139,15 +135,15 @@ export default function LoginPage({ role, onSuccess, onBack }) {
       }
 
       if (data.access_token) {
-        localStorage.setItem("token", data.access_token);
-        if (data.role) localStorage.setItem("role", data.role);
-        if (data.name) localStorage.setItem("name", data.name);
+        // Use centralized auth token management
+        setAuthToken(data.access_token, data.role || role, data.name);
         onSuccess(data.role || role);
       } else {
         throw new Error("Invalid response from server.");
       }
     } catch (err) {
-      setError(err.message || "Authentication failed.");
+      console.error("Login error:", err);
+      setError(err.message || "Authentication failed. Please try again.");
       setLoading(false);
     }
   };

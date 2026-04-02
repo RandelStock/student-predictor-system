@@ -8,7 +8,25 @@
  */
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import API_BASE_URL from "../apiBase";
+import {
+  apiAnalytics,
+  apiModelInfo,
+  apiCorrelation,
+  apiDashboard,
+  apiAdminAttempts,
+  apiMonthlySummary,
+  apiPassFailByYear,
+  apiTrendInsights,
+  apiUsageSummary,
+  apiReviewAnalysis,
+  apiTimingAnalysis,
+  apiPerformanceReport,
+  apiAttemptTimings,
+  apiTest2025,
+  apiTest2025Records,
+  apiTest2025Predict,
+  apiSpecificAttempt,
+} from "../api-service";
 import ProfessorSidebarLayout from "./professor/ProfessorSidebarLayout";
 import ProfessorTimingModal from "./professor/ProfessorTimingModal";
 import ModelOverviewDashboard from "./professor/ModelOverviewDashboard";
@@ -63,27 +81,29 @@ export default function ProfessorPage({ onLogout }) {
 
   const [dashFilters, setDashFilters] = useState({ year: "", period: "", review: "", subject: "" });
 
-  // ── Fetch logic (unchanged) ───────────────────────────────────────────────
+  // ── Fetch logic with improved error handling ───────────────────────────────
   const fetchAnalytics = useCallback(async () => {
     setLoading(true);
     try {
-      const [analyticsRes, modelRes, corrRes, dashRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/analytics`),
-        fetch(`${API_BASE_URL}/model-info`),
-        fetch(`${API_BASE_URL}/correlation`),
-        fetch(`${API_BASE_URL}/dashboard`),
+      const [analyticsResult, modelResult, corrResult, dashResult] = await Promise.all([
+        apiAnalytics().catch(err => { console.warn("Analytics error:", err); return { success: false }; }),
+        apiModelInfo().catch(err => { console.warn("Model info error:", err); return { success: false }; }),
+        apiCorrelation().catch(err => { console.warn("Correlation error:", err); return { success: false }; }),
+        apiDashboard().catch(err => { console.warn("Dashboard error:", err); return { success: false }; }),
       ]);
-      if (!analyticsRes.ok || !modelRes.ok) throw new Error("Server error");
-      const analytics = await analyticsRes.json();
-      const model     = await modelRes.json();
-      const corr      = corrRes.ok ? await corrRes.json() : null;
-      const dash      = dashRes.ok ? await dashRes.json() : {};
+
       const mock = buildMockData();
+      const analytics = analyticsResult.success ? analyticsResult.data : {};
+      const model = modelResult.success ? modelResult.data : {};
+      const corr = corrResult.success ? corrResult.data : null;
+      const dash = dashResult.success ? dashResult.data : {};
+
       setData({ ...mock, ...analytics });
       setModelInfo(model);
       setCorrelation(corr && !corr.error ? corr : null);
-      setDashboardData(dash);                                     // ← ADD THIS
-    } catch {
+      setDashboardData(dash);
+    } catch (err) {
+      console.error("Analytics fetch error:", err);
       setData(buildMockData());
     } finally {
       setLoading(false);
@@ -92,17 +112,22 @@ export default function ProfessorPage({ onLogout }) {
 
   const fetchAdminFromDb = useCallback(async () => {
     try {
-      const yearParam  = attFilter.year  ? `&year=${attFilter.year}`   : "";
-      const monthParam = attFilter.month ? `&month=${attFilter.month}` : "";
-      const [attRes, yRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/admin/attempts?page=${attPage}&page_size=20${yearParam}${monthParam}`),
-        fetch(`${API_BASE_URL}/admin/pass-fail-by-year`),
+      const [attResult, yResult] = await Promise.all([
+        apiAdminAttempts(attPage, 20, attFilter)
+          .catch(err => { console.warn("Admin attempts error:", err); return { success: false }; }),
+        apiPassFailByYear()
+          .catch(err => { console.warn("Pass/fail by year error:", err); return { success: false }; }),
       ]);
-      if (attRes.ok) setAttempts(await attRes.json());
-      if (yRes.ok)   setYearlyPF(await yRes.json());
+      if (attResult.success) setAttempts(attResult.data);
+      if (yResult.success) setYearlyPF(yResult.data);
+
       if (selectedYear) {
-        const mRes = await fetch(`${API_BASE_URL}/admin/monthly-summary?year=${selectedYear}`);
-        if (mRes.ok) setMonthly(await mRes.json());
+        try {
+          const mResult = await apiMonthlySummary(selectedYear);
+          if (mResult.success) setMonthly(mResult.data);
+        } catch (e) {
+          console.warn("Monthly summary error:", e);
+        }
       }
     } catch (e) { console.error("Admin fetch error:", e); }
   }, [attPage, attFilter, selectedYear]);
@@ -110,8 +135,8 @@ export default function ProfessorPage({ onLogout }) {
   const fetchTrendInsights = useCallback(async () => {
     setInsightsLoading(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/admin/trend-insights`);
-      if (res.ok) setTrendInsights(await res.json());
+      const result = await apiTrendInsights();
+      if (result.success) setTrendInsights(result.data);
     } catch (e) { console.error("Trend insights error:", e); }
     finally { setInsightsLoading(false); }
   }, []);
@@ -119,23 +144,23 @@ export default function ProfessorPage({ onLogout }) {
   const fetchUsage = useCallback(async () => {
     setUsageLoading(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/admin/usage-summary?days=30`);
-      if (res.ok) setUsageSummary(await res.json());
+      const result = await apiUsageSummary(30);
+      if (result.success) setUsageSummary(result.data);
     } catch (e) { console.error("Usage summary error:", e); }
     finally { setUsageLoading(false); }
   }, []);
 
   const fetchReviewAnalysis = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/admin/review-analysis`);
-      if (res.ok) setReviewAnalysis(await res.json());
+      const result = await apiReviewAnalysis();
+      if (result.success) setReviewAnalysis(result.data);
     } catch (e) { console.error("Review analysis error:", e); }
   }, []);
 
   const fetchTimingAnalysis = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/admin/timing-analysis?limit=10`);
-      if (res.ok) setTimingAnalysis(await res.json());
+      const result = await apiTimingAnalysis(10);
+      if (result.success) setTimingAnalysis(result.data);
     } catch (e) { console.error("Timing analysis error:", e); }
   }, []);
 
@@ -146,19 +171,25 @@ export default function ProfessorPage({ onLogout }) {
     setSelectedTimingData(null);
     setSelectedTimingLoading(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/admin/attempt-timings?attempt_id=${encodeURIComponent(attempt.attempt_id)}`);
-      if (!res.ok) throw new Error("Failed");
-      setSelectedTimingData(await res.json());
-    } catch { setSelectedTimingData({ error: "Could not load attempt timing details." }); }
+      const result = await apiAttemptTimings(attempt.attempt_id);
+      if (result.success) {
+        setSelectedTimingData(result.data);
+      } else {
+        throw new Error("Failed to load timing data");
+      }
+    } catch (e) { 
+      console.error("Timing modal error:", e);
+      setSelectedTimingData({ error: "Could not load attempt timing details." }); 
+    }
     finally { setSelectedTimingLoading(false); }
   }, []);
 
   const downloadPerformanceReport = useCallback(async () => {
     setReportLoading(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/admin/performance-report?year=${selectedYear}&days=30`);
-      if (!res.ok) throw new Error("Server error");
-      const payload = await res.json();
+      const result = await apiPerformanceReport(selectedYear, 30);
+      if (!result.success) throw new Error("Server error");
+      const payload = result.data;
       const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -174,7 +205,7 @@ export default function ProfessorPage({ onLogout }) {
     } finally { setReportLoading(false); }
   }, [selectedYear]);
 
-  // ── Effects (unchanged) ───────────────────────────────────────────────────
+  // ── Effects with improved error handling ───────────────────────────────────
   useEffect(() => { fetchAnalytics(); }, [fetchAnalytics]);
 
   useEffect(() => {
@@ -183,10 +214,16 @@ export default function ProfessorPage({ onLogout }) {
     (async () => {
       setTestLoading(true);
       try {
-        const res = await fetch(`${API_BASE_URL}/defense/test-2025`);
-        if (!res.ok) throw new Error("Server error");
-        if (!cancelled) setTest2025(await res.json());
-      } catch { if (!cancelled) setTest2025({ error: "Could not load 2025 defense metrics." }); }
+        const result = await apiTest2025();
+        if (!cancelled && result.success) {
+          setTest2025(result.data);
+        } else if (!cancelled) {
+          setTest2025({ error: "Could not load 2025 defense metrics." });
+        }
+      } catch (e) { 
+        console.error("Test2025 error:", e);
+        if (!cancelled) setTest2025({ error: "Could not load 2025 defense metrics." }); 
+      }
       finally { if (!cancelled) setTestLoading(false); }
     })();
     return () => { cancelled = true; };
@@ -197,11 +234,19 @@ export default function ProfessorPage({ onLogout }) {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/defense/test-2025-records`);
-        if (!res.ok) throw new Error("Server error");
-        const payload = await res.json();
-        if (!cancelled) { setTest2025Records(payload.error ? null : payload.items || []); setSelectedTestIdx(0); }
-      } catch { if (!cancelled) setTest2025Records([]); }
+        const result = await apiTest2025Records();
+        if (!cancelled) { 
+          if (result.success) {
+            setTest2025Records(result.data?.items || []); 
+          } else {
+            setTest2025Records([]);
+          }
+          setSelectedTestIdx(0); 
+        }
+      } catch (e) { 
+        console.error("Test2025 records error:", e);
+        if (!cancelled) setTest2025Records([]); 
+      }
     })();
     return () => { cancelled = true; };
   }, [activeTab]);
