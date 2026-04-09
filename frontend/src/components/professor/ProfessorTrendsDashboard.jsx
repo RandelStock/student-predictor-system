@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, createPortal } from "react";
 import {
   BarChart,
   Bar,
@@ -489,42 +489,93 @@ function ChartCard({ icon, title, sub, children, note }) {
 }
 
 function AttemptDetailModal({ open, onClose, attempt, loading, error }) {
-  // Escape key to close
-  useState(() => {
+  useEffect(() => {
     if (!open) return;
     const handler = (e) => { if (e.key === "Escape") onClose(); };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  });
+  }, [open, onClose]);
 
-  // Lock body scroll
-  if (typeof document !== "undefined") {
+  useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
-  }
+    return () => { document.body.style.overflow = ""; };
+  }, [open]);
 
   if (!open) return null;
 
   const name = attempt?.full_name || attempt?.name || "Unknown Student";
   const id   = attempt?.attempt_id || attempt?.id || "";
 
-  return (
-    <div className="tr-modal-backdrop" onClick={onClose}>
-      <div className="tr-modal-box" onClick={(e) => e.stopPropagation()}>
-
-        <div className="tr-modal-header">
-          <div className="tr-modal-header-left">
-            <div className="tr-modal-avatar">🎓</div>
+  const modalContent = (
+    <div
+      style={{
+        position: "fixed", inset: 0, zIndex: 99999,
+        background: "rgba(2,6,23,0.88)",
+        backdropFilter: "blur(8px)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        padding: "24px",
+        animation: "trFadeIn 0.2s ease both",
+      }}
+      onClick={onClose}
+    >
+      <div
+        style={{
+          position: "relative",
+          width: "100%", maxWidth: "860px", maxHeight: "90vh",
+          background: "linear-gradient(160deg,#0d1b3e 0%,#0b1437 60%,#0f1c4d 100%)",
+          border: "1px solid rgba(245,197,24,0.28)",
+          borderRadius: "20px",
+          boxShadow: "0 32px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(245,197,24,0.08)",
+          display: "flex", flexDirection: "column", overflow: "hidden",
+          animation: "trModalPop 0.25s cubic-bezier(0.34,1.56,0.64,1) both",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div style={{
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "20px 28px",
+          borderBottom: "1px solid rgba(245,197,24,0.12)",
+          background: "linear-gradient(90deg,rgba(245,197,24,0.05) 0%,transparent 100%)",
+          flexShrink: 0, gap: "16px",
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "14px", minWidth: 0 }}>
+            <div style={{
+              width: 44, height: 44, borderRadius: 12, flexShrink: 0,
+              background: "linear-gradient(135deg,#3b82f6,#8b5cf6)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 20, border: "1px solid rgba(139,92,246,0.35)",
+            }}>🎓</div>
             <div style={{ minWidth: 0 }}>
-              <p className="tr-modal-title">{name}</p>
-              <p className="tr-modal-subtitle">
+              <p style={{
+                margin: "0 0 2px", fontSize: 18, fontWeight: 700,
+                color: "#f8fafc", fontFamily: "'Montserrat',sans-serif",
+                whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+              }}>{name}</p>
+              <p style={{ margin: 0, color: "#64748b", fontSize: 12, fontFamily: "'Inter',sans-serif" }}>
                 Recent Attempt Details{id ? ` · ${id.slice(0, 8)}…` : ""}
               </p>
             </div>
           </div>
-          <button className="tr-modal-close" onClick={onClose}>✕ Close</button>
+          <button
+            onClick={onClose}
+            style={{
+              flexShrink: 0,
+              background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.12)",
+              borderRadius: 10, padding: "8px 16px", color: "#94a3b8",
+              fontSize: 13, cursor: "pointer", fontFamily: "'Inter',sans-serif",
+              transition: "all 0.18s",
+            }}
+            onMouseEnter={e => { e.target.style.background="rgba(239,68,68,0.12)"; e.target.style.color="#fca5a5"; e.target.style.borderColor="rgba(239,68,68,0.35)"; }}
+            onMouseLeave={e => { e.target.style.background="rgba(255,255,255,0.05)"; e.target.style.color="#94a3b8"; e.target.style.borderColor="rgba(255,255,255,0.12)"; }}
+          >✕ Close</button>
         </div>
 
-        <div className="tr-modal-body">
+        {/* Body */}
+        <div style={{
+          flex: 1, overflowY: "auto",
+          padding: "24px 28px",
+        }}>
           {loading ? (
             <div style={{ display:"flex", alignItems:"center", gap:12, padding:"48px 0" }}>
               <div className="tr-spinner" />
@@ -544,10 +595,11 @@ function AttemptDetailModal({ open, onClose, attempt, loading, error }) {
             </p>
           )}
         </div>
-
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 }
 
 function CustomTooltip({ active, payload, label }) {
