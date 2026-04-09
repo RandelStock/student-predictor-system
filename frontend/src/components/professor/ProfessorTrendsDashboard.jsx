@@ -144,7 +144,7 @@ const styles = `
 
   .tr-modal-backdrop {
     position: fixed; inset: 0;
-    background: rgba(2, 6, 23, 0.88);
+    background: rgba(0, 0, 0, 0.75);
     backdrop-filter: blur(8px);
     z-index: 9999;
     display: flex; align-items: center; justify-content: center;
@@ -156,9 +156,9 @@ const styles = `
     width: 100%; max-width: 860px;
     max-height: 90vh;
     background: linear-gradient(160deg, #0d1b3e 0%, #0b1437 60%, #0f1c4d 100%);
-    border: 1px solid rgba(245,197,24,0.28);
+    border: 2px solid rgba(245,197,24,0.4);
     border-radius: 20px;
-    box-shadow: 0 32px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(245,197,24,0.08);
+    box-shadow: 0 32px 80px rgba(0,0,0,0.8), inset 0 0 1px rgba(245,197,24,0.15);
     display: flex; flex-direction: column;
     overflow: hidden;
     animation: trModalPop 0.25s cubic-bezier(0.34,1.56,0.64,1) both;
