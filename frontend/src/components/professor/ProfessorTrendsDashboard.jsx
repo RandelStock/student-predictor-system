@@ -1,4 +1,5 @@
-import { useState, useMemo, useEffect, createPortal } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { createPortal } from "react-dom";
 import {
   BarChart,
   Bar,
