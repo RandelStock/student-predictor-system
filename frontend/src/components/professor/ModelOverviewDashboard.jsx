@@ -773,7 +773,7 @@ export default function ModelOverviewDashboard({
         </div>
         <h2 className="comb-hero-title">
           {mode === "institutional"
-            ? <>PRC 2022-2025 <span className="ag">PRC Result</span> Dashboard</>
+            ? <>PRC 2022-2025 <span className="ag">Result</span> Dashboard</>
             : <>PRC 2022-2025 <span className="ab">Model</span> Dashboard</>}
         </h2>
         <p className="comb-hero-sub">

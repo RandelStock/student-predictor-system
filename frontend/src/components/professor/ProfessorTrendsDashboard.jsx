@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   BarChart,
   Bar,
@@ -119,6 +119,48 @@ const styles = `
     transition:color .18s, border-color .18s;
   }
   .tr-filter-btn:hover { color:${IIEE.white}; border-color:rgba(255,255,255,0.25); }
+
+  .tr-search-row {
+    display:flex; gap:10px; flex-wrap:wrap; align-items:center; width:100%; margin-bottom:16px;
+  }
+  .tr-search-input {
+    flex:1; min-width:200px;
+    background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1);
+    border-radius:12px; padding:10px 14px; color:${IIEE.white};
+    font-size:clamp(11px, 1.5vw, 12px); font-family:'Inter',sans-serif; outline:none;
+  }
+  .tr-search-input::placeholder { color: rgba(248,250,252,0.55); }
+  .tr-search-action {
+    flex-shrink:0; display:flex; gap:8px; align-items:center;
+  }
+  .tr-search-btn {
+    background:${IIEE.blue}; border:1px solid rgba(56,189,248,0.45);
+    color:${IIEE.white}; border-radius:10px; padding:10px 16px;
+    font-size:12px; cursor:pointer; font-family:'Inter',sans-serif; font-weight:700;
+    transition:background .18s, transform .18s;
+  }
+  .tr-search-btn:hover { background:rgba(56,189,248,0.9); transform:translateY(-1px); }
+  .tr-search-info { font-size:12px; color:${IIEE.dimText}; }
+
+  .tr-side-panel-backdrop {
+    position:fixed; inset:0; background:rgba(2,6,23,0.85); backdrop-filter:blur(5px);
+    z-index:90; display:flex; justify-content:flex-end; overflow:hidden;
+  }
+  .tr-side-panel {
+    width:clamp(360px, 60vw, 1040px); max-width:100%; height:100vh;
+    background:#0b1220; border-left:1px solid rgba(148,163,184,0.18);
+    box-shadow:-12px 0 48px rgba(0,0,0,0.5); overflow-y:auto; padding:24px;
+    display:flex; flex-direction:column;
+  }
+  .tr-side-panel-close {
+    margin-left:auto; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.12);
+    border-radius:9px; padding:9px 14px; color:#cbd5e1; cursor:pointer;
+    font-size:13px; font-family:'Inter',sans-serif;
+  }
+  .tr-side-panel-close:hover { background:rgba(255,255,255,0.08); }
+  .tr-side-panel-header { display:flex; gap:16px; align-items:flex-start; margin-bottom:20px; }
+  .tr-side-panel-title { margin:0; font-size:clamp(18px,2.4vw,24px); font-weight:700; color:${IIEE.white}; font-family:'Montserrat',sans-serif; }
+  .tr-side-panel-subtitle { margin:4px 0 0; color:${IIEE.dimText}; font-size:13px; font-family:'Inter',sans-serif; }
 
   /* Divider */
   .tr-divider {
@@ -412,54 +454,16 @@ function AttemptDetailModal({ open, onClose, attempt, loading, error }) {
   if (!open) return null;
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(2,6,23,0.8)",
-        backdropFilter: "blur(6px)",
-        zIndex: 90,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: 16,
-      }}
-      onClick={onClose}
-    >
-      <div
-        style={{
-          width: "min(980px, 96vw)",
-          maxHeight: "85vh",
-          overflow: "auto",
-          background: "#0b1220",
-          border: "1px solid rgba(148,163,184,0.2)",
-          borderRadius: 16,
-          padding: "clamp(12px, 3vw, 24px)",
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+    <div className="tr-side-panel-backdrop" onClick={onClose}>
+      <div className="tr-side-panel" onClick={(e) => e.stopPropagation()}>
+        <div className="tr-side-panel-header">
           <div>
-            <p style={{ margin: 0, fontSize: "clamp(14px, 2.2vw, 18px)", fontWeight: 700, color: "#f8fafc", fontFamily: "'Montserrat',sans-serif" }}>
-              Recent Attempt Details
-            </p>
-            <p style={{ margin: "4px 0 0", fontSize: "clamp(11px, 1.3vw, 13px)", color: "#94a3b8", fontFamily: "'Inter',sans-serif" }}>
+            <p className="tr-side-panel-title">Recent Attempt Details</p>
+            <p className="tr-side-panel-subtitle">
               {attempt?.name ?? "Unknown"} · {attempt?.attempt_id ? attempt.attempt_id.slice(0, 8) : "—"}
             </p>
           </div>
-          <button
-            onClick={onClose}
-            style={{
-              background: "rgba(255,255,255,0.04)",
-              border: "1px solid rgba(255,255,255,0.12)",
-              borderRadius: 8,
-              padding: "7px 12px",
-              color: "#cbd5e1",
-              cursor: "pointer",
-              fontSize: "clamp(12px, 1.3vw, 13px)",
-              fontFamily: "'Inter',sans-serif",
-            }}
-          >
+          <button className="tr-side-panel-close" onClick={onClose}>
             ✕ Close
           </button>
         </div>
@@ -526,6 +530,20 @@ export default function ProfessorTrendsDashboard({
   const [selectedAttempt, setSelectedAttempt] = useState(null);
   const [attemptDetailLoading, setAttemptDetailLoading] = useState(false);
   const [attemptDetailError, setAttemptDetailError] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredAttempts = useMemo(() => {
+    if (!attempts?.items?.length) return [];
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return attempts.items;
+    return attempts.items.filter((item) => {
+      const name = (item.full_name || item.name || "").toLowerCase();
+      const email = (item.email || "").toLowerCase();
+      const label = (item.label || "").toLowerCase();
+      const id = (item.attempt_id || item.id || "").toLowerCase();
+      return name.includes(query) || email.includes(query) || label.includes(query) || id.includes(query);
+    });
+  }, [attempts?.items, searchQuery]);
 
   const openAttemptDetail = async (item) => {
     setAttemptDetailOpen(true);
@@ -921,6 +939,25 @@ export default function ProfessorTrendsDashboard({
         <SecCard num="7" icon="🗃️" iconVariant="indigo" title="Recent Prediction Attempts"
           subtitle="Paginated log from prediction_attempts table">
           {/* Filter row */}
+          <div className="tr-search-row">
+            <input
+              className="tr-search-input"
+              type="search"
+              placeholder="Search student, email, attempt ID, or result"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            <div className="tr-search-action">
+              <button
+                className="tr-search-btn"
+                onClick={() => setSearchQuery("")}
+                type="button"
+              >
+                Clear search
+              </button>
+            </div>
+          </div>
+
           <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 16, flexWrap: "wrap" }}>
             <span className="tr-filter-label">Year:</span>
             <input
@@ -964,7 +1001,7 @@ export default function ProfessorTrendsDashboard({
             </select>
             <button
               className="tr-filter-btn"
-              onClick={() => { setAttFilter({ year: "", review_program: "", review_duration: "", pageSize: 25 }); setAttPage(1); }}
+              onClick={() => { setAttFilter({ year: "", review_program: "", review_duration: "", pageSize: 25 }); setSearchQuery(""); setAttPage(1); }}
             >
               Clear
             </button>
@@ -975,8 +1012,29 @@ export default function ProfessorTrendsDashboard({
             )}
           </div>
 
-          {attempts && (attempts.items ?? []).length > 0 ? (
+          {attempts && filteredAttempts.length > 0 ? (
             <>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, flexWrap: "wrap", gap: 10 }}>
+                {searchQuery ? (
+                  <span className="tr-search-info">
+                    Showing {filteredAttempts.length} of {attempts.items.length} results for “{searchQuery}”.
+                  </span>
+                ) : (
+                  <span className="tr-search-info">
+                    Showing {filteredAttempts.length} attempt{filteredAttempts.length === 1 ? "" : "s"} on this page.
+                  </span>
+                )}
+                {searchQuery && (
+                  <button
+                    className="tr-filter-btn"
+                    onClick={() => setSearchQuery("")}
+                    type="button"
+                  >
+                    Clear search
+                  </button>
+                )}
+              </div>
+
               <div style={{ overflowX: "auto" }}>
                 <table className="tr-table">
                   <thead>
@@ -990,17 +1048,17 @@ export default function ProfessorTrendsDashboard({
                     </tr>
                   </thead>
                   <tbody>
-                    {(attempts.items ?? []).map((item, i) => (
+                    {filteredAttempts.map((item, i) => (
                       <tr
                         key={i}
                         style={{ cursor: "pointer" }}
                         onClick={() => openAttemptDetail(item)}
                       >
                         <td style={{ color: IIEE.dimText, fontSize: 11 }}>
-                          {new Date(item.created_at).toLocaleDateString("en-PH", {
+                          {item.created_at ? new Date(item.created_at).toLocaleDateString("en-PH", {
                             year: "numeric", month: "short", day: "numeric",
                             hour: "2-digit", minute: "2-digit",
-                          })}
+                          }) : "—"}
                         </td>
                         <td>
                           <span className={item.label === "PASSED" ? "tr-badge-pass" : "tr-badge-fail"}>
@@ -1012,13 +1070,13 @@ export default function ProfessorTrendsDashboard({
                           color: item.probability_pass >= 0.7 ? IIEE.passGreen
                             : item.probability_pass >= 0.5 ? IIEE.amber : IIEE.failRed,
                         }}>
-                          {(item.probability_pass * 100).toFixed(1)}%
+                          {typeof item.probability_pass === "number" ? `${(item.probability_pass * 100).toFixed(1)}%` : "—"}
                         </td>
                         <td style={{
                           color: item.predicted_rating_a >= 70 ? IIEE.passGreen
                             : item.predicted_rating_a >= 60 ? IIEE.amber : IIEE.failRed,
                         }}>
-                          {item.predicted_rating_a?.toFixed(1) ?? "—"}
+                          {item.predicted_rating_a != null ? item.predicted_rating_a.toFixed(1) : "—"}
                         </td>
                         <td style={{ fontWeight: 700, color: "#e2e8f0" }}>
                           {item.full_name || item.name || "—"}
@@ -1054,9 +1112,11 @@ export default function ProfessorTrendsDashboard({
             </>
           ) : (
             <div style={{ padding: "28px 0", textAlign: "center" }}>
-              <p style={{ fontSize: 14, color: IIEE.dimText }}>No prediction attempts found.</p>
+              <p style={{ fontSize: 14, color: IIEE.dimText }}>
+                {searchQuery ? `No attempts match “${searchQuery}”.` : "No prediction attempts found."}
+              </p>
               <p style={{ fontSize: 12, color: "#334155", marginTop: 4 }}>
-                Students need to log in and submit predictions first.
+                {searchQuery ? "Try a different search term or clear filters." : "Students need to log in and submit predictions first."}
               </p>
             </div>
           )}
