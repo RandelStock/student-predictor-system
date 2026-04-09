@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import {
   BarChart,
   Bar,
@@ -143,69 +143,62 @@ const styles = `
   .tr-search-info { font-size:12px; color:${IIEE.dimText}; }
 
   .tr-modal-backdrop {
-    position: fixed; inset: 0;
-    background: rgba(0, 0, 0, 0.75);
-    backdrop-filter: blur(8px);
-    z-index: 9999;
-    display: flex; align-items: center; justify-content: center;
-    padding: clamp(12px, 3vw, 32px);
-    animation: trFadeIn 0.2s ease both;
-  }
-  .tr-modal-box {
-    position: relative;
-    width: 100%; max-width: 860px;
-    max-height: 90vh;
-    background: linear-gradient(160deg, #0d1b3e 0%, #0b1437 60%, #0f1c4d 100%);
-    border: 2px solid rgba(245,197,24,0.4);
-    border-radius: 20px;
-    box-shadow: 0 32px 80px rgba(0,0,0,0.8), inset 0 0 1px rgba(245,197,24,0.15);
-    display: flex; flex-direction: column;
-    overflow: hidden;
-    animation: trModalPop 0.25s cubic-bezier(0.34,1.56,0.64,1) both;
+    position:fixed; inset:0;
+    background:rgba(2,6,23,0.88);
+    backdrop-filter:blur(8px);
+    z-index:9999;
+    display:flex; align-items:center; justify-content:center;
+    padding:clamp(12px,3vw,32px);
   }
   @keyframes trModalPop {
-    from { opacity: 0; transform: scale(0.93) translateY(16px); }
-    to   { opacity: 1; transform: scale(1)    translateY(0);    }
+    from { opacity:0; transform:scale(0.93) translateY(20px); }
+    to   { opacity:1; transform:scale(1)    translateY(0);    }
+  }
+  .tr-modal-box {
+    position:relative;
+    width:100%; max-width:860px; max-height:90vh;
+    background:linear-gradient(160deg,#0d1b3e 0%,#0b1437 60%,#0f1c4d 100%);
+    border:1px solid rgba(245,197,24,0.28);
+    border-radius:20px;
+    box-shadow:0 32px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(245,197,24,0.08);
+    display:flex; flex-direction:column; overflow:hidden;
+    animation:trModalPop 0.25s cubic-bezier(0.34,1.56,0.64,1) both;
   }
   .tr-modal-header {
-    display: flex; align-items: flex-start; justify-content: space-between;
-    padding: clamp(16px, 3vw, 24px) clamp(16px, 3vw, 28px) clamp(12px, 2vw, 18px);
-    border-bottom: 1px solid rgba(245,197,24,0.12);
-    background: linear-gradient(90deg, rgba(245,197,24,0.05) 0%, transparent 100%);
-    flex-shrink: 0;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:clamp(16px,3vw,24px) clamp(16px,3vw,28px);
+    border-bottom:1px solid rgba(245,197,24,0.12);
+    background:linear-gradient(90deg,rgba(245,197,24,0.05) 0%,transparent 100%);
+    flex-shrink:0; gap:16px;
   }
-  .tr-modal-header-left { display: flex; align-items: center; gap: 14px; }
+  .tr-modal-header-left { display:flex; align-items:center; gap:14px; min-width:0; }
   .tr-modal-avatar {
-    width: 46px; height: 46px; border-radius: 12px;
-    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 22px; flex-shrink: 0;
-    border: 1px solid rgba(139,92,246,0.35);
+    width:44px; height:44px; border-radius:12px;
+    background:linear-gradient(135deg,#3b82f6,#8b5cf6);
+    display:flex; align-items:center; justify-content:center;
+    font-size:20px; flex-shrink:0;
+    border:1px solid rgba(139,92,246,0.35);
   }
   .tr-modal-title {
-    margin: 0 0 3px;
-    font-size: clamp(16px, 2.5vw, 20px); font-weight: 700;
-    color: #f8fafc; font-family: 'Montserrat', sans-serif;
+    margin:0 0 2px; font-size:clamp(15px,2vw,19px); font-weight:700;
+    color:#f8fafc; font-family:'Montserrat',sans-serif;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
   }
-  .tr-modal-subtitle {
-    margin: 0; color: #64748b;
-    font-size: clamp(11px, 1.5vw, 13px); font-family: 'Inter', sans-serif;
-  }
+  .tr-modal-subtitle { margin:0; color:#64748b; font-size:clamp(11px,1.5vw,12px); font-family:'Inter',sans-serif; }
   .tr-modal-close {
-    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12);
-    border-radius: 10px; padding: 8px 14px; color: #94a3b8;
-    font-size: 13px; cursor: pointer; font-family: 'Inter', sans-serif;
-    transition: all 0.18s; flex-shrink: 0;
+    flex-shrink:0;
+    background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.12);
+    border-radius:10px; padding:8px 16px; color:#94a3b8;
+    font-size:13px; cursor:pointer; font-family:'Inter',sans-serif;
+    transition:all 0.18s;
   }
-  .tr-modal-close:hover {
-    background: rgba(239,68,68,0.12); border-color: rgba(239,68,68,0.35);
-    color: #fca5a5;
-  }
+  .tr-modal-close:hover { background:rgba(239,68,68,0.12); border-color:rgba(239,68,68,0.35); color:#fca5a5; }
   .tr-modal-body {
-    flex: 1; overflow-y: auto; padding: clamp(16px, 3vw, 24px) clamp(16px, 3vw, 28px);
+    flex:1; overflow-y:auto;
+    padding:clamp(16px,3vw,24px) clamp(16px,3vw,28px);
   }
-  .tr-modal-body::-webkit-scrollbar { width: 4px; }
-  .tr-modal-body::-webkit-scrollbar-thumb { background: rgba(245,197,24,0.2); border-radius: 99px; }
+  .tr-modal-body::-webkit-scrollbar { width:4px; }
+  .tr-modal-body::-webkit-scrollbar-thumb { background:rgba(245,197,24,0.2); border-radius:99px; }
 
   /* Divider */
   .tr-divider {
@@ -496,59 +489,57 @@ function ChartCard({ icon, title, sub, children, note }) {
 }
 
 function AttemptDetailModal({ open, onClose, attempt, loading, error }) {
-  // Close on Escape key
-  useEffect(() => {
+  // Escape key to close
+  useState(() => {
     if (!open) return;
     const handler = (e) => { if (e.key === "Escape") onClose(); };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [open, onClose]);
+  });
 
-  // Lock body scroll when open
-  useEffect(() => {
+  // Lock body scroll
+  if (typeof document !== "undefined") {
     document.body.style.overflow = open ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
-  }, [open]);
+  }
 
   if (!open) return null;
 
   const name = attempt?.full_name || attempt?.name || "Unknown Student";
-  const attemptId = attempt?.attempt_id || attempt?.id || "";
+  const id   = attempt?.attempt_id || attempt?.id || "";
 
   return (
     <div className="tr-modal-backdrop" onClick={onClose}>
       <div className="tr-modal-box" onClick={(e) => e.stopPropagation()}>
 
-        {/* Header */}
         <div className="tr-modal-header">
           <div className="tr-modal-header-left">
             <div className="tr-modal-avatar">🎓</div>
-            <div>
+            <div style={{ minWidth: 0 }}>
               <p className="tr-modal-title">{name}</p>
               <p className="tr-modal-subtitle">
-                Recent Attempt Details
-                {attemptId ? ` · ${attemptId.slice(0, 8)}…` : ""}
+                Recent Attempt Details{id ? ` · ${id.slice(0, 8)}…` : ""}
               </p>
             </div>
           </div>
           <button className="tr-modal-close" onClick={onClose}>✕ Close</button>
         </div>
 
-        {/* Body */}
         <div className="tr-modal-body">
           {loading ? (
-            <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "40px 0" }}>
+            <div style={{ display:"flex", alignItems:"center", gap:12, padding:"48px 0" }}>
               <div className="tr-spinner" />
-              <span style={{ fontSize: 13, color: "#64748b", fontFamily: "'Inter',sans-serif" }}>
+              <span style={{ fontSize:13, color:"#64748b", fontFamily:"'Inter',sans-serif" }}>
                 Loading attempt details…
               </span>
             </div>
           ) : error ? (
-            <p style={{ color: "#fca5a5", fontSize: 13, fontFamily: "'Inter',sans-serif" }}>{error}</p>
+            <p style={{ color:"#fca5a5", fontSize:13, fontFamily:"'Inter',sans-serif", padding:"24px 0" }}>
+              {error}
+            </p>
           ) : attempt ? (
             <ResultCard result={attempt} />
           ) : (
-            <p style={{ color: "#94a3b8", fontSize: 13, fontFamily: "'Inter',sans-serif" }}>
+            <p style={{ color:"#94a3b8", fontSize:13, fontFamily:"'Inter',sans-serif", padding:"24px 0" }}>
               No attempt selected.
             </p>
           )}
