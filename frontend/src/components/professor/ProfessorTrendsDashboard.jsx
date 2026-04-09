@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   BarChart,
   Bar,
@@ -142,25 +142,70 @@ const styles = `
   .tr-search-btn:hover { background:rgba(56,189,248,0.9); transform:translateY(-1px); }
   .tr-search-info { font-size:12px; color:${IIEE.dimText}; }
 
-  .tr-side-panel-backdrop {
-    position:fixed; inset:0; background:rgba(2,6,23,0.85); backdrop-filter:blur(5px);
-    z-index:90; display:flex; justify-content:flex-end; overflow:hidden;
+  .tr-modal-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(2, 6, 23, 0.88);
+    backdrop-filter: blur(8px);
+    z-index: 9999;
+    display: flex; align-items: center; justify-content: center;
+    padding: clamp(12px, 3vw, 32px);
+    animation: trFadeIn 0.2s ease both;
   }
-  .tr-side-panel {
-    width:clamp(360px, 60vw, 1040px); max-width:100%; height:100vh;
-    background:#0b1220; border-left:1px solid rgba(148,163,184,0.18);
-    box-shadow:-12px 0 48px rgba(0,0,0,0.5); overflow-y:auto; padding:24px;
-    display:flex; flex-direction:column;
+  .tr-modal-box {
+    position: relative;
+    width: 100%; max-width: 860px;
+    max-height: 90vh;
+    background: linear-gradient(160deg, #0d1b3e 0%, #0b1437 60%, #0f1c4d 100%);
+    border: 1px solid rgba(245,197,24,0.28);
+    border-radius: 20px;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(245,197,24,0.08);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+    animation: trModalPop 0.25s cubic-bezier(0.34,1.56,0.64,1) both;
   }
-  .tr-side-panel-close {
-    margin-left:auto; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.12);
-    border-radius:9px; padding:9px 14px; color:#cbd5e1; cursor:pointer;
-    font-size:13px; font-family:'Inter',sans-serif;
+  @keyframes trModalPop {
+    from { opacity: 0; transform: scale(0.93) translateY(16px); }
+    to   { opacity: 1; transform: scale(1)    translateY(0);    }
   }
-  .tr-side-panel-close:hover { background:rgba(255,255,255,0.08); }
-  .tr-side-panel-header { display:flex; gap:16px; align-items:flex-start; margin-bottom:20px; }
-  .tr-side-panel-title { margin:0; font-size:clamp(18px,2.4vw,24px); font-weight:700; color:${IIEE.white}; font-family:'Montserrat',sans-serif; }
-  .tr-side-panel-subtitle { margin:4px 0 0; color:${IIEE.dimText}; font-size:13px; font-family:'Inter',sans-serif; }
+  .tr-modal-header {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    padding: clamp(16px, 3vw, 24px) clamp(16px, 3vw, 28px) clamp(12px, 2vw, 18px);
+    border-bottom: 1px solid rgba(245,197,24,0.12);
+    background: linear-gradient(90deg, rgba(245,197,24,0.05) 0%, transparent 100%);
+    flex-shrink: 0;
+  }
+  .tr-modal-header-left { display: flex; align-items: center; gap: 14px; }
+  .tr-modal-avatar {
+    width: 46px; height: 46px; border-radius: 12px;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; flex-shrink: 0;
+    border: 1px solid rgba(139,92,246,0.35);
+  }
+  .tr-modal-title {
+    margin: 0 0 3px;
+    font-size: clamp(16px, 2.5vw, 20px); font-weight: 700;
+    color: #f8fafc; font-family: 'Montserrat', sans-serif;
+  }
+  .tr-modal-subtitle {
+    margin: 0; color: #64748b;
+    font-size: clamp(11px, 1.5vw, 13px); font-family: 'Inter', sans-serif;
+  }
+  .tr-modal-close {
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 10px; padding: 8px 14px; color: #94a3b8;
+    font-size: 13px; cursor: pointer; font-family: 'Inter', sans-serif;
+    transition: all 0.18s; flex-shrink: 0;
+  }
+  .tr-modal-close:hover {
+    background: rgba(239,68,68,0.12); border-color: rgba(239,68,68,0.35);
+    color: #fca5a5;
+  }
+  .tr-modal-body {
+    flex: 1; overflow-y: auto; padding: clamp(16px, 3vw, 24px) clamp(16px, 3vw, 28px);
+  }
+  .tr-modal-body::-webkit-scrollbar { width: 4px; }
+  .tr-modal-body::-webkit-scrollbar-thumb { background: rgba(245,197,24,0.2); border-radius: 99px; }
 
   /* Divider */
   .tr-divider {
@@ -451,38 +496,64 @@ function ChartCard({ icon, title, sub, children, note }) {
 }
 
 function AttemptDetailModal({ open, onClose, attempt, loading, error }) {
+  // Close on Escape key
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [open, onClose]);
+
+  // Lock body scroll when open
+  useEffect(() => {
+    document.body.style.overflow = open ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [open]);
+
   if (!open) return null;
 
+  const name = attempt?.full_name || attempt?.name || "Unknown Student";
+  const attemptId = attempt?.attempt_id || attempt?.id || "";
+
   return (
-    <div className="tr-side-panel-backdrop" onClick={onClose}>
-      <div className="tr-side-panel" onClick={(e) => e.stopPropagation()}>
-        <div className="tr-side-panel-header">
-          <div>
-            <p className="tr-side-panel-title">Recent Attempt Details</p>
-            <p className="tr-side-panel-subtitle">
-              {attempt?.name ?? "Unknown"} · {attempt?.attempt_id ? attempt.attempt_id.slice(0, 8) : "—"}
-            </p>
+    <div className="tr-modal-backdrop" onClick={onClose}>
+      <div className="tr-modal-box" onClick={(e) => e.stopPropagation()}>
+
+        {/* Header */}
+        <div className="tr-modal-header">
+          <div className="tr-modal-header-left">
+            <div className="tr-modal-avatar">🎓</div>
+            <div>
+              <p className="tr-modal-title">{name}</p>
+              <p className="tr-modal-subtitle">
+                Recent Attempt Details
+                {attemptId ? ` · ${attemptId.slice(0, 8)}…` : ""}
+              </p>
+            </div>
           </div>
-          <button className="tr-side-panel-close" onClick={onClose}>
-            ✕ Close
-          </button>
+          <button className="tr-modal-close" onClick={onClose}>✕ Close</button>
         </div>
 
-        {loading ? (
-          <p style={{ color: "#cbd5e1", fontSize: "clamp(12px, 1.3vw, 13px)", fontFamily: "'Inter',sans-serif" }}>
-            Loading attempt details…
-          </p>
-        ) : error ? (
-          <p style={{ color: "#fca5a5", fontSize: "clamp(12px, 1.3vw, 13px)", fontFamily: "'Inter',sans-serif" }}>
-            {error}
-          </p>
-        ) : attempt ? (
-          <ResultCard result={attempt} />
-        ) : (
-          <p style={{ color: "#cbd5e1", fontSize: "clamp(12px, 1.3vw, 13px)", fontFamily: "'Inter',sans-serif" }}>
-            No attempt selected.
-          </p>
-        )}
+        {/* Body */}
+        <div className="tr-modal-body">
+          {loading ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "40px 0" }}>
+              <div className="tr-spinner" />
+              <span style={{ fontSize: 13, color: "#64748b", fontFamily: "'Inter',sans-serif" }}>
+                Loading attempt details…
+              </span>
+            </div>
+          ) : error ? (
+            <p style={{ color: "#fca5a5", fontSize: 13, fontFamily: "'Inter',sans-serif" }}>{error}</p>
+          ) : attempt ? (
+            <ResultCard result={attempt} />
+          ) : (
+            <p style={{ color: "#94a3b8", fontSize: 13, fontFamily: "'Inter',sans-serif" }}>
+              No attempt selected.
+            </p>
+          )}
+        </div>
+
       </div>
     </div>
   );
