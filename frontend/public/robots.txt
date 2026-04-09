@@ -1,4 +1,4 @@
-# https://www.robotstxt.org/robotstxt.html
+﻿# https://www.robotstxt.org/robotstxt.html
 User-agent: *
 Allow: /
 Disallow: /api/
@@ -9,3 +9,4 @@ Disallow: /private/
 Crawl-delay: 1
 
 Sitemap: https://slsureeboardexampredictor.com/sitemap.xml
+

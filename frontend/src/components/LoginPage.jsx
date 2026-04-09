@@ -31,6 +31,7 @@ export default function LoginPage({ role, onSuccess, onBack }) {
   const [name, setName]             = useState("");
   const [email, setEmail]           = useState("");
   const [password, setPassword]     = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError]           = useState("");
   const [loading, setLoading]       = useState(false);
   const [showPass, setShowPass]     = useState(false);
@@ -52,6 +53,25 @@ export default function LoginPage({ role, onSuccess, onBack }) {
   const shadowBtn = isProfessor
     ? "0 8px 28px rgba(124,58,237,0.35)"
     : "0 8px 28px rgba(14,165,233,0.35)";
+
+  const passwordContainsNameOrEmail = (() => {
+    const lower = password.toLowerCase();
+    const normalizedName = name.trim().toLowerCase();
+    if (normalizedName) {
+      const parts = normalizedName.split(/\s+/).filter(Boolean);
+      if (parts.some(part => part && lower.includes(part))) return true;
+    }
+    return email && lower.includes(email.trim().toLowerCase());
+  })();
+
+  const passwordValidations = {
+    minLength: password.length >= 8,
+    hasNumberOrSymbol: /[0-9\W]/.test(password),
+    noNameOrEmail: !passwordContainsNameOrEmail,
+  };
+
+  const passwordsMatch = confirmPassword.trim() === "" || password === confirmPassword;
+  const showPasswordChecklist = password.length > 0;
 
   // Faculty code verification (two-step login)
   const handleFacultyCodeVerify = async (e) => {
@@ -100,6 +120,33 @@ export default function LoginPage({ role, onSuccess, onBack }) {
     } else {
       if (!email.trim() || !password.trim()) {
         setError("Please enter both email and password.");
+        return;
+      }
+    }
+
+    if (isRegister) {
+      if (!confirmPassword.trim()) {
+        setError("Please confirm your password.");
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        setError("Passwords do not match.");
+        return;
+      }
+
+      if (password.length < 8) {
+        setError("Password must be at least 8 characters.");
+        return;
+      }
+
+      if (!/[0-9\W]/.test(password)) {
+        setError("Password must contain at least one number or symbol.");
+        return;
+      }
+
+      if (passwordContainsNameOrEmail) {
+        setError("Password cannot contain your name or email address.");
         return;
       }
     }
@@ -535,6 +582,56 @@ export default function LoginPage({ role, onSuccess, onBack }) {
                 </div>
               </div>
 
+              {isRegister && (
+                <>
+                  <div>
+                    <label style={{
+                      display:"block", fontSize:"clamp(9px, 1.2vw, 10px)", fontWeight:700,
+                      color:T.dimText, textTransform:"uppercase",
+                      letterSpacing:"0.1em", marginBottom:6,
+                      fontFamily:"'Inter',sans-serif",
+                    }}>Confirm Password</label>
+                    <div style={{ position:"relative" }}>
+                      <input
+                        className="lp-input"
+                        type={showPass ? "text" : "password"}
+                        placeholder="Re-enter your password"
+                        value={confirmPassword}
+                        onChange={e => { setConfirmPassword(e.target.value); setError(""); }}
+                        autoComplete="new-password"
+                        style={{ paddingRight:44 }}
+                      />
+                      <button type="button" className="lp-eye-btn" onClick={() => setShowPass(p => !p)}>
+                        {showPass ? "🙈" : "👁️"}
+                      </button>
+                    </div>
+                    {confirmPassword && !passwordsMatch && (
+                      <p style={{ margin:"8px 0 0", color:T.fail, fontSize:12, fontFamily:"'Inter',sans-serif" }}>
+                        Passwords do not match.
+                      </p>
+                    )}
+                  </div>
+
+                  {showPasswordChecklist && (
+                    <div style={{ marginTop:16, padding:"14px 16px", borderRadius:16, background:"rgba(255,255,255,0.06)", border:`1px solid ${T.borderSub}` }}>
+                      <p style={{ margin:"0 0 10px", fontSize:13, fontWeight:700, color:T.white, fontFamily:"'Inter',sans-serif" }}>
+                        Password requirements
+                      </p>
+                      {[
+                        { label: "Cannot contain your name or email address", valid: passwordValidations.noNameOrEmail },
+                        { label: "At least 8 characters", valid: passwordValidations.minLength },
+                        { label: "Contains a number or symbol", valid: passwordValidations.hasNumberOrSymbol },
+                      ].map((item, i) => (
+                        <div key={i} style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
+                          <span style={{ color:item.valid ? T.pass : T.fail, fontSize:14 }}>{item.valid ? "✔" : "✕"}</span>
+                          <span style={{ color:item.valid ? T.white : T.dimText, fontSize:12, fontFamily:"'Inter',sans-serif" }}>{item.label}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+
               {/* Faculty Access Code — professor register only */}
               {isProfessor && isRegister && (
                 <div>
@@ -640,7 +737,7 @@ export default function LoginPage({ role, onSuccess, onBack }) {
                 <button
                   type="button"
                   className="lp-toggle"
-                  onClick={() => { setIsRegister(false); setError(""); setInviteCode(""); setFacultyCodeVerified(false); setFacultyCodeInput(""); }}
+                  onClick={() => { setIsRegister(false); setError(""); setInviteCode(""); setConfirmPassword(""); setPassword(""); setFacultyCodeVerified(false); setFacultyCodeInput(""); }}
                 >
                   Sign in instead
                 </button>
@@ -651,7 +748,7 @@ export default function LoginPage({ role, onSuccess, onBack }) {
                 <button
                   type="button"
                   className="lp-toggle"
-                  onClick={() => { setIsRegister(true); setError(""); setFacultyCodeVerified(false); setFacultyCodeInput(""); }}
+                  onClick={() => { setIsRegister(true); setError(""); setConfirmPassword(""); setPassword(""); setFacultyCodeVerified(false); setFacultyCodeInput(""); }}
                 >
                   Create an account
                 </button>

@@ -768,6 +768,7 @@ export default function LandingPage({ onEnter }) {
             letterSpacing:"-0.035em", margin:"0 0 24px",
             color:T.white100,
           }}>
+            SLSU EE Licensure Predictor<br />
             Predict Your<br />
             <span className="lp-shimmer">EE Board Exam</span><br />
             Outcome with AI
@@ -778,9 +779,9 @@ export default function LandingPage({ onEnter }) {
             maxWidth:"560px", lineHeight:1.78, margin:"0 0 44px",
             fontWeight:400,
           }}>
-            An AI-powered prediction system for Electrical Engineering licensure
-            examinees at SLSU. Assess your readiness, receive personalized feedback,
-            and help faculty identify institutional gaps all in one platform.
+            An AI-powered PRC Electrical Engineering board exam predictor for SLSU
+            examinees in the Philippines. Assess your readiness, receive personalized
+            feedback, and help faculty identify institutional gaps before exam day.
           </p>
         </div>
 
