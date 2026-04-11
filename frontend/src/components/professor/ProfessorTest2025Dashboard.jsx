@@ -1,3 +1,4 @@
+import { useState } from "react";
 import ExamineeDetailPanel from "../ExamineeDetailPanel";
 import {
   ScatterChart,
@@ -263,6 +264,31 @@ const styles = `
 
   .fade-in { animation:fadeIn .45s ease both; }
   @keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+
+  /* ── Expandable sections ── */
+  .expand-header {
+    display:flex; justify-content:space-between; align-items:center;
+    cursor:pointer; user-select:none; padding:0;
+  }
+  .expand-toggle {
+    display:inline-flex; align-items:center; justify-content:center;
+    width:24px; height:24px; border-radius:6px;
+    background:rgba(245,197,24,0.1); border:1px solid rgba(245,197,24,0.2);
+    color:${IIEE.gold}; font-size:14px; transition:transform .2s, background .2s;
+    flex-shrink:0;
+  }
+  .expand-header:hover .expand-toggle {
+    background:rgba(245,197,24,0.2); transform:scale(1.08);
+  }
+  .expand-content {
+    margin-top:12px; padding:12px; border-radius:8px;
+    background:rgba(245,197,24,0.04); border-left:3px solid ${IIEE.gold};
+    font-size:clamp(11px, 1.5vw, 12.5px); line-height:1.8; color:${IIEE.muted};
+  }
+  .expand-content strong { color:${IIEE.gold}; font-weight:700; }
+  .expand-content p { margin:8px 0; }
+  .expand-content ul { margin:8px 0; padding-left:20px; }
+  .expand-content li { margin:4px 0; }
 `;
 
 /* ─── Local sub-components (mirrors ModelOverviewDashboard) ───── */
@@ -303,6 +329,40 @@ function Card({ icon, title, sub, children, note, insight, inner, fullWidth, blu
         <div className="chart-note">
           {note && <span>{note}</span>}
           {insight && <><br /><strong>↳ {insight}</strong></>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ExpandableCard({ icon, title, sub, children, note, insight, explanation, fullWidth, blueTint, tealTint }) {
+  const [expanded, setExpanded] = useState(false);
+  const iconClass = `chart-icon${blueTint ? " blue" : tealTint ? " teal" : ""}`;
+  
+  return (
+    <div className={`chart-card${fullWidth ? " fw" : ""}`}>
+      <div className="chart-head expand-header" onClick={() => setExpanded(!expanded)}>
+        <div style={{ display: 'flex', alignItems: 'center', flex: 1, gap: '12px' }}>
+          <div className={iconClass}>{icon}</div>
+          <div>
+            <div className="chart-title">{title}</div>
+            {sub && <div className="chart-sub">{sub}</div>}
+          </div>
+        </div>
+        <div className="expand-toggle" style={{ transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+          ▼
+        </div>
+      </div>
+      {children}
+      {(note || insight) && (
+        <div className="chart-note">
+          {note && <span>{note}</span>}
+          {insight && <><br /><strong>↳ {insight}</strong></>}
+        </div>
+      )}
+      {expanded && explanation && (
+        <div className="expand-content">
+          {typeof explanation === 'string' ? <p>{explanation}</p> : explanation}
         </div>
       )}
     </div>
@@ -535,9 +595,33 @@ export default function ProfessorTest2025Dashboard({
               ) : (
                 <div className="g2">
 
-                  <Card inner icon="📉" title="Regression A" sub="EE + MATH + ESAS + GWA" tealTint
+                  <ExpandableCard inner icon="📉" title="Regression A" sub="EE + MATH + ESAS + GWA" tealTint
                     note="Model A uses full subject scores and GWA — highest predictive fidelity."
-                    insight={`R² of ${num(regA.r2, 4)} means ${pct((regA.r2 ?? 0) * 100)} of rating variance explained.`}>
+                    insight={`R² of ${num(regA.r2, 4)} means ${pct((regA.r2 ?? 0) * 100)} of rating variance explained.`}
+                    explanation={
+                      <div style={{ fontSize: 13, color: IIEE.muted, lineHeight: 1.8 }}>
+                        <p><strong style={{color: IIEE.gold}}>What is this model?</strong></p>
+                        <p>Regression Model A predicts students' final PRC Total Rating using four input features:</p>
+                        <ul style={{marginLeft: 16, marginTop: 6}}>
+                          <li><strong>EE (Electronics Exam)</strong> — Raw performance on electronics subject matter</li>
+                          <li><strong>MATH</strong> — Raw performance on mathematics subject matter</li>
+                          <li><strong>ESAS</strong> — Raw performance on engineering sciences/allied subjects</li>
+                          <li><strong>GWA</strong> — Cumulative General Weighted Average across all coursework</li>
+                        </ul>
+                        
+                        <p style={{marginTop: 12}}><strong style={{color: IIEE.gold}}>How well does it work?</strong></p>
+                        <p>An R² value of <span style={{color: IIEE.teal, fontWeight: 700}}>{num(regA.r2, 4)}</span> means that <span style={{fontWeight: 700}}>{pct((regA.r2 ?? 0) * 100)}</span> of the variation in final ratings is explained by these four features. This is considered excellent predictive power.</p>
+                        
+                        <p style={{marginTop: 12}}><strong style={{color: IIEE.gold}}>Error metrics explained:</strong></p>
+                        <ul style={{marginLeft: 16, marginTop: 6}}>
+                          <li><strong>MAE ({num(regA.mae, 4)} pts)</strong> — Average absolute prediction error. On average, predictions are off by this many points.</li>
+                          <li><strong>RMSE ({num(regA.rmse, 4)} pts)</strong> — Root mean squared error. Penalizes larger errors more heavily than MAE.</li>
+                        </ul>
+                        
+                        <p style={{marginTop: 12}}><strong style={{color: IIEE.gold}}>Why is this model so effective?</strong></p>
+                        <p>Subject exam scores (EE, MATH, ESAS) contain direct signals about student mastery. Combined with GWA (which reflects sustained performance), they capture the main drivers of board exam ratings. This is why Model A achieves near-perfect R².</p>
+                      </div>
+                    }>
                   {[["R²", "r2", 4], ["MAE", "mae", 4], ["MSE", "mse", 4], ["RMSE", "rmse", 4]].map(([label, key, d]) => (
                     <div key={key}>
                       <div className="model-row" style={{ padding: "8px 0", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
@@ -547,11 +631,38 @@ export default function ProfessorTest2025Dashboard({
                       {key === "r2" && <Prog value={(regA.r2 ?? 0) * 100} color={IIEE.teal} />}
                     </div>
                   ))}
-                </Card>
+                </ExpandableCard>
 
-                <Card inner icon="🧠" title="Regression B" sub="GWA + Survey only (no subjects)" blueTint
+                <ExpandableCard inner icon="🧠" title="Regression B" sub="GWA + Survey only (no subjects)" blueTint
                   note="Model B validates survey-only predictive capacity without subject exam scores."
-                  insight={`R² of ${num(regB.r2, 4)} — lower than A, confirming subject scores add significant signal.`}>
+                  insight={`R² of ${num(regB.r2, 4)} — lower than A, confirming subject scores add significant signal.`}
+                  explanation={
+                    <div style={{ fontSize: 13, color: IIEE.muted, lineHeight: 1.8 }}>
+                      <p><strong style={{color: IIEE.gold}}>What is this model?</strong></p>
+                      <p>Regression Model B is a <em>simplified</em> version that predicts final PRC Total Rating using only two inputs:</p>
+                      <ul style={{marginLeft: 16, marginTop: 6}}>
+                        <li><strong>GWA</strong> — Cumulative General Weighted Average</li>
+                        <li><strong>Survey responses</strong> — Student self-assessment and feedback during the course</li>
+                      </ul>
+                      <p style={{marginTop: 8}}>Notably, it <em>excludes</em> subject-specific exam scores (EE, MATH, ESAS).</p>
+                      
+                      <p style={{marginTop: 12}}><strong style={{color: IIEE.gold}}>Why would we use a "worse" model?</strong></p>
+                      <p>Model B is useful for <strong>early prediction</strong>. Before the final exams are completed, we have GWA and survey data, but not yet the final subject exam scores. Model B allows predicting ratings earlier in the semester.</p>
+                      
+                      <p style={{marginTop: 12}}><strong style={{color: IIEE.gold}}>Performance comparison:</strong></p>
+                      <p>An R² of <span style={{color: IIEE.indigo, fontWeight: 700}}>{num(regB.r2, 4)}</span> (vs. Model A's <span style={{color: IIEE.teal, fontWeight: 700}}>{num(regA.r2, 4)}</span>) shows a <span style={{fontWeight: 700}}>{pct((regA.r2 - regB.r2) * 100)}</span> drop in explained variance.</p>
+                      
+                      <p style={{marginTop: 12}}><strong style={{color: IIEE.gold}}>Interpretation:</strong></p>
+                      <p>The difference quantifies how much <strong>subject exam scores drive final ratings</strong>. Subject performance matters significantly — but GWA and surveys alone still capture some predictive signal, especially for sustained high/low performers.</p>
+                      
+                      <p style={{marginTop: 12}}><strong style={{color: IIEE.gold}}>Use cases:</strong></p>
+                      <ul style={{marginLeft: 16, marginTop: 6}}>
+                        <li><strong>Early flagging</strong> — Identify at-risk students mid-semester</li>
+                        <li><strong>Course feedback</strong> — Understand how survey responses correlate with outcomes</li>
+                        <li><strong>Baseline comparison</strong> — See which features matter most (high R² drop = high feature importance)</li>
+                      </ul>
+                    </div>
+                  }>
                   {[["R²", "r2", 4], ["MAE", "mae", 4], ["MSE", "mse", 4], ["RMSE", "rmse", 4]].map(([label, key, d]) => (
                     <div key={key}>
                       <div className="model-row" style={{ padding: "8px 0", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
@@ -561,11 +672,53 @@ export default function ProfessorTest2025Dashboard({
                       {key === "r2" && <Prog value={(regB.r2 ?? 0) * 100} color={IIEE.indigo} />}
                     </div>
                   ))}
-                </Card>
+                </ExpandableCard>
 
                 {/* R² comparison quick-view */}
-                <Card inner icon="⚖️" title="Model A vs B — R² Comparison" sub="Higher R² = better rating prediction" fullWidth
-                  note="Model A benefits from subject score inputs; Model B relies on GWA + survey responses only.">
+                <ExpandableCard inner icon="⚖️" title="Model A vs B — R² Comparison" sub="Higher R² = better rating prediction" fullWidth
+                  note="Model A benefits from subject score inputs; Model B relies on GWA + survey responses only."
+                  explanation={
+                    <div style={{ fontSize: 13, color: IIEE.muted, lineHeight: 1.8 }}>
+                      <p><strong style={{color: IIEE.gold}}>What are we comparing?</strong></p>
+                      <p><strong>R²</strong> (coefficient of determination) measures how much of the variation in final ratings each model can explain:</p>
+                      <ul style={{marginLeft: 16, marginTop: 6}}>
+                        <li><strong style={{color: IIEE.teal}}>Model A (R² = {num(regA.r2, 4)})</strong> — Uses full subject exams + GWA</li>
+                        <li><strong style={{color: IIEE.indigo}}>Model B (R² = {num(regB.r2, 4)})</strong> — Uses GWA + survey only</li>
+                      </ul>
+                      
+                      <p style={{marginTop: 12}}><strong style={{color: IIEE.gold}}>The R² gap tells us something crucial:</strong></p>
+                      <p>The difference of <span style={{fontWeight: 700, color: IIEE.gold}}>{pct((regA.r2 - regB.r2) * 100)}</span> represents the <strong>marginal contribution</strong> of subject exam scores to predicting ratings.</p>
+                      
+                      <p style={{marginTop: 12}}><strong style={{color: IIEE.gold}}>Interpretation framework:</strong></p>
+                      <table style={{marginTop: 8, borderCollapse: 'collapse', width: '100%'}}>
+                        <tbody>
+                          <tr style={{borderBottom: '1px solid rgba(245,197,24,0.1)'}}>
+                            <td style={{padding: '8px 0', fontWeight: 700, color: IIEE.gold}}>R² of Model A</td>
+                            <td style={{padding: '8px 8px'}}>{num(regA.r2, 4)} — How well can we predict with all inputs (best-case scenario)</td>
+                          </tr>
+                          <tr style={{borderBottom: '1px solid rgba(245,197,24,0.1)'}}>
+                            <td style={{padding: '8px 0', fontWeight: 700, color: IIEE.gold}}>R² of Model B</td>
+                            <td style={{padding: '8px 8px'}}>{num(regB.r2, 4)} — How well can we predict with limited inputs (early-prediction scenario)</td>
+                          </tr>
+                          <tr>
+                            <td style={{padding: '8px 0', fontWeight: 700, color: IIEE.gold}}>Gap</td>
+                            <td style={{padding: '8px 8px'}}>{pct((regA.r2 - regB.r2) * 100)} — The value added by knowing subject exam scores</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                      
+                      <p style={{marginTop: 12}}><strong style={{color: IIEE.gold}}>Practical implications:</strong></p>
+                      <ul style={{marginLeft: 16, marginTop: 6}}>
+                        <li>Subject exam performance is the <strong>primary driver</strong> of final rating predictions</li>
+                        <li>GWA and survey data alone are <strong>moderately predictive</strong> but miss important signals</li>
+                        <li>For <strong>high-confidence predictions</strong>, wait for subject scores (use Model A)</li>
+                        <li>For <strong>early warnings</strong>, use Model B mid-semester before exams are final</li>
+                      </ul>
+                      
+                      <p style={{marginTop: 12}}><strong style={{color: IIEE.gold}}>Statistical note:</strong></p>
+                      <p>Both models use Ridge Regression with the same training/evaluation split. The difference in R² isolates the predictive power of feature additions, not model architecture.</p>
+                    </div>
+                  }>
                   <div style={{ display: "flex", gap: clamp(12, 24), flexWrap: "wrap" }}>
                     {[
                       { label: "Reg A (EE+MATH+ESAS+GWA)", value: regA.r2 ?? 0, color: IIEE.teal },
@@ -582,7 +735,7 @@ export default function ProfessorTest2025Dashboard({
                       </div>
                     ))}
                   </div>
-                </Card>
+                </ExpandableCard>
               </div>
             )}
             </SecCard>
