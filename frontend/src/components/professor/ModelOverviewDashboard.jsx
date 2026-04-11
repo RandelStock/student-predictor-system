@@ -601,7 +601,7 @@ function PredictedActualSection({ scatterData: rawScatter, modelInfo }) {
    ---------------------------------------------------------------
    The backend /analytics endpoint loads DATA_UPCOMING (333 rows)
    as the primary source and returns its aggregates in `ov`:
-     ov.total_students     → 333 (all examiners)
+     ov.total_students     → 333 (all examinees)
      ov.total_passers      → from DATA_UPCOMING
      ov.total_failers      → from DATA_UPCOMING
      ov.overall_pass_rate  → from DATA_UPCOMING
@@ -817,7 +817,7 @@ export default function ModelOverviewDashboard({
         <div style={{ display: mode === "institutional" ? "block" : "none" }}>
 
           <Divider
-            label={`Key Performance Indicators — ${ov?.total_students ?? 333} Examiners (2022-2025)`}
+            label={`Key Performance Indicators — ${ov?.total_students ?? 333} Examinees (2022-2025)`}
             icon="📌"
           />
 
@@ -836,7 +836,7 @@ export default function ModelOverviewDashboard({
           <div className="metrics-grid" style={{ marginBottom: 28 }}>
             {/* All KPI values now sourced from useInstitutionalKpi → ov → DATA_UPCOMING */}
             <KPI
-              label="Total Examiners"
+              label="Total Examinees"
               value={kpi.total_students || "—"}
               icon="👥"
               color={IIEE.blue}
@@ -893,8 +893,8 @@ export default function ModelOverviewDashboard({
             <Card
               icon="🥧"
               title="Pass / Fail Distribution"
-              sub={`All examiners — DATA_UPCOMING (${ov?.upcoming_rows ?? ov?.total_students ?? 333} rows)`}
-              note={`Donut chart of overall pass/fail outcomes across ${kpi.total_students} examiners from DATA_UPCOMING.`}
+              sub={`All examinees — DATA_UPCOMING (${ov?.upcoming_rows ?? ov?.total_students ?? 333} rows)`}
+              note={`Donut chart of overall pass/fail outcomes across ${kpi.total_students} examinees from DATA_UPCOMING.`}
               insight={`${pct(kpi.overall_pass_rate)} pass rate — ${(kpi.overall_pass_rate ?? 0) >= 70 ? "above" : "below"} the 70% PRC benchmark.`}
             >
               <ResponsiveContainer width="100%" height={220}>

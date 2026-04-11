@@ -366,6 +366,10 @@ export default function ProfessorTest2025Dashboard({
   const cls = test2025?.classification ?? {};
   const regA = test2025?.regression?.a ?? {};
   const regB = test2025?.regression?.b ?? {};
+  const hasRegression = Boolean(
+    regA?.r2 != null || regA?.mae != null || regA?.mse != null || regA?.rmse != null ||
+    regB?.r2 != null || regB?.mae != null || regB?.mse != null || regB?.rmse != null
+  );
   const cm   = test2025?.confusion_matrix;
 
   const passedScatter = (scatterData ?? []).filter((d) => d.passed);
@@ -520,11 +524,20 @@ export default function ProfessorTest2025Dashboard({
             <SecCard num="2" icon="📉" title="Regression Model Results"
               subtitle="Predicted PRC Total Rating — evaluated on 2025 held-out set">
               <DsTag label="DATA_EVALUATION — 2025 only · Ridge Regression (Model A & B)" />
-              <div className="g2">
+              {!hasRegression ? (
+                <div className="state-box" style={{ padding: "28px 0" }}>
+                  <div className="state-emoji">📉</div>
+                  <div className="state-title">Regression metrics unavailable</div>
+                  <div className="state-sub">
+                    This evaluation run only performed classification (Pass/Fail). No regression models were applied, so rating prediction metrics are not available for Section 2.
+                  </div>
+                </div>
+              ) : (
+                <div className="g2">
 
-                <Card inner icon="📉" title="Regression A" sub="EE + MATH + ESAS + GWA" tealTint
-                  note="Model A uses full subject scores and GWA — highest predictive fidelity."
-                  insight={`R² of ${num(regA.r2, 4)} means ${pct((regA.r2 ?? 0) * 100)} of rating variance explained.`}>
+                  <Card inner icon="📉" title="Regression A" sub="EE + MATH + ESAS + GWA" tealTint
+                    note="Model A uses full subject scores and GWA — highest predictive fidelity."
+                    insight={`R² of ${num(regA.r2, 4)} means ${pct((regA.r2 ?? 0) * 100)} of rating variance explained.`}>
                   {[["R²", "r2", 4], ["MAE", "mae", 4], ["MSE", "mse", 4], ["RMSE", "rmse", 4]].map(([label, key, d]) => (
                     <div key={key}>
                       <div className="model-row" style={{ padding: "8px 0", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
@@ -571,6 +584,7 @@ export default function ProfessorTest2025Dashboard({
                   </div>
                 </Card>
               </div>
+            )}
             </SecCard>
 
             {/* ════ SECTION 3: Scatter plot ════ */}

@@ -2057,7 +2057,7 @@ def defense_test_2025():
     text = open(report_path, "r", encoding="utf-8").read()
 
     def _search_float(pattern: str):
-        m = re.search(pattern, text, flags=re.IGNORECASE | re.MULTILINE)
+        m = re.search(pattern, text, flags=re.IGNORECASE | re.MULTILINE | re.DOTALL)
         return float(m.group(1)) if m else None
 
     clf_accuracy     = _search_float(r"Accuracy\s*:\s*([0-9.]+)\s*\(")
@@ -2074,6 +2074,14 @@ def defense_test_2025():
     reg_b_mae  = _search_float(r"MODEL 2B: REGRESSION.*?MAE\s*:\s*([0-9.]+)\s*pts")
     reg_b_rmse = _search_float(r"MODEL 2B: REGRESSION.*?RMSE\s*:\s*([0-9.]+)")
     reg_b_r2   = _search_float(r"MODEL 2B: REGRESSION.*?R2\s*:\s*([0-9.]+)")
+
+    # Diagnostic logging for regression parsing
+    print(f"[/defense/test-2025] Regression A: MAE={reg_a_mae}, RMSE={reg_a_rmse}, R2={reg_a_r2}")
+    print(f"[/defense/test-2025] Regression B: MAE={reg_b_mae}, RMSE={reg_b_rmse}, R2={reg_b_r2}")
+    if not any([reg_a_mae, reg_a_rmse, reg_a_r2, reg_b_mae, reg_b_rmse, reg_b_r2]):
+        print(f"[/defense/test-2025] WARNING: No regression metrics extracted from evaluation_report.txt")
+        print(f"[/defense/test-2025] Report file exists: {os.path.exists(report_path)}")
+        print(f"[/defense/test-2025] Report size: {os.path.getsize(report_path)} bytes")
 
     reg_a_mse = (reg_a_rmse ** 2) if reg_a_rmse is not None else None
     reg_b_mse = (reg_b_rmse ** 2) if reg_b_rmse is not None else None
