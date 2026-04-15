@@ -128,12 +128,25 @@ except FileNotFoundError as e:
 for df in [df_model, df_evaluation, df_all]:
     df.columns = df.columns.str.strip()
 
+
+def _normalize_subject_order(df: pd.DataFrame) -> pd.DataFrame:
+    if all(col in df.columns for col in SUBJECT_COLS):
+        ordered = [col for col in SUBJECT_COLS if col in df.columns]
+        rest = [col for col in df.columns if col not in ordered]
+        return df[ordered + rest]
+    return df
+
+df_model      = _normalize_subject_order(df_model)
+df_evaluation = _normalize_subject_order(df_evaluation)
+df_all       = _normalize_subject_order(df_all)
+
 # Load DATA_UPCOMING for institutional analytics and additional training samples in regression A
 try:
     df_upcoming = _load_data_file(FILE_UPCOMING)
     if df_upcoming is None:
         raise FileNotFoundError(f"No file for {FILE_UPCOMING} found (CSV/XLSX)")
     df_upcoming.columns = df_upcoming.columns.str.strip()
+    df_upcoming = _normalize_subject_order(df_upcoming)
     print(f"    DATA_UPCOMING  : {len(df_upcoming)} rows x {len(df_upcoming.columns)} cols (legacy 333)")
 except FileNotFoundError as e:
     print(f"    WARNING: {e}")

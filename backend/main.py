@@ -359,6 +359,15 @@ def _normalise_passed(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+def _normalize_subject_order(df: pd.DataFrame) -> pd.DataFrame:
+    if all(col in df.columns for col in SUBJECT_COLS):
+        ordered = [col for col in SUBJECT_COLS if col in df.columns]
+        rest = [col for col in df.columns if col not in ordered]
+        if list(df.columns[:len(ordered)]) != ordered:
+            return df[ordered + rest]
+    return df
+
+
 def remap_subject_importance(feature_names, importances):
     """Remap feature importance scores for EE/MATH/ESAS when dataset columns are reordered."""
     mapping = {
@@ -417,6 +426,7 @@ def _load_main_df() -> pd.DataFrame:
         try:
             d.columns = d.columns.str.strip()
             d["_source"] = "DATA_UPCOMING"
+            d = _normalize_subject_order(d)
             d = _normalise_year(d)
             d = _normalise_passed(d)
             print(f"[analytics] Loaded DATA_UPCOMING: {len(d)} rows (PRIMARY institutional source)")
@@ -430,6 +440,7 @@ def _load_main_df() -> pd.DataFrame:
         if d is not None:
             d.columns = d.columns.str.strip()
             d["_source"] = "DATA_ALL"
+            d = _normalize_subject_order(d)
             d = _normalise_year(d)
             d = _normalise_passed(d)
             print(f"[analytics] Loaded {FILE_ALL}: {len(d)} rows (fallback)")
@@ -443,6 +454,7 @@ def _load_main_df() -> pd.DataFrame:
         if d is not None:
             d.columns = d.columns.str.strip()
             d["_source"] = "DATA_ALL"
+            d = _normalize_subject_order(d)
             d = _normalise_year(d)
             d = _normalise_passed(d)
             print(f"[analytics] Loaded {FILE_ALL}: {len(d)} rows (fallback)")
@@ -458,6 +470,7 @@ def _load_main_df() -> pd.DataFrame:
             d = pd.read_excel(path, sheet_name=0)
             d.columns = d.columns.str.strip()
             d["_source"] = label
+            d = _normalize_subject_order(d)
             frames.append(d)
         except Exception as e:
             print(f"[analytics] Could not load {path}: {e}")
