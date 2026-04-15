@@ -658,7 +658,6 @@ export default function ProfessorCorrelationDashboard() {
         <Divider label="Key Correlation Indicators" icon="📌" />
         <div className="metrics-grid" style={{ marginBottom: 28 }}>
           <KPI label="Strongest Predictor" value={strongestPredictor.label} icon="🏆" color={IIEE.gold} sub={`rpb = ${strongestPredictor.rpb.toFixed(3)} with Pass/Fail`} />
-          <KPI label="Highest Pair" value={overallHighestPair.value.toFixed(3)} icon="📈" color={IIEE.passGreen} sub={`${overallHighestPair.pair} (overall group)`} />
           <KPI label="GWA–ESAS" value="−0.631" icon="🎓" color={IIEE.amber} sub="Strongest academic-GWA link" />
           <KPI label="Review vs Pass" value="V=0.647" icon="🔗" color={IIEE.teal} sub="Strongest Chi-Sq effect" />
           <KPI label="Passers / Total" value="93/159" icon="🧮" color={IIEE.indigo} sub="58.5% pass rate, 2022-2025" />
