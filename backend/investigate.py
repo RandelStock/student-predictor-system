@@ -114,9 +114,9 @@ df.fillna(0, inplace=True)
 remaining = df.isnull().sum().sum()
 print(f"    Remaining nulls after fill: {remaining}")
 
-ALL_FEATURES    = [col for col in df.select_dtypes(include=[np.number]).columns
-                   if col not in [TARGET_CLASS, TARGET_REG]]
-NO_SUBJECT_FEAT = [col for col in ALL_FEATURES if col not in SUBJECT_COLS]
+ALL_FEATURES    = sorted([col for col in df.select_dtypes(include=[np.number]).columns
+                   if col not in [TARGET_CLASS, TARGET_REG]])
+NO_SUBJECT_FEAT = sorted([col for col in ALL_FEATURES if col not in SUBJECT_COLS])
 
 X_all   = df[ALL_FEATURES]
 X_nosub = df[NO_SUBJECT_FEAT]

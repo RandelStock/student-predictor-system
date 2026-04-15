@@ -280,11 +280,11 @@ print(f"    Nulls remaining — MODEL:{df_model.isnull().sum().sum()}  "
 # ═══════════════════════════════════════════════════════════════
 print("\n[4] Building feature sets...")
 
-ALL_FEATURES = [
+ALL_FEATURES = sorted([
     col for col in df_model.select_dtypes(include=[np.number]).columns
     if col not in [TARGET_CLASS, TARGET_REG]
-]
-NO_SUBJECT_FEATURES = [c for c in ALL_FEATURES if c not in SUBJECT_COLS]
+])
+NO_SUBJECT_FEATURES = sorted([c for c in ALL_FEATURES if c not in SUBJECT_COLS])
 BASIC_FEATURES = [c for c in ["EE", "MATH", "ESAS", "GWA"] if c in df_model.columns]
 
 print(f"    ALL_FEATURES        : {len(ALL_FEATURES)} cols  (classification + reg-B)")
