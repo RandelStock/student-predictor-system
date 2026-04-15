@@ -605,17 +605,6 @@ export default function ProfessorCorrelationDashboard() {
   const secondPredictor = sortedPointBiserial[1];
   const thirdPredictor = sortedPointBiserial[2];
   const institutionalPredictor = POINT_BISERIAL.find((d) => d.label === "F: Institutional");
-  const overallHighestPair = useMemo(() => {
-    let best = { pair: "", value: -Infinity };
-    VARS.forEach((r, ri) => VARS.forEach((c, ci) => {
-      if (ri >= ci) return;
-      const value = OVERALL_MATRIX_RAW[r][c];
-      if (Math.abs(value) > Math.abs(best.value)) {
-        best = { pair: `${VAR_LABELS[r]}–${VAR_LABELS[c]}`, value };
-      }
-    }));
-    return best;
-  }, []);
 
   return (
     <div className="corr-wrap fade-in">
