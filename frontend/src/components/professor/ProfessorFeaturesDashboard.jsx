@@ -410,6 +410,7 @@ export default function ProfessorFeaturesDashboard({ featureImp = [], passFailCo
   const [hoveredBar, setHoveredBar] = useState(null);
 
   const fallbackPassFail = passFailComparison.length ? passFailComparison : [
+    { factor: "EE Avg",           pass: "80%",  fail: "60%" },
     { factor: "ESAS Avg",          pass: "78%",  fail: "55%" },
     { factor: "MATH Avg",          pass: "81%",  fail: "58%" },
     { factor: "GWA",               pass: "1.52", fail: "2.48" },
@@ -417,6 +418,9 @@ export default function ProfessorFeaturesDashboard({ featureImp = [], passFailCo
   ];
 
   const topFeature  = featureImp[0] ?? null;
+  const topFeatureShort = topFeature?.label?.split(" ").slice(0,2).join(" ") || "Top predictor";
+  const top3Labels  = featureImp.slice(0,3).map(f => f.label?.split(" ").slice(0,2).join(" ") || "Feature");
+  const top3Share   = top3Labels.filter(Boolean).join(" + ") || "Top features";
   const top3Pct     = featureImp.slice(0,3).reduce((a,f) => a + (f.value ?? 0), 0);
   const top3PctFmt  = topFeature ? `${(top3Pct * 100).toFixed(1)}%` : "—";
 
@@ -446,7 +450,7 @@ export default function ProfessorFeaturesDashboard({ featureImp = [], passFailCo
         </p>
         {topFeature && (
           <div className="feat-hero-insight">
-            The model identifies <strong>{topFeature.label}</strong>, <strong>MATH scores</strong>, and <strong>GWA</strong> as the top three predictors, accounting for approximately <strong>{top3PctFmt}</strong> of total model importance. Students with higher scores in these areas and consistent study habits are significantly more likely to pass the licensure exam.
+            The model identifies <strong>{top3Labels[0]}</strong>, <strong>{top3Labels[1]}</strong>, and <strong>{top3Labels[2]}</strong> as the top three predictors, accounting for approximately <strong>{top3PctFmt}</strong> of total model importance. Students with higher scores in these areas and consistent study habits are significantly more likely to pass the licensure exam.
           </div>
         )}
       </div>
@@ -469,7 +473,7 @@ export default function ProfessorFeaturesDashboard({ featureImp = [], passFailCo
             value={top3PctFmt}
             icon="📊"
             color={IIEE.gold}
-            sub="ESAS + MATH + GWA combined"
+            sub={`${top3Share} combined`}
           />
           <KPI
             label="Total Features"
@@ -545,7 +549,7 @@ export default function ProfessorFeaturesDashboard({ featureImp = [], passFailCo
                 })}
               </div>
               <div className="feat-chart-note">
-                Progress bars show relative importance vs. the top feature. ESAS, MATH, and GWA dominate the top three slots.
+                Progress bars show relative importance vs. the top feature. {top3Labels.join(", ")} dominate the top three slots.
                 <br /><strong>↳ Subject-area academic performance is the model's primary signal.</strong>
               </div>
             </ChartCard>
@@ -597,7 +601,7 @@ export default function ProfessorFeaturesDashboard({ featureImp = [], passFailCo
           </div>
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(clamp(200px,30vw,260px),1fr))", gap:12, marginBottom:14 }}>
             {[
-              { icon:"📝", title:"Subject Scores Dominate", desc:`EE, MATH, and ESAS scores are the top 3 predictors, accounting for ~${top3PctFmt} of total importance — far ahead of other features.`, color:IIEE.blue },
+              { icon:"📝", title:"Subject Scores Dominate", desc:`${top3Labels.join(", ")} are the top 3 predictors, accounting for ~${top3PctFmt} of total importance — far ahead of other features.`, color:IIEE.blue },
               { icon:"📚", title:"GWA is a Key Signal", desc:"Academic performance (GWA) is the strongest non-exam predictor, confirming its role as an early-warning indicator for at-risk students.", color:IIEE.amber },
               { icon:"🧠", title:"Survey Factors Matter", desc:"Problem-solving confidence and study schedule adherence rank in the top survey predictors — they reflect preparation quality beyond raw scores.", color:IIEE.teal },
               { icon:"📉", title:"Model Drift Watch", desc:"Re-evaluate feature importance rankings each time the model is retrained on updated batches to detect shifts in predictor priority.", color:IIEE.indigo },
@@ -617,10 +621,10 @@ export default function ProfessorFeaturesDashboard({ featureImp = [], passFailCo
           <div className="feat-g2">
             <ChartCard inner icon="📈" title="Top Features vs Model Role" sub="How each predictor tier contributes" accent="blue">
               {[
-                { label:"ESAS (Review)",  value:featureImp[0]?.value ?? 0, color:IIEE.blue,   desc:"Board review preparation signal" },
-                { label:"MATH (Subject)", value:featureImp[1]?.value ?? 0, color:IIEE.indigo, desc:"Core academic competency" },
-                { label:"GWA (Academic)", value:featureImp.find(f=>f.label?.toLowerCase().includes("gwa"))?.value ?? 0, color:IIEE.amber, desc:"Longitudinal performance indicator" },
-                { label:"Survey Factors", value:featureImp.slice(5).reduce((a,f)=>a+(f.value??0),0), color:IIEE.teal, desc:"Behavioral and attitudinal inputs" },
+                { label:`${top3Labels[0]} (Primary)`,   value:featureImp[0]?.value ?? 0, color:IIEE.blue,   desc:"Highest importance model signal" },
+                { label:`${top3Labels[1]} (Secondary)`, value:featureImp[1]?.value ?? 0, color:IIEE.indigo, desc:"Second strongest predictor" },
+                { label:"GWA (Academic)",                value:featureImp.find(f=>f.label?.toLowerCase().includes("gwa"))?.value ?? 0, color:IIEE.amber, desc:"Longitudinal performance indicator" },
+                { label:"Survey Factors",                value:featureImp.slice(5).reduce((a,f)=>a+(f.value??0),0), color:IIEE.teal, desc:"Behavioral and attitudinal inputs" },
               ].map((m,i) => (
                 <div key={i}>
                   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
@@ -637,12 +641,12 @@ export default function ProfessorFeaturesDashboard({ featureImp = [], passFailCo
               <div className="feat-reco-title">⚡ Key Recommendations</div>
               <ul className="feat-reco-list">
                 {[
-                  `Prioritize ESAS drilling — it's the #1 predictor and most directly actionable through review programs.`,
+                  `Prioritize ${topFeatureShort} drilling — it's the #1 predictor and most directly actionable through review programs.`,
                   "Flag students with GWA above 2.0 early — it's the strongest non-exam at-risk indicator.",
                   "Integrate study habit surveys into the early-warning system — consistent study behavior ranks high.",
                   "Include both subject scores and survey metrics in the feature set for balanced explainability.",
                   "Monitor feature importance after each retraining batch to detect model drift over time.",
-                  "Consider MATH-targeted remediation for students with strong ESAS but weak MATH scores.",
+                  `Consider MATH-targeted remediation for students with strong ${topFeatureShort} but weak MATH scores.`,
                 ].map((r,i) => (
                   <li key={i}><span className="feat-reco-dot" />{r}</li>
                 ))}

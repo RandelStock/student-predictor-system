@@ -597,6 +597,26 @@ export default function ProfessorCorrelationDashboard() {
     return IIEE.muted;
   };
 
+  const sortedPointBiserial = useMemo(() => {
+    return [...POINT_BISERIAL].sort((a, b) => Math.abs(b.rpb) - Math.abs(a.rpb));
+  }, []);
+
+  const strongestPredictor = sortedPointBiserial[0];
+  const secondPredictor = sortedPointBiserial[1];
+  const thirdPredictor = sortedPointBiserial[2];
+  const institutionalPredictor = POINT_BISERIAL.find((d) => d.label === "F: Institutional");
+  const overallHighestPair = useMemo(() => {
+    let best = { pair: "", value: -Infinity };
+    VARS.forEach((r, ri) => VARS.forEach((c, ci) => {
+      if (ri >= ci) return;
+      const value = OVERALL_MATRIX_RAW[r][c];
+      if (Math.abs(value) > Math.abs(best.value)) {
+        best = { pair: `${VAR_LABELS[r]}–${VAR_LABELS[c]}`, value };
+      }
+    }));
+    return best;
+  }, []);
+
   return (
     <div className="corr-wrap fade-in">
       <style>{styles}</style>
@@ -637,12 +657,12 @@ export default function ProfessorCorrelationDashboard() {
         {/* ── KPI Strip ── */}
         <Divider label="Key Correlation Indicators" icon="📌" />
         <div className="metrics-grid" style={{ marginBottom: 28 }}>
-          <KPI label="Strongest Predictor" value="ESAS"   icon="🏆" color={IIEE.gold}      sub="rpb = 0.865 with Pass/Fail" />
-          <KPI label="Highest Pair"        value="0.814"  icon="📈" color={IIEE.passGreen} sub="MATH–ESAS (overall group)" />
-          <KPI label="GWA–ESAS"            value="−0.631" icon="🎓" color={IIEE.amber}     sub="Strongest academic-GWA link" />
-          <KPI label="Review vs Pass"      value="V=0.647" icon="🔗" color={IIEE.teal}     sub="Strongest Chi-Sq effect" />
-          <KPI label="Passers / Total"     value="93/159" icon="🧮" color={IIEE.indigo}    sub="58.5% pass rate, 2022-2025" />
-          <KPI label="Sig. Tests"          value="5/5"    icon="✅" color={IIEE.passGreen} sub="All Chi-Squared p < 0.05" />
+          <KPI label="Strongest Predictor" value={strongestPredictor.label} icon="🏆" color={IIEE.gold} sub={`rpb = ${strongestPredictor.rpb.toFixed(3)} with Pass/Fail`} />
+          <KPI label="Highest Pair" value={overallHighestPair.value.toFixed(3)} icon="📈" color={IIEE.passGreen} sub={`${overallHighestPair.pair} (overall group)`} />
+          <KPI label="GWA–ESAS" value="−0.631" icon="🎓" color={IIEE.amber} sub="Strongest academic-GWA link" />
+          <KPI label="Review vs Pass" value="V=0.647" icon="🔗" color={IIEE.teal} sub="Strongest Chi-Sq effect" />
+          <KPI label="Passers / Total" value="93/159" icon="🧮" color={IIEE.indigo} sub="58.5% pass rate, 2022-2025" />
+          <KPI label="Sig. Tests" value="5/5" icon="✅" color={IIEE.passGreen} sub="All Chi-Squared p < 0.05" />
         </div>
 
         {/* ════ OVERALL ════ */}
@@ -715,7 +735,7 @@ export default function ProfessorCorrelationDashboard() {
                   </div>
                 </div>
                 <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={POINT_BISERIAL} layout="vertical" margin={{ top: 4, right: 50, left: 12, bottom: 4 }}>
+                  <BarChart data={sortedPointBiserial} layout="vertical" margin={{ top: 4, right: 50, left: 12, bottom: 4 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(245,197,24,.10)" horizontal={false} />
                     <XAxis type="number" domain={[-0.70, 0.95]} tick={{ fill: IIEE.dimText, fontSize: 10 }} axisLine={false} tickLine={false} />
                     <YAxis type="category" dataKey="label" tick={{ fill: IIEE.white, fontSize: 11 }} axisLine={false} tickLine={false} width={120} />
@@ -725,12 +745,12 @@ export default function ProfessorCorrelationDashboard() {
                     <ReferenceLine x={0.60}  stroke={IIEE.passGreen} strokeDasharray="4 3" label={{ value: "0.60", position: "top", fill: IIEE.passGreen, fontSize: 10 }} />
                     <ReferenceLine x={-0.40} stroke={IIEE.amber}     strokeDasharray="4 3" label={{ value: "−0.40", position: "top", fill: IIEE.amber,   fontSize: 10 }} />
                     <Bar dataKey="rpb" name="rpb" radius={[0, 4, 4, 0]}>
-                      {POINT_BISERIAL.map((d, i) => <Cell key={i} fill={pbBarColor(d.rpb)} />)}
+                      {sortedPointBiserial.map((d, i) => <Cell key={i} fill={pbBarColor(d.rpb)} />)}
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
                 <div className="chart-note" style={{ marginTop: 10 }}>
-                  <strong>Key Finding:</strong> ESAS dominates with rpb=0.865 — by far the strongest individual predictor. MATH (0.757) and EE (0.677) follow. Remarkably, Institutional factor (rpb=0.613) outperforms EE as a predictor of pass/fail outcome, indicating that institutional perceptions (curriculum, faculty, dept support, facilities) strongly differentiate passers from failers at the population level. GWA (rpb=−0.567) is the 7th strongest predictor.
+                  <strong>Key Finding:</strong> {strongestPredictor.label} dominates with rpb={strongestPredictor.rpb.toFixed(3)} — by far the strongest individual predictor. {secondPredictor.label} ({secondPredictor.rpb.toFixed(3)}) and {thirdPredictor.label} ({thirdPredictor.rpb.toFixed(3)}) follow. Remarkably, {institutionalPredictor.label} (rpb={institutionalPredictor.rpb.toFixed(3)}) outperforms {thirdPredictor.label} as a predictor of pass/fail outcome, indicating that institutional perceptions (curriculum, faculty, dept support, facilities) strongly differentiate passers from failers at the population level. GWA (rpb=−0.567) is the 7th strongest predictor.
                 </div>
               </div>
               <div style={{ overflowX: "auto", marginTop: 14 }}>
@@ -741,7 +761,7 @@ export default function ProfessorCorrelationDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {POINT_BISERIAL.map((d, i) => {
+                    {sortedPointBiserial.map((d, i) => {
                       const a = Math.abs(d.rpb);
                       const strength = a >= 0.80 ? "Very Strong" : a >= 0.60 ? "Strong" : a >= 0.40 ? "Moderate" : a >= 0.20 ? "Weak" : "Very Weak";
                       const sc = a >= 0.80 ? "#16a34a" : a >= 0.60 ? IIEE.passGreen : a >= 0.40 ? IIEE.amber : IIEE.dimText;

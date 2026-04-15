@@ -401,6 +401,8 @@ export default function ProfessorPerformanceDashboard({
     : 0;
   const trendData     = filteredSubjectTrends?.length ? filteredSubjectTrends : (subjectTrends ?? []);
   const lastTrend     = trendData[trendData.length - 1] ?? {};
+  const subjectTrendOrder = ["MATH", "ESAS", "EE"];
+  const subjectTrendColors = { MATH: IIEE.indigo, ESAS: IIEE.teal, EE: IIEE.blue };
 
   return (
     <div className="perf-dash fade-in">
@@ -550,10 +552,10 @@ export default function ProfessorPerformanceDashboard({
           <>
             <Divider label="Subject Score Trends" icon="📐" />
             <SecCard num="3" icon="📐" title="Subject Score Trends by Year"
-              subtitle="EE, MATH, ESAS average score trajectories over 2022–2025">
-              <DsTag label="DATA_UPCOMING — EE / MATH / ESAS averages by year" />
+              subtitle="MATH, ESAS, EE average score trajectories over 2022–2025">
+              <DsTag label="DATA_UPCOMING — MATH / ESAS / EE averages by year" />
 
-              <Card icon="📈" title="EE · MATH · ESAS Trends" sub="Year-over-year subject performance vs 70% passing line" fullWidth
+              <Card icon="📈" title="MATH · ESAS · EE Trends" sub="Year-over-year subject performance vs 70% passing line" fullWidth
                 note="Year-over-year trends show curriculum performance momentum and which domains consistently fall below the passing line."
                 insight={weakestSubject
                   ? `${weakestSubject.id} is the weakest subject (avg ${num(weakestSubject.avg, 1)}) — ${weakestSubject.delta >= 0 ? "improving" : "declining"} ${Math.abs(weakestSubject.delta).toFixed(1)} pts overall.`
@@ -568,20 +570,29 @@ export default function ProfessorPerformanceDashboard({
                       label={{ value: "70% threshold", position: "insideTopRight", fill: IIEE.gold, fontSize: 10 }} />
                     <Legend iconType="circle" iconSize={9}
                       formatter={(v) => <span style={{ color: IIEE.muted, fontSize: 12 }}>{v}</span>} />
-                    <Line type="monotone" dataKey="EE_avg"   name="EE"   stroke={IIEE.blue}   strokeWidth={2.5} dot={{ fill: IIEE.blue,   r: 4 }} activeDot={{ r: 6 }} />
-                    <Line type="monotone" dataKey="MATH_avg" name="MATH" stroke={IIEE.indigo} strokeWidth={2.5} dot={{ fill: IIEE.indigo, r: 4 }} activeDot={{ r: 6 }} />
-                    <Line type="monotone" dataKey="ESAS_avg" name="ESAS" stroke={IIEE.teal}   strokeWidth={2.5} dot={{ fill: IIEE.teal,   r: 4 }} activeDot={{ r: 6 }} />
+                    {subjectTrendOrder.map((subj) => (
+                      <Line
+                        key={subj}
+                        type="monotone"
+                        dataKey={`${subj}_avg`}
+                        name={subj}
+                        stroke={subjectTrendColors[subj]}
+                        strokeWidth={2.5}
+                        dot={{ fill: subjectTrendColors[subj], r: 4 }}
+                        activeDot={{ r: 6 }}
+                      />
+                    ))}
                   </LineChart>
                 </ResponsiveContainer>
               </Card>
 
               {/* Subject stat tiles */}
               <div className="g3" style={{ marginTop: 16 }}>
-                {["EE", "MATH", "ESAS"].map((subj, i) => {
-                  const first = subjectTrends[0];
-                  const last  = subjectTrends[subjectTrends.length - 1];
+                {subjectTrendOrder.map((subj) => {
+                  const first = trendData[0];
+                  const last  = trendData[trendData.length - 1];
                   const delta = (last?.[`${subj}_avg`] ?? 0) - (first?.[`${subj}_avg`] ?? 0);
-                  const col   = [IIEE.blue, IIEE.indigo, IIEE.teal][i];
+                  const col   = subjectTrendColors[subj];
                   return (
                     <div key={subj} className="trend-stat"
                       style={{ background: `${col}0d`, border: `1px solid ${col}25` }}>
