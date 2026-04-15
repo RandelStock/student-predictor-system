@@ -18,27 +18,27 @@
   Train rows        : 123 (DATA_MODEL)
   Test rows         : 36 (DATA_EVALUATION)
   Features used     : 88
-  Accuracy          : 1.0000 (100.00%)
-  Precision         : 1.0000
+  Accuracy          : 0.9722 (97.22%)
+  Precision         : 0.9412
   Recall            : 1.0000
-  F1-Score          : 1.0000
+  F1-Score          : 0.9697
   5-Fold CV Accuracy: 0.9677 +/- 0.0300
   5-Fold CV F1      : 0.9733 +/- 0.0250
 
   Confusion Matrix:
                Predicted FAIL  Predicted PASS
-  Actual FAIL         20               0
+  Actual FAIL         19               1
   Actual PASS          0              16
 
   Classification Report:
               precision    recall  f1-score   support
 
-        FAIL       1.00      1.00      1.00        20
-        PASS       1.00      1.00      1.00        16
+        FAIL       1.00      0.95      0.97        20
+        PASS       0.94      1.00      0.97        16
 
-    accuracy                           1.00        36
-   macro avg       1.00      1.00      1.00        36
-weighted avg       1.00      1.00      1.00        36
+    accuracy                           0.97        36
+   macro avg       0.97      0.97      0.97        36
+weighted avg       0.97      0.97      0.97        36
 
 -----------------------------------------------------------------
   MODEL 2A: REGRESSION (EE+MATH+ESAS+GWA, 123 train rows)
@@ -57,11 +57,11 @@ weighted avg       1.00      1.00      1.00        36
 -----------------------------------------------------------------
   Train rows        : 123 (DATA_MODEL only)
   Features          : 85
-  MAE               : 7.5985 pts
-  RMSE              : 10.3927 pts
-  R2                : 0.4246
-  5-Fold CV R2      : 0.6253 +/- 0.0764
-  5-Fold CV MAE     : 5.0890 +/- 0.3151
+  MAE               : 7.5446 pts
+  RMSE              : 10.3267 pts
+  R2                : 0.4319
+  5-Fold CV R2      : 0.6279 +/- 0.0733
+  5-Fold CV MAE     : 5.0878 +/- 0.3286
 
   NOTE: Model 2B excludes subject scores to avoid data leakage.
         Useful for early-stage prediction before subject scores are known.
@@ -69,22 +69,22 @@ weighted avg       1.00      1.00      1.00        36
 -----------------------------------------------------------------
   TOP 5 KEY FACTORS
 -----------------------------------------------------------------
-  [CLF]   0.2274  ESAS
-  [CLF]   0.1017  MATH
-  [CLF]   0.0851  3. Mock examinations or practice tests provided by the depar
-  [CLF]   0.0817  GWA
-  [CLF]   0.0543  EE
+  [CLF]   0.1863  ESAS
+  [CLF]   0.1231  MATH
+  [CLF]   0.0963  GWA
+  [CLF]   0.0771  3. Mock examinations or practice tests provided by the depar
+  [CLF]   0.0638  EE
 
   [REG-A] 0.8715  ESAS
   [REG-A] 0.0780  MATH
   [REG-A] 0.0470  EE
   [REG-A] 0.0035  GWA
 
-  [REG-B] 0.5733  GWA
-  [REG-B] 0.0325  I attended a formal board review program.
+  [REG-B] 0.5732  GWA
+  [REG-B] 0.0324  I attended a formal board review program.
   [REG-B] 0.0308  3. Mock examinations or practice tests provided by the depar
-  [REG-B] 0.0301  11.  I can interpret technical diagrams, schematics, and cir
-  [REG-B] 0.0287  1.  I can analyze complex Electrical Engineering problems lo
+  [REG-B] 0.0308  11.  I can interpret technical diagrams, schematics, and cir
+  [REG-B] 0.0281  1.  I can analyze complex Electrical Engineering problems lo
 
 -----------------------------------------------------------------
   COMPARISON SUMMARY
@@ -92,7 +92,7 @@ weighted avg       1.00      1.00      1.00        36
   Model                                         MAE     RMSE       R2
   ----------------------------------------------------------------
   Reg A (EE+MATH+ESAS+GWA, 123 rows)         0.5921   0.7896   0.9967
-  Reg B (GWA+survey, 60 rows)                7.5985  10.3927   0.4246
+  Reg B (GWA+survey, 60 rows)                7.5446  10.3267   0.4319
 
   Model A outperforms B — subject scores dominate prediction.
 

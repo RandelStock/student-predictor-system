@@ -128,25 +128,12 @@ except FileNotFoundError as e:
 for df in [df_model, df_evaluation, df_all]:
     df.columns = df.columns.str.strip()
 
-
-def _normalize_subject_order(df: pd.DataFrame) -> pd.DataFrame:
-    if all(col in df.columns for col in SUBJECT_COLS):
-        ordered = [col for col in SUBJECT_COLS if col in df.columns]
-        rest = [col for col in df.columns if col not in ordered]
-        return df[ordered + rest]
-    return df
-
-df_model      = _normalize_subject_order(df_model)
-df_evaluation = _normalize_subject_order(df_evaluation)
-df_all       = _normalize_subject_order(df_all)
-
 # Load DATA_UPCOMING for institutional analytics and additional training samples in regression A
 try:
     df_upcoming = _load_data_file(FILE_UPCOMING)
     if df_upcoming is None:
         raise FileNotFoundError(f"No file for {FILE_UPCOMING} found (CSV/XLSX)")
     df_upcoming.columns = df_upcoming.columns.str.strip()
-    df_upcoming = _normalize_subject_order(df_upcoming)
     print(f"    DATA_UPCOMING  : {len(df_upcoming)} rows x {len(df_upcoming.columns)} cols (legacy 333)")
 except FileNotFoundError as e:
     print(f"    WARNING: {e}")
@@ -293,11 +280,11 @@ print(f"    Nulls remaining — MODEL:{df_model.isnull().sum().sum()}  "
 # ═══════════════════════════════════════════════════════════════
 print("\n[4] Building feature sets...")
 
-ALL_FEATURES = sorted([
+ALL_FEATURES = [
     col for col in df_model.select_dtypes(include=[np.number]).columns
     if col not in [TARGET_CLASS, TARGET_REG]
-])
-NO_SUBJECT_FEATURES = sorted([c for c in ALL_FEATURES if c not in SUBJECT_COLS])
+]
+NO_SUBJECT_FEATURES = [c for c in ALL_FEATURES if c not in SUBJECT_COLS]
 BASIC_FEATURES = [c for c in ["EE", "MATH", "ESAS", "GWA"] if c in df_model.columns]
 
 print(f"    ALL_FEATURES        : {len(ALL_FEATURES)} cols  (classification + reg-B)")
@@ -422,8 +409,7 @@ print(f"    Regression B   — MAE:{mae_b:.4f} | R2:{r2_b:.4f}")
 print("\n[8] Top 5 key factors per model:")
 
 def top5(model, features, label):
-    importances = model.feature_importances_
-    pairs = sorted(zip(features, importances), key=lambda x: -x[1])[:5]
+    pairs = sorted(zip(features, model.feature_importances_), key=lambda x: -x[1])[:5]
     print(f"\n    {label}:")
     for name, score in pairs:
         print(f"      {score:.4f}  {(name[:60]+'...') if len(name)>63 else name}")
