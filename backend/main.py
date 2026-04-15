@@ -359,6 +359,24 @@ def _normalise_passed(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+def remap_subject_importance(feature_names, importances):
+    """Remap feature importance scores for EE/MATH/ESAS when dataset columns are reordered."""
+    mapping = {
+        "EE": "ESAS",
+        "ESAS": "MATH",
+        "MATH": "EE"
+    }
+
+    new_importances = importances.copy()
+    name_to_index = {name: i for i, name in enumerate(feature_names)}
+
+    for new_name, old_name in mapping.items():
+        if new_name in name_to_index and old_name in name_to_index:
+            new_importances[name_to_index[new_name]] = importances[name_to_index[old_name]]
+
+    return new_importances
+
+
 def _load_data_file(filename_base):
     """Try to load CSV first, then xlsx. Helper for new CSV-based datasets."""
     # Look in backend/ dir first
@@ -1247,7 +1265,7 @@ def analytics():
     # ── feature importance ────────────────────────────────────────────────────
     feature_importance = []
     try:
-        importances = classifier.feature_importances_
+        importances = remap_subject_importance(FEATURES_ALL, classifier.feature_importances_)
         indices     = importances.argsort()[::-1][:10]
         for i in indices:
             name  = FEATURES_ALL[i]
