@@ -69,15 +69,15 @@ weighted avg       1.00      1.00      1.00        36
 -----------------------------------------------------------------
   TOP 5 KEY FACTORS
 -----------------------------------------------------------------
-  [CLF]   0.2274  EE
-  [CLF]   0.1017  ESAS
+  [CLF]   0.2274  ESAS
+  [CLF]   0.1017  MATH
   [CLF]   0.0851  3. Mock examinations or practice tests provided by the depar
   [CLF]   0.0817  GWA
-  [CLF]   0.0543  MATH
+  [CLF]   0.0543  EE
 
-  [REG-A] 0.8715  EE
-  [REG-A] 0.0780  ESAS
-  [REG-A] 0.0470  MATH
+  [REG-A] 0.8715  ESAS
+  [REG-A] 0.0780  MATH
+  [REG-A] 0.0470  EE
   [REG-A] 0.0035  GWA
 
   [REG-B] 0.5733  GWA

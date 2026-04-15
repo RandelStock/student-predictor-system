@@ -417,38 +417,12 @@ print(f"    Regression A   — MAE:{mae_a:.4f} | R2:{r2_a:.4f}")
 print(f"    Regression B   — MAE:{mae_b:.4f} | R2:{r2_b:.4f}")
 
 # ═══════════════════════════════════════════════════════════════
-# HELPER: Remap subject importance (handles column order changes)
-# ═══════════════════════════════════════════════════════════════
-def remap_subject_importance(feature_names, importances):
-    """
-    Remap feature importance scores for subject columns (EE, MATH, ESAS)
-    to account for dataset column reordering.
-    
-    When dataset column order changes but model was trained on old order,
-    importances get misaligned with names. This function corrects the display.
-    """
-    mapping = {
-        "EE": "ESAS",
-        "ESAS": "MATH",
-        "MATH": "EE"
-    }
-
-    new_importances = importances.copy()
-    name_to_index = {name: i for i, name in enumerate(feature_names)}
-
-    for new_name, old_name in mapping.items():
-        if new_name in name_to_index and old_name in name_to_index:
-            new_importances[name_to_index[new_name]] = importances[name_to_index[old_name]]
-
-    return new_importances
-
-# ═══════════════════════════════════════════════════════════════
 # STEP 9 — TOP 5 KEY FACTORS (Objective 5)
 # ═══════════════════════════════════════════════════════════════
 print("\n[8] Top 5 key factors per model:")
 
 def top5(model, features, label):
-    importances = remap_subject_importance(features, model.feature_importances_)
+    importances = model.feature_importances_
     pairs = sorted(zip(features, importances), key=lambda x: -x[1])[:5]
     print(f"\n    {label}:")
     for name, score in pairs:
@@ -587,7 +561,7 @@ print("[10] Saved: confusion_matrix_test2025.png")
 # STEP 12 — FEATURE IMPORTANCE PLOTS
 # ═══════════════════════════════════════════════════════════════
 def plot_importance(model, feature_names, title, filename, top_n=20):
-    importances = remap_subject_importance(feature_names, model.feature_importances_)
+    importances = model.feature_importances_
     top_n = min(top_n, len(feature_names))
     idx   = np.argsort(importances)[::-1][:top_n]
     names = [(f[:42]+"...") if len(f)>45 else f for f in [feature_names[i] for i in idx]]
