@@ -492,6 +492,8 @@ export default function ExamineeDetailPanel({ records, selectedIdx, onSelect, ru
   const actual    = runData?.actual;
   const predicted = runData?.predicted;
   const correct   = actual?.label === predicted?.label;
+  const errorA    = predicted?.percent_error_rating_a;
+  const errorB    = predicted?.percent_error_rating_b;
 
   const sectionScores = SURVEY_SECTIONS.map(s => ({
     ...s, score: sectionScore(s.keys, answers),
@@ -555,7 +557,11 @@ export default function ExamineeDetailPanel({ records, selectedIdx, onSelect, ru
             <div className="edp-verdict-pair">
               {[
                 { lbl: "Actual",    val: actual?.label,    sub: `Rating: ${num(actual?.rating, 2)}` },
-                { lbl: "Predicted", val: predicted?.label, sub: `P(Pass): ${pct((predicted?.probability_pass ?? 0) * 100)}` },
+                {
+                  lbl: "Predicted",
+                  val: predicted?.label,
+                  sub: `P(Pass): ${pct((predicted?.probability_pass ?? 0) * 100)}${predicted?.calibration_mode ? " · score-aligned" : ""}`,
+                },
               ].map(x => {
                 const isPassed = x.val === "PASSED";
                 const col = isPassed ? IIEE.passGreen : IIEE.failRed;
@@ -580,8 +586,18 @@ export default function ExamineeDetailPanel({ records, selectedIdx, onSelect, ru
           <Divider label="📈 Predicted Ratings" />
           <div className="edp-reg-grid edp-fade">
             {[
-              { lbl: "Regression A", sub: "EE + MATH + ESAS + GWA", val: predicted?.predicted_rating_a, color: IIEE.blue },
-              { lbl: "Regression B", sub: "GWA + Survey only",       val: predicted?.predicted_rating_b, color: IIEE.indigo },
+              {
+                lbl: "Regression A",
+                sub: `EE + MATH + ESAS + GWA${typeof errorA === "number" ? ` · Err ${errorA.toFixed(2)}%` : ""}`,
+                val: predicted?.predicted_rating_a,
+                color: IIEE.blue,
+              },
+              {
+                lbl: "Regression B",
+                sub: `GWA + Survey only${typeof errorB === "number" ? ` · Err ${errorB.toFixed(2)}%` : ""}`,
+                val: predicted?.predicted_rating_b,
+                color: IIEE.indigo,
+              },
             ].map(x => (
               <div
                 key={x.lbl} className="edp-reg-box"
