@@ -46,9 +46,9 @@ weighted avg       0.97      0.97      0.97        36
   Train rows        : 123 (DATA_MODEL)
   Test rows         : 36 (DATA_EVALUATION)
   Features          : 4
-  MAE               : 0.5965 pts
-  RMSE              : 0.7925 pts
-  R2                : 0.9967
+  MAE               : 1.8753 pts
+  RMSE              : 2.5041 pts
+  R2                : 0.9666
   5-Fold CV R2      : 0.9750 +/- 0.0068
   5-Fold CV MAE     : 1.1725 +/- 0.1625
 
@@ -75,10 +75,10 @@ weighted avg       0.97      0.97      0.97        36
   [CLF]   0.0771  3. Mock examinations or practice tests provided by the depar
   [CLF]   0.0638  MATH
 
-  [REG-A] 0.8715  EE
-  [REG-A] 0.0780  ESAS
-  [REG-A] 0.0470  MATH
-  [REG-A] 0.0035  GWA
+  [REG-A] 0.8283  EE
+  [REG-A] 0.0971  ESAS
+  [REG-A] 0.0674  MATH
+  [REG-A] 0.0072  GWA
 
   [REG-B] 0.5732  GWA
   [REG-B] 0.0324  I attended a formal board review program.
@@ -91,7 +91,7 @@ weighted avg       0.97      0.97      0.97        36
 -----------------------------------------------------------------
   Model                                         MAE     RMSE       R2
   ----------------------------------------------------------------
-  Reg A (EE+MATH+ESAS+GWA, 123 rows)         0.5965   0.7925   0.9967
+  Reg A (EE+MATH+ESAS+GWA, 123 rows)         1.8753   2.5041   0.9666
   Reg B (GWA+survey, 60 rows)                7.5446  10.3267   0.4319
 
   Model A outperforms B — subject scores dominate prediction.

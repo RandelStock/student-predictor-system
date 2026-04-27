@@ -25,7 +25,7 @@ DATA_UPCOMING.xlsx  333 rows, 8 cols, 2022-2025
 TRAINING STRATEGY
 -----------------
 Classification    train=DATA_MODEL(123),             test=DATA_EVALUATION(36), features=ALL_FEATURES
-Regression A      train=DATA_MODEL(123) + DATA_UPCOMING[2022-2024](250) = 373 rows,
+Regression A      train=DATA_MODEL(123),
                   test=DATA_EVALUATION(36), features=BASIC_FEATURES
 Regression B      train=DATA_MODEL(123),             test=DATA_EVALUATION(36), features=NO_SUBJECT_FEATURES
 
@@ -33,7 +33,7 @@ NOTE ON DATA_UPCOMING vs DATA_ALL
 ---------------------------------
 DATA_UPCOMING (333 rows) is the institutional analytics source for main.py.
 DATA_ALL (159 rows) is the model production training source (2022-2025).
-DO NOT combine DATA_UPCOMING with DATA_EVALUATION or DATA_MODEL for evaluation.
+DO NOT combine DATA_UPCOMING with DATA_EVALUATION or DATA_MODEL for rating-model training/evaluation.
 """
 
 import os
@@ -128,7 +128,7 @@ except FileNotFoundError as e:
 for df in [df_model, df_evaluation, df_all]:
     df.columns = df.columns.str.strip()
 
-# Load DATA_UPCOMING for institutional analytics and additional training samples in regression A
+# Load DATA_UPCOMING for institutional analytics only
 try:
     df_upcoming = _load_data_file(FILE_UPCOMING)
     if df_upcoming is None:
@@ -308,17 +308,6 @@ y_train_ra = df_model[TARGET_REG]
 X_test_ra  = df_evaluation.reindex(columns=BASIC_FEATURES, fill_value=0)
 y_test_ra  = df_evaluation[TARGET_REG]
 
-# Add DATA_UPCOMING to Regression A training when available (legacy 333 rows)
-X_train_ra_aug = X_train_ra.copy()
-y_train_ra_aug = y_train_ra.copy()
-if not df_upcoming.empty and TARGET_REG in df_upcoming.columns:
-    upcoming_ra = df_upcoming.copy()
-    upcoming_ra = upcoming_ra[pd.notna(upcoming_ra[TARGET_REG])]
-    if not upcoming_ra.empty:
-        upcoming_basis = upcoming_ra.reindex(columns=BASIC_FEATURES, fill_value=0)
-        X_train_ra_aug = pd.concat([X_train_ra_aug, upcoming_basis], ignore_index=True, sort=False)
-        y_train_ra_aug = pd.concat([y_train_ra_aug, upcoming_ra[TARGET_REG]], ignore_index=True, sort=False)
-
 # — Regression B: DATA_MODEL train, DATA_EVALUATION test, survey features only
 X_train_rb = df_model[NO_SUBJECT_FEATURES]
 y_train_rb = df_model[TARGET_REG]
@@ -327,10 +316,7 @@ y_test_rb  = df_evaluation[TARGET_REG]
 
 print(f"    Classification — train:{len(X_train_clf)} (MODEL) | test:{len(X_test_clf)} (EVAL)")
 print(f"    Regression A   — train:{len(X_train_ra)} (MODEL) | test:{len(X_test_ra)} (EVAL)")
-if len(X_train_ra_aug) > len(X_train_ra):
-    print(f"    Regression A+Upcoming — train:{len(X_train_ra_aug)} (MODEL+UPCOMING) | test:{len(X_test_ra)} (EVAL)")
-else:
-    print(f"    Regression A+Upcoming — not available (DATA_UPCOMING missing or incomplete)")
+print("    Regression A source — DATA_MODEL only (legacy DATA_UPCOMING excluded to avoid domain shift)")
 print(f"    Regression B   — train:{len(X_train_rb)} (MODEL) | test:{len(X_test_rb)} (EVAL)")
 print(f"    Train balance  — PASS:{y_train_clf.sum()} | FAIL:{(y_train_clf==0).sum()}")
 print(f"    Test  balance  — PASS:{y_test_clf.sum()}  | FAIL:{(y_test_clf==0).sum()}")
@@ -353,8 +339,8 @@ reg_a = RandomForestRegressor(
     min_samples_split=5, min_samples_leaf=2,
     random_state=42
 )
-reg_a.fit(X_train_ra_aug, y_train_ra_aug)
-print(f"    Regression A ({len(X_train_ra_aug)} rows, EE+MATH+ESAS+GWA) — done (includes DATA_UPCOMING when available)")
+reg_a.fit(X_train_ra, y_train_ra)
+print(f"    Regression A ({len(X_train_ra)} rows, EE+MATH+ESAS+GWA) — done")
 
 reg_b = RandomForestRegressor(
     n_estimators=200, max_depth=10,
@@ -618,6 +604,22 @@ plt.savefig("regression_actual_vs_predicted.png", dpi=150, bbox_inches="tight")
 plt.close()
 print("    Saved: regression_actual_vs_predicted.png")
 
+# Export row-level evaluation results for thesis checking / dashboard comparison
+eval_predictions = pd.DataFrame({
+    "actual_rating": y_test_ra.values,
+    "predicted_rating_a": np.round(y_pred_ra, 2),
+    "abs_error_a": np.round(np.abs(y_pred_ra - y_test_ra.values), 2),
+    "pct_error_a": np.round((np.abs(y_pred_ra - y_test_ra.values) / y_test_ra.values) * 100, 2),
+    "predicted_rating_b": np.round(y_pred_rb, 2),
+    "abs_error_b": np.round(np.abs(y_pred_rb - y_test_rb.values), 2),
+    "pct_error_b": np.round((np.abs(y_pred_rb - y_test_rb.values) / y_test_rb.values) * 100, 2),
+})
+for col in ["EE", "MATH", "ESAS", "GWA", TARGET_CLASS]:
+    if col in df_evaluation.columns:
+        eval_predictions.insert(len(eval_predictions.columns), col, df_evaluation[col].values)
+eval_predictions.to_csv("evaluation_predictions.csv", index=False)
+print("    Saved: evaluation_predictions.csv")
+
 # ═══════════════════════════════════════════════════════════════
 # STEP 15 — SAVE MODEL BUNDLE (WITH NEW DATASET METADATA)
 # ═══════════════════════════════════════════════════════════════
@@ -634,25 +636,9 @@ final_clf = RandomForestClassifier(
 )
 final_clf.fit(X_final_clf, y_final_clf)
 
-# Regression A is expanded with DATA_UPCOMING when available to boost sample size
 final_ra_source = "DATA_ALL"
-if not df_upcoming.empty and TARGET_REG in df_upcoming.columns:
-    df_upcoming_ra = df_upcoming[pd.notna(df_upcoming[TARGET_REG])]
-    if not df_upcoming_ra.empty:
-        df_all_ra_expanded = pd.concat([df_all, df_upcoming_ra], ignore_index=True, sort=False)
-        dedup_cols = BASIC_FEATURES + [TARGET_REG]
-        if YEAR_COL:
-            dedup_cols.append(YEAR_COL)
-        df_all_ra_expanded = df_all_ra_expanded.drop_duplicates(subset=dedup_cols, keep="last")
-        X_final_ra = df_all_ra_expanded[BASIC_FEATURES]
-        y_final_ra = df_all_ra_expanded[TARGET_REG]
-        final_ra_source = "DATA_ALL + DATA_UPCOMING"
-    else:
-        X_final_ra = df_all[BASIC_FEATURES]
-        y_final_ra = df_all[TARGET_REG]
-else:
-    X_final_ra = df_all[BASIC_FEATURES]
-    y_final_ra = df_all[TARGET_REG]
+X_final_ra = df_all[BASIC_FEATURES]
+y_final_ra = df_all[TARGET_REG]
 
 print(f"    Training final regression A on {final_ra_source} ({len(X_final_ra)} rows)...")
 final_reg_a = RandomForestRegressor(
@@ -715,7 +701,7 @@ bundle = {
     "data_source": {
         "training": f"DATA_MODEL ({len(df_model)} rows, 2022-2024)",
         "evaluation": f"DATA_EVALUATION ({len(df_evaluation)} rows, 2025)",
-        "production": (f"DATA_ALL ({len(df_all)} rows, 2022-2025) + DATA_UPCOMING ({len(df_upcoming)} rows)" if not df_upcoming.empty else f"DATA_ALL ({len(df_all)} rows, 2022-2025)"),
+        "production": f"DATA_ALL ({len(df_all)} rows, 2022-2025)",
     },
 }
 
