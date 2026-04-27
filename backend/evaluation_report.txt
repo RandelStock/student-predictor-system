@@ -41,16 +41,16 @@
 weighted avg       0.97      0.97      0.97        36
 
 -----------------------------------------------------------------
-  MODEL 2A: REGRESSION (EE+MATH+ESAS+GWA, 123 train rows)
+  MODEL 2A: REGRESSION (engineered score-dominant features, 123 train rows)
 -----------------------------------------------------------------
   Train rows        : 123 (DATA_MODEL)
   Test rows         : 36 (DATA_EVALUATION)
-  Features          : 4
-  MAE               : 1.8753 pts
-  RMSE              : 2.5041 pts
-  R2                : 0.9666
-  5-Fold CV R2      : 0.9750 +/- 0.0068
-  5-Fold CV MAE     : 1.1725 +/- 0.1625
+  Features          : 13
+  MAE               : 0.2240 pts
+  RMSE              : 0.3920 pts
+  R2                : 0.9992
+  5-Fold CV R2      : 0.9975 +/- 0.0039
+  5-Fold CV MAE     : 0.1571 +/- 0.0593
 
 -----------------------------------------------------------------
   MODEL 2B: REGRESSION (GWA+Survey only, 123 train rows)
@@ -75,10 +75,11 @@ weighted avg       0.97      0.97      0.97        36
   [CLF]   0.0771  3. Mock examinations or practice tests provided by the depar
   [CLF]   0.0638  MATH
 
-  [REG-A] 0.8283  EE
-  [REG-A] 0.0971  ESAS
-  [REG-A] 0.0674  MATH
-  [REG-A] 0.0072  GWA
+  [REG-A] 0.3138  EE
+  [REG-A] 0.2197  weighted_board_score
+  [REG-A] 0.2092  score_mean
+  [REG-A] 0.1698  ESAS
+  [REG-A] 0.1441  MATH
 
   [REG-B] 0.5732  GWA
   [REG-B] 0.0324  I attended a formal board review program.
@@ -91,7 +92,7 @@ weighted avg       0.97      0.97      0.97        36
 -----------------------------------------------------------------
   Model                                         MAE     RMSE       R2
   ----------------------------------------------------------------
-  Reg A (EE+MATH+ESAS+GWA, 123 rows)         1.8753   2.5041   0.9666
+  Reg A (score-dominant engineered, 123 rows)   0.2240   0.3920   0.9992
   Reg B (GWA+survey, 60 rows)                7.5446  10.3267   0.4319
 
   Model A outperforms B — subject scores dominate prediction.

@@ -153,6 +153,7 @@ try:
     regressor_b    = bundle["regressor_b"]
     FEATURES_ALL   = bundle["features_all"]
     FEATURES_BASIC = bundle["features_basic"]
+    FEATURES_BASIC_RAW = bundle.get("features_basic_raw", ["EE", "MATH", "ESAS", "GWA"])
     FEATURES_NOSUB = bundle["features_nosub"]
     SUBJECT_COLS   = bundle["subject_cols"]
     PASSING_SCORE  = bundle["passing_score"]
@@ -587,6 +588,58 @@ def build_feature_vector(req, feature_list: list) -> np.ndarray:
     return np.array([vector])
 
 
+def build_regression_a_vector_from_scores(ee: float, math: float, esas: float, gwa: float) -> np.ndarray:
+    score_mean = (ee + math + esas) / 3.0
+    score_min = min(ee, math, esas)
+    score_max = max(ee, math, esas)
+    score_range = score_max - score_min
+    score_std = float(np.std([ee, math, esas], ddof=1)) if len([ee, math, esas]) > 1 else 0.0
+    pass_count = float(sum(1 for s in [ee, math, esas] if s >= 70))
+    below_70_gap = float(sum(max(0.0, 70.0 - s) for s in [ee, math, esas]))
+    gwa_quality = (6.0 - float(gwa)) * 20.0
+    weighted_board_score = (ee * 0.40) + (math * 0.30) + (esas * 0.30)
+
+    row = {
+        "EE": float(ee),
+        "MATH": float(math),
+        "ESAS": float(esas),
+        "GWA": float(gwa),
+        "score_mean": score_mean,
+        "weighted_board_score": weighted_board_score,
+        "score_min": score_min,
+        "score_max": score_max,
+        "score_range": score_range,
+        "score_std": score_std,
+        "pass_count": pass_count,
+        "below_70_gap": below_70_gap,
+        "gwa_quality": gwa_quality,
+    }
+    return np.array([[float(row.get(feat, 0.0)) for feat in FEATURES_BASIC]], dtype=float)
+
+
+def build_regression_a_frame(df: pd.DataFrame) -> pd.DataFrame:
+    work = pd.DataFrame(index=df.index)
+    for col in FEATURES_BASIC_RAW:
+        work[col] = pd.to_numeric(df[col], errors="coerce").fillna(0.0)
+
+    scores = work[["EE", "MATH", "ESAS"]]
+    out = pd.DataFrame(index=df.index)
+    out["EE"] = work["EE"]
+    out["MATH"] = work["MATH"]
+    out["ESAS"] = work["ESAS"]
+    out["GWA"] = work["GWA"]
+    out["score_mean"] = scores.mean(axis=1)
+    out["weighted_board_score"] = (work["EE"] * 0.40) + (work["MATH"] * 0.30) + (work["ESAS"] * 0.30)
+    out["score_min"] = scores.min(axis=1)
+    out["score_max"] = scores.max(axis=1)
+    out["score_range"] = out["score_max"] - out["score_min"]
+    out["score_std"] = scores.std(axis=1).fillna(0.0)
+    out["pass_count"] = (scores >= 70).sum(axis=1).astype(float)
+    out["below_70_gap"] = (70 - scores).clip(lower=0).sum(axis=1)
+    out["gwa_quality"] = (6.0 - out["GWA"]) * 20.0
+    return out.reindex(columns=FEATURES_BASIC, fill_value=0.0)
+
+
 def compute_reliability(req: "PredictRequest") -> float:
     penalties = 0
     checks = 0
@@ -771,7 +824,7 @@ def predict(req: PredictRequest, current_user: User = Depends(get_current_user))
     pred  = int(classifier.predict(X_all)[0])
     proba = classifier.predict_proba(X_all)[0]
 
-    X_basic        = build_feature_vector(req, FEATURES_BASIC)
+    X_basic        = build_regression_a_vector_from_scores(req.EE, req.MATH, req.ESAS, req.GWA)
     pred_rating_a  = round(float(np.clip(regressor_a.predict(X_basic)[0], 0, 100)), 2)
 
     X_nosub       = build_feature_vector(req, FEATURES_NOSUB)
@@ -2318,7 +2371,12 @@ def defense_test_2025_predict(idx: int):
             actual_rating = None
 
     X_all   = np.array([[ _get_float(row, f) for f in FEATURES_ALL   ]], dtype=float)
-    X_basic = np.array([[ _get_float(row, f) for f in FEATURES_BASIC ]], dtype=float)
+    X_basic = build_regression_a_vector_from_scores(
+        _get_float(row, "EE"),
+        _get_float(row, "MATH"),
+        _get_float(row, "ESAS"),
+        _get_float(row, "GWA"),
+    )
     X_nosub = np.array([[ _get_float(row, f) for f in FEATURES_NOSUB ]], dtype=float)
 
     pred        = int(classifier.predict(X_all)[0])
@@ -2563,10 +2621,7 @@ def _build_sectionScores(df):
 def _build_scatterData(df_test_raw):
     df = df_test_raw.copy()
     df.columns = df.columns.str.strip()
-    for col in FEATURES_BASIC:
-        if col in df.columns:
-            df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0)
-    X = df.reindex(columns=FEATURES_BASIC, fill_value=0)
+    X = build_regression_a_frame(df)
     try:
         predicted = regressor_a.predict(X)
     except Exception as e:

@@ -50,6 +50,7 @@ warnings.filterwarnings("ignore")
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+from sklearn.linear_model import Ridge
 from sklearn.model_selection import StratifiedKFold, KFold, cross_val_score
 from sklearn.metrics import (
     accuracy_score, precision_score, recall_score, f1_score,
@@ -286,10 +287,32 @@ ALL_FEATURES = [
 ]
 NO_SUBJECT_FEATURES = [c for c in ALL_FEATURES if c not in SUBJECT_COLS]
 BASIC_FEATURES = [c for c in ["EE", "MATH", "ESAS", "GWA"] if c in df_model.columns]
+REG_A_FEATURES = [
+    "EE", "MATH", "ESAS", "GWA",
+    "score_mean", "weighted_board_score", "score_min", "score_max",
+    "score_range", "score_std", "pass_count", "below_70_gap", "gwa_quality",
+]
+
+def build_regression_a_features(df: pd.DataFrame) -> pd.DataFrame:
+    work = pd.DataFrame(index=df.index)
+    for col in BASIC_FEATURES:
+        work[col] = pd.to_numeric(df[col], errors="coerce").fillna(0.0)
+
+    scores = work[["EE", "MATH", "ESAS"]]
+    work["score_mean"] = scores.mean(axis=1)
+    work["weighted_board_score"] = (work["EE"] * 0.40) + (work["MATH"] * 0.30) + (work["ESAS"] * 0.30)
+    work["score_min"] = scores.min(axis=1)
+    work["score_max"] = scores.max(axis=1)
+    work["score_range"] = work["score_max"] - work["score_min"]
+    work["score_std"] = scores.std(axis=1).fillna(0.0)
+    work["pass_count"] = (scores >= 70).sum(axis=1)
+    work["below_70_gap"] = (70 - scores).clip(lower=0).sum(axis=1)
+    work["gwa_quality"] = (6.0 - work["GWA"]) * 20.0
+    return work.reindex(columns=REG_A_FEATURES, fill_value=0.0)
 
 print(f"    ALL_FEATURES        : {len(ALL_FEATURES)} cols  (classification + reg-B)")
 print(f"    NO_SUBJECT_FEATURES : {len(NO_SUBJECT_FEATURES)} cols  (reg-B only, no EE/MATH/ESAS)")
-print(f"    BASIC_FEATURES      : {len(BASIC_FEATURES)} cols  (reg-A)")
+print(f"    BASIC_FEATURES      : {len(REG_A_FEATURES)} cols  (reg-A engineered, score-dominant)")
 
 # ═══════════════════════════════════════════════════════════════
 # STEP 6 — ASSEMBLE TRAIN / TEST SPLITS (NEW DATASET STRUCTURE)
@@ -302,10 +325,10 @@ y_train_clf = df_model[TARGET_CLASS]
 X_test_clf  = df_evaluation.reindex(columns=ALL_FEATURES, fill_value=0)
 y_test_clf  = df_evaluation[TARGET_CLASS]
 
-# — Regression A: DATA_MODEL train, DATA_EVALUATION test, BASIC_FEATURES
-X_train_ra = df_model[BASIC_FEATURES]
+# — Regression A: DATA_MODEL train, DATA_EVALUATION test, engineered score-dominant features
+X_train_ra = build_regression_a_features(df_model)
 y_train_ra = df_model[TARGET_REG]
-X_test_ra  = df_evaluation.reindex(columns=BASIC_FEATURES, fill_value=0)
+X_test_ra  = build_regression_a_features(df_evaluation)
 y_test_ra  = df_evaluation[TARGET_REG]
 
 # — Regression B: DATA_MODEL train, DATA_EVALUATION test, survey features only
@@ -334,13 +357,9 @@ clf = RandomForestClassifier(
 clf.fit(X_train_clf, y_train_clf)
 print("    Classification (60 rows, survey+scores) — done")
 
-reg_a = RandomForestRegressor(
-    n_estimators=200, max_depth=10,
-    min_samples_split=5, min_samples_leaf=2,
-    random_state=42
-)
+reg_a = Ridge(alpha=1.0)
 reg_a.fit(X_train_ra, y_train_ra)
-print(f"    Regression A ({len(X_train_ra)} rows, EE+MATH+ESAS+GWA) — done")
+print(f"    Regression A ({len(X_train_ra)} rows, engineered score-dominant ridge model) — done")
 
 reg_b = RandomForestRegressor(
     n_estimators=200, max_depth=10,
@@ -395,14 +414,20 @@ print(f"    Regression B   — MAE:{mae_b:.4f} | R2:{r2_b:.4f}")
 print("\n[8] Top 5 key factors per model:")
 
 def top5(model, features, label):
-    pairs = sorted(zip(features, model.feature_importances_), key=lambda x: -x[1])[:5]
+    if hasattr(model, "feature_importances_"):
+        values = model.feature_importances_
+    elif hasattr(model, "coef_"):
+        values = np.abs(np.ravel(model.coef_))
+    else:
+        values = np.zeros(len(features))
+    pairs = sorted(zip(features, values), key=lambda x: -x[1])[:5]
     print(f"\n    {label}:")
     for name, score in pairs:
         print(f"      {score:.4f}  {(name[:60]+'...') if len(name)>63 else name}")
     return pairs
 
 top5_clf = top5(clf,   ALL_FEATURES,        "Classification (pass/fail)")
-top5_ra  = top5(reg_a, BASIC_FEATURES,      "Regression A (EE+MATH+ESAS+GWA)")
+top5_ra  = top5(reg_a, REG_A_FEATURES,      "Regression A (engineered score-dominant)")
 top5_rb  = top5(reg_b, NO_SUBJECT_FEATURES, "Regression B (GWA+survey)")
 
 # ═══════════════════════════════════════════════════════════════
@@ -444,11 +469,11 @@ lines = [
     "  Classification Report:",
     classification_report(y_test_clf, y_pred_clf, target_names=["FAIL","PASS"]),
     "-" * 65,
-    f"  MODEL 2A: REGRESSION (EE+MATH+ESAS+GWA, {len(X_train_ra)} train rows)",
+    f"  MODEL 2A: REGRESSION (engineered score-dominant features, {len(X_train_ra)} train rows)",
     "-" * 65,
     f"  Train rows        : {len(X_train_ra)} (DATA_MODEL)",
     f"  Test rows         : {len(X_test_ra)} (DATA_EVALUATION)",
-    f"  Features          : {len(BASIC_FEATURES)}",
+    f"  Features          : {len(REG_A_FEATURES)}",
     f"  MAE               : {mae_a:.4f} pts",
     f"  RMSE              : {rmse_a:.4f} pts",
     f"  R2                : {r2_a:.4f}",
@@ -488,7 +513,7 @@ lines += [
     "-" * 65,
     f"  {'Model':<40} {'MAE':>8} {'RMSE':>8} {'R2':>8}",
     f"  {'-'*64}",
-    f"  {f'Reg A (EE+MATH+ESAS+GWA, {len(X_train_ra)} rows)':<40} {mae_a:>8.4f} {rmse_a:>8.4f} {r2_a:>8.4f}",
+    f"  {f'Reg A (score-dominant engineered, {len(X_train_ra)} rows)':<40} {mae_a:>8.4f} {rmse_a:>8.4f} {r2_a:>8.4f}",
     f"  {'Reg B (GWA+survey, 60 rows)':<40} {mae_b:>8.4f} {rmse_b:>8.4f} {r2_b:>8.4f}",
     "",
     ("  Model B has acceptable R2 — survey + GWA have real predictive power."
@@ -533,7 +558,12 @@ print("[10] Saved: confusion_matrix_test2025.png")
 # STEP 12 — FEATURE IMPORTANCE PLOTS
 # ═══════════════════════════════════════════════════════════════
 def plot_importance(model, feature_names, title, filename, top_n=20):
-    importances = model.feature_importances_
+    if hasattr(model, "feature_importances_"):
+        importances = model.feature_importances_
+    elif hasattr(model, "coef_"):
+        importances = np.abs(np.ravel(model.coef_))
+    else:
+        importances = np.zeros(len(feature_names))
     top_n = min(top_n, len(feature_names))
     idx   = np.argsort(importances)[::-1][:top_n]
     names = [(f[:42]+"...") if len(f)>45 else f for f in [feature_names[i] for i in idx]]
@@ -555,7 +585,7 @@ def plot_importance(model, feature_names, title, filename, top_n=20):
 
 print("[11] Generating feature importance plots...")
 plot_importance(clf,   ALL_FEATURES,        "Feature Importance — Classification (Pass/Fail)",      "feature_importance_classification.png")
-plot_importance(reg_a, BASIC_FEATURES,      "Feature Importance — Regression A (EE+MATH+ESAS+GWA)", "feature_importance_regression_a.png")
+plot_importance(reg_a, REG_A_FEATURES,      "Feature Importance — Regression A (Score-Dominant)",    "feature_importance_regression_a.png")
 plot_importance(reg_b, NO_SUBJECT_FEATURES, "Feature Importance — Regression B (GWA+Survey Only)",  "feature_importance_regression_b.png")
 
 # ═══════════════════════════════════════════════════════════════
@@ -585,7 +615,7 @@ print("    Saved: correlation_matrix.png")
 print("[13] Generating regression scatter plots...")
 fig, axes = plt.subplots(1, 2, figsize=(13, 5))
 for ax, y_true, y_pred, title, r2, mae in [
-    (axes[0], y_test_ra, y_pred_ra, f"Regression A (EE+MATH+ESAS+GWA, {len(X_train_ra)} train)", r2_a, mae_a),
+    (axes[0], y_test_ra, y_pred_ra, f"Regression A (score-dominant engineered, {len(X_train_ra)} train)", r2_a, mae_a),
     (axes[1], y_test_rb, y_pred_rb,  "Regression B (GWA+Survey, 60 train)",                       r2_b, mae_b),
 ]:
     ax.scatter(y_true, y_pred, alpha=0.6, edgecolors="k", linewidths=0.3, s=40, color="#3498db")
@@ -637,7 +667,7 @@ final_clf = RandomForestClassifier(
 final_clf.fit(X_final_clf, y_final_clf)
 
 final_ra_source = "DATA_ALL"
-X_final_ra = df_all[BASIC_FEATURES]
+X_final_ra = build_regression_a_features(df_all)
 y_final_ra = df_all[TARGET_REG]
 
 print(f"    Training final regression A on {final_ra_source} ({len(X_final_ra)} rows)...")
@@ -666,7 +696,8 @@ bundle = {
     # — Feature sets —
     "features_all":        ALL_FEATURES,
     "features_nosub":      NO_SUBJECT_FEATURES,
-    "features_basic":      BASIC_FEATURES,
+    "features_basic":      REG_A_FEATURES,
+    "features_basic_raw":  BASIC_FEATURES,
     "subject_cols":        SUBJECT_COLS,
     "label_encoders":      le_dict,
     "target_class":        TARGET_CLASS,
