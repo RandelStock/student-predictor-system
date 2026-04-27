@@ -147,7 +147,8 @@ app.add_middleware(
 # ══════════════════════════════════════════════════════════════════════════════
 
 try:
-    bundle         = joblib.load("ree_survey_model.pkl")
+    MODEL_BUNDLE_PATH = os.path.join(os.path.dirname(__file__), "ree_survey_model.pkl")
+    bundle         = joblib.load(MODEL_BUNDLE_PATH)
     classifier     = bundle["classifier"]
     regressor_a    = bundle["regressor_a"]
     regressor_b    = bundle["regressor_b"]
@@ -172,6 +173,31 @@ try:
     print(f"  Reg-A train size:         {bundle.get('dataset_size_reg_a_train', 'N/A')} rows")
 except Exception as e:
     raise RuntimeError(f"Could not load ree_survey_model.pkl: {e}")
+
+
+def get_loaded_model_metadata():
+    trained_at = bundle.get("trained_at")
+    if not trained_at:
+        try:
+            trained_at = datetime.utcfromtimestamp(os.path.getmtime(MODEL_BUNDLE_PATH)).isoformat() + "Z"
+        except Exception:
+            trained_at = None
+
+    model_version = bundle.get("model_version")
+    if not model_version:
+        if trained_at:
+            compact = re.sub(r"[^0-9]", "", trained_at)[:14]
+            model_version = f"ree-{compact}" if compact else "ree-unknown"
+        else:
+            model_version = "ree-unknown"
+
+    return {
+        "version": model_version,
+        "trained_at": trained_at,
+        "feature_count_all": len(FEATURES_ALL),
+        "feature_count_regression_a": len(FEATURES_BASIC),
+        "feature_count_regression_b": len(FEATURES_NOSUB),
+    }
 
 # ══════════════════════════════════════════════════════════════════════════════
 # DATABASE
@@ -964,6 +990,7 @@ def _rating_label(score: float) -> str:
 def model_info():
     # Get dataset metadata from bundle (set in train_model.py)
     data_src = bundle.get("data_source", {})
+    model_meta = get_loaded_model_metadata()
     
     return {
         # — Dataset metadata (NEW 2026-03-30) —
@@ -972,6 +999,7 @@ def model_info():
             "evaluation": data_src.get("evaluation", "DATA_EVALUATION - 2025"),
             "production": data_src.get("production", "DATA_ALL - 2022–2025"),
         },
+        "model_meta": model_meta,
         "dataset_size_model":       bundle.get("dataset_size_model", 121),
         "dataset_size_evaluation":  bundle.get("dataset_size_evaluation", 36),
         "dataset_size_all":         bundle.get("dataset_size_all", 157),
@@ -2150,6 +2178,7 @@ def defense_test_2025():
 
     return {
         "test_year": 2025,
+        "model_meta": get_loaded_model_metadata(),
         "test_size": bundle.get("dataset_size_evaluation", 36),  # DATA_EVALUATION rows (2025)
         "train_size": {
             "classification": bundle.get("dataset_size_model", 123),

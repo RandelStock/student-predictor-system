@@ -39,6 +39,7 @@ DO NOT combine DATA_UPCOMING with DATA_EVALUATION or DATA_MODEL for rating-model
 import os
 import pandas as pd
 import numpy as np
+from datetime import datetime, timezone
 import matplotlib.pyplot as plt
 import matplotlib
 matplotlib.use("Agg")
@@ -693,6 +694,8 @@ bundle = {
     "classifier":          final_clf,
     "regressor_a":         final_reg_a,
     "regressor_b":         final_reg_b,
+    "model_version":       datetime.now(timezone.utc).strftime("ree-%Y%m%d-%H%M%S"),
+    "trained_at":          datetime.now(timezone.utc).isoformat(),
     # — Feature sets —
     "features_all":        ALL_FEATURES,
     "features_nosub":      NO_SUBJECT_FEATURES,

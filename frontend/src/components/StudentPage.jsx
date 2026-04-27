@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import PredictorForm from "./PredictorForm";
 import ResultCard from "./ResultCard";
-import { apiStudentAttempts } from "../api-service";
+import { apiModelInfo, apiStudentAttempts } from "../api-service";
 
 // ─── Design Tokens (mirrors ModelOverviewDashboard) ───────────────────────────
 const IIEE = {
@@ -81,6 +81,15 @@ const STYLES = `
   .sp-nav-actions {
     display: flex; align-items: center; gap: clamp(6px, 1.5vw, 10px);
     flex-shrink: 0;
+  }
+  .sp-model-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 10px; border-radius: 10px;
+    font-size: clamp(9px, 1.2vw, 11px);
+    color: ${IIEE.white};
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    font-family: 'DM Sans', sans-serif;
   }
   .sp-badge {
     display: inline-flex; align-items: center; gap: 5px;
@@ -184,6 +193,19 @@ const STYLES = `
   .sp-hero-sub {
     font-size: clamp(12px, 1.6vw, 14px); color: ${IIEE.muted};
     margin: 0; font-family: 'DM Sans', sans-serif;
+  }
+  .sp-hero-meta {
+    display: flex; gap: 8px; flex-wrap: wrap;
+    margin-top: 12px;
+  }
+  .sp-hero-meta-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 10px; border-radius: 10px;
+    font-size: clamp(10px, 1.3vw, 11px);
+    color: ${IIEE.white};
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    font-family: 'DM Sans', sans-serif;
   }
 
   /* ── KPI grid ── */
@@ -534,6 +556,15 @@ function getRatingColor(score) {
   return IIEE.failRed;
 }
 function pct(v) { return v != null ? `${Number(v).toFixed(1)}%` : "—"; }
+function formatModelMetaDate(iso) {
+  if (!iso) return "Unknown";
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime())
+    ? iso
+    : d.toLocaleString("en-PH", {
+        year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
+      });
+}
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
@@ -631,6 +662,7 @@ export default function StudentPage({ onLogout }) {
   const [history, setHistory] = useState([]);
   const [viewingEntry, setViewingEntry] = useState(null);
   const [pendingResult, setPendingResult] = useState(null);
+  const [modelMeta, setModelMeta] = useState(null);
 
 
   useEffect(() => {
@@ -646,6 +678,22 @@ export default function StudentPage({ onLogout }) {
     })();
     return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const result = await apiModelInfo();
+        if (!cancelled && result?.success) {
+          setModelMeta(result.data?.model_meta ?? null);
+        }
+      } catch (err) {
+        console.warn("Model info unavailable:", err);
+        if (!cancelled) setModelMeta(null);
+      }
+    })();
+    return () => { cancelled = true; };
   }, []);
 
   const refreshHistory = async () => {
@@ -723,6 +771,11 @@ export default function StudentPage({ onLogout }) {
           {view === "dashboard" && (
             <button className="sp-btn primary" onClick={() => setView("predictor")}>+ Take Prediction</button>
           )}
+          {modelMeta?.version && (
+            <span className="sp-model-chip" title={`Loaded model trained at ${formatModelMetaDate(modelMeta?.trained_at)}`}>
+              Model {modelMeta.version}
+            </span>
+          )}
           <span className="sp-badge gold">🎓 Student</span>
           <button className="sp-btn ghost danger" onClick={onLogout}>Sign Out</button>
         </div>
@@ -747,6 +800,18 @@ export default function StudentPage({ onLogout }) {
               <p className="sp-hero-sub">
                 Track your board exam predictions and monitor your readiness progress across attempts.
               </p>
+              {modelMeta && (
+                <div className="sp-hero-meta">
+                  <span className="sp-hero-meta-pill">
+                    <span>Loaded model</span>
+                    <strong>{modelMeta.version}</strong>
+                  </span>
+                  <span className="sp-hero-meta-pill">
+                    <span>Trained</span>
+                    <strong>{formatModelMetaDate(modelMeta.trained_at)}</strong>
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* KPIs */}
@@ -894,6 +959,18 @@ export default function StudentPage({ onLogout }) {
               <p className="sp-hero-sub">
                 Answer all questions honestly for the most accurate board exam readiness prediction.
               </p>
+              {modelMeta && (
+                <div className="sp-hero-meta">
+                  <span className="sp-hero-meta-pill">
+                    <span>Loaded model</span>
+                    <strong>{modelMeta.version}</strong>
+                  </span>
+                  <span className="sp-hero-meta-pill">
+                    <span>Trained</span>
+                    <strong>{formatModelMetaDate(modelMeta.trained_at)}</strong>
+                  </span>
+                </div>
+              )}
             </div>
             <PredictorForm onResult={handleResult} />
           </div>
@@ -915,6 +992,18 @@ export default function StudentPage({ onLogout }) {
               <p className="sp-hero-sub">
                 {viewingEntry ? `Result from ${formatDate(viewingEntry.date)}` : "Your latest board exam readiness prediction"}
               </p>
+              {modelMeta && (
+                <div className="sp-hero-meta">
+                  <span className="sp-hero-meta-pill">
+                    <span>Loaded model</span>
+                    <strong>{modelMeta.version}</strong>
+                  </span>
+                  <span className="sp-hero-meta-pill">
+                    <span>Trained</span>
+                    <strong>{formatModelMetaDate(modelMeta.trained_at)}</strong>
+                  </span>
+                </div>
+              )}
             </div>
 
             <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>

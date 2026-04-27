@@ -77,6 +77,23 @@ const styles = `
   }
   .t25-hero-title .ac { color:${IIEE.teal}; }
   .t25-hero-sub { font-size:clamp(12px, 2vw, 14px); color:${IIEE.muted}; margin:0; font-family:'Inter',sans-serif; }
+  .t25-model-meta {
+    margin-top: 12px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .t25-model-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 10px;
+    font-size: clamp(10px, 1.4vw, 11px);
+    color: ${IIEE.white};
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+  }
 
   /* ── Body ── */
   .t25-body { padding:clamp(14px, 4vw, 24px) clamp(16px, 5vw, 28px) clamp(32px, 6vw, 48px); }
@@ -426,6 +443,7 @@ export default function ProfessorTest2025Dashboard({
   const cls = test2025?.classification ?? {};
   const regA = test2025?.regression?.a ?? {};
   const regB = test2025?.regression?.b ?? {};
+  const modelMeta = test2025?.model_meta ?? null;
   const hasRegression = Boolean(
     regA?.r2 != null || regA?.mae != null || regA?.mse != null || regA?.rmse != null ||
     regB?.r2 != null || regB?.mae != null || regB?.mse != null || regB?.rmse != null
@@ -439,6 +457,11 @@ export default function ProfessorTest2025Dashboard({
   const precision = cls.precision ?? 0;
   const recall    = cls.recall    ?? 0;
   const f1        = cls.f1        ?? 0;
+  const trainedAtText = modelMeta?.trained_at
+    ? new Date(modelMeta.trained_at).toLocaleString("en-PH", {
+        year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
+      })
+    : "Unknown";
 
   return (
     <div className="t25-wrap fade-in">
@@ -457,6 +480,16 @@ export default function ProfessorTest2025Dashboard({
         <p className="t25-hero-sub">
           Held-out test set evaluation — <strong style={{ color: IIEE.white }}>DATA_EVALUATION.csv</strong> (2025 cohort) · Pass threshold: 70%
         </p>
+        <div className="t25-model-meta">
+          <div className="t25-model-pill">
+            <span>Loaded model</span>
+            <strong>{modelMeta?.version ?? "ree-unknown"}</strong>
+          </div>
+          <div className="t25-model-pill">
+            <span>Trained</span>
+            <strong>{trainedAtText}</strong>
+          </div>
+        </div>
       </div>
 
       <div className="t25-body">
