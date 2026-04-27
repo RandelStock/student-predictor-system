@@ -2291,9 +2291,9 @@ def _score_aligned_rating(model_rating: float, ee: float, math: float, esas: flo
 
 def _score_aligned_pass_probability(model_prob_pass: float, aligned_rating: float) -> float:
     # Tuned probability params:
-    # model/rating blend = 15/85, sigmoid slope = 2.5.
-    rating_prob_pass = 1.0 / (1.0 + np.exp(-(aligned_rating - 70.0) / 2.5))
-    blended_prob = (model_prob_pass * 0.15) + (rating_prob_pass * 0.85)
+    # model/rating blend = 30/70, sigmoid slope = 5.0 (softened confidence curve).
+    rating_prob_pass = 1.0 / (1.0 + np.exp(-(aligned_rating - 70.0) / 5.0))
+    blended_prob = (model_prob_pass * 0.30) + (rating_prob_pass * 0.70)
     return float(np.clip(blended_prob, 0.0, 1.0))
 
 
