@@ -623,7 +623,7 @@ def build_regression_a_vector_from_scores(ee: float, math: float, esas: float, g
     pass_count = float(sum(1 for s in [ee, math, esas] if s >= 70))
     below_70_gap = float(sum(max(0.0, 70.0 - s) for s in [ee, math, esas]))
     gwa_quality = (6.0 - float(gwa)) * 20.0
-    weighted_board_score = (ee * 0.40) + (math * 0.30) + (esas * 0.30)
+    weighted_board_score = (ee * 0.45) + (math * 0.25) + (esas * 0.30)
 
     row = {
         "EE": float(ee),
@@ -655,7 +655,7 @@ def build_regression_a_frame(df: pd.DataFrame) -> pd.DataFrame:
     out["ESAS"] = work["ESAS"]
     out["GWA"] = work["GWA"]
     out["score_mean"] = scores.mean(axis=1)
-    out["weighted_board_score"] = (work["EE"] * 0.40) + (work["MATH"] * 0.30) + (work["ESAS"] * 0.30)
+    out["weighted_board_score"] = (work["EE"] * 0.45) + (work["MATH"] * 0.25) + (work["ESAS"] * 0.30)
     out["score_min"] = scores.min(axis=1)
     out["score_max"] = scores.max(axis=1)
     out["score_range"] = out["score_max"] - out["score_min"]
@@ -2282,9 +2282,9 @@ def _score_aligned_rating(model_rating: float, ee: float, math: float, esas: flo
     Calibrate model output toward board-subject performance for 2025 row checks.
     This keeps model behavior while giving stronger weight to EE/MATH/ESAS scores.
     """
-    # Tuned on all 36 rows from SYSTEM_DATA - Sheet12.csv:
-    # subject weights 0.20/0.25/0.55 and model/anchor blend 10/90.
-    subject_anchor = (ee * 0.20) + (math * 0.25) + (esas * 0.55)
+    # Subject-weighted anchor per project requirement:
+    # EE 45%, MATH 25%, ESAS 30%.
+    subject_anchor = (ee * 0.45) + (math * 0.25) + (esas * 0.30)
     aligned = (model_rating * 0.10) + (subject_anchor * 0.90)
     return float(np.clip(aligned, 0.0, 100.0))
 
