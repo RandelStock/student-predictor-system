@@ -560,7 +560,7 @@ export default function ExamineeDetailPanel({ records, selectedIdx, onSelect, ru
                 {
                   lbl: "Predicted",
                   val: predicted?.label,
-                  sub: `P(Pass): ${pct((predicted?.probability_pass ?? 0) * 100)}${predicted?.calibration_mode ? " · score-aligned" : ""}`,
+                  sub: `Predicted %: ${pct((predicted?.probability_pass ?? 0) * 100)}${predicted?.calibration_mode ? " · score-aligned" : ""}`,
                 },
               ].map(x => {
                 const isPassed = x.val === "PASSED";

@@ -2290,10 +2290,12 @@ def _score_aligned_rating(model_rating: float, ee: float, math: float, esas: flo
 
 
 def _score_aligned_pass_probability(model_prob_pass: float, aligned_rating: float) -> float:
-    # Tuned probability params:
-    # model/rating blend = 30/70, sigmoid slope = 5.0 (softened confidence curve).
-    rating_prob_pass = 1.0 / (1.0 + np.exp(-(aligned_rating - 70.0) / 5.0))
-    blended_prob = (model_prob_pass * 0.30) + (rating_prob_pass * 0.70)
+    """
+    Make displayed percentage closely follow predicted rating percentage.
+    Example: aligned_rating ~54 -> probability_pass ~0.52 to 0.55 range.
+    """
+    rating_percent_prob = float(np.clip(aligned_rating / 100.0, 0.0, 1.0))
+    blended_prob = (model_prob_pass * 0.10) + (rating_percent_prob * 0.90)
     return float(np.clip(blended_prob, 0.0, 1.0))
 
 
@@ -2444,7 +2446,8 @@ def defense_test_2025_predict(idx: int):
 
     prob_pass_aligned = round(_score_aligned_pass_probability(float(proba[1]), pred_rating_a_aligned), 6)
     prob_fail_aligned = round(1.0 - prob_pass_aligned, 6)
-    pred_label_aligned = "PASSED" if prob_pass_aligned >= 0.5 else "FAILED"
+    # Keep label decision rating-based so failed rows around 50-69 stay FAILED.
+    pred_label_aligned = "PASSED" if pred_rating_a_aligned >= 70.0 else "FAILED"
 
     pct_error_a = None
     pct_error_b = None
