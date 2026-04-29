@@ -770,6 +770,16 @@ export default function ResultCard({ result }) {
   const passPercent = Math.round(result.probability_pass * 100);
   const failPercent = Math.round(result.probability_fail * 100);
   const confidence  = passed ? passPercent : failPercent;
+  const confidenceLabel = confidence >= 75
+    ? "High Probability"
+    : confidence >= 50
+      ? "Moderate Probability"
+      : "Low Probability";
+  const confidenceColor = confidence >= 75
+    ? IIEE.passGreen
+    : confidence >= 50
+      ? IIEE.amber
+      : IIEE.failRed;
   const answers     = result.answers || {};
   const attempt_id  = result.attempt_id;
 
@@ -840,7 +850,9 @@ export default function ResultCard({ result }) {
                 color: passColor, fontFamily: "'Montserrat',sans-serif",
               }}>{confidence}%</span>
             </div>
-            <span className="rc-ring-sub">confidence</span>
+            <span className="rc-ring-sub" style={{ color: confidenceColor, fontWeight: 700 }}>
+              {confidenceLabel}
+            </span>
           </div>
         </div>
 

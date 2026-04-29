@@ -390,6 +390,16 @@ const LIKERT = { 1: "Strongly Agree", 2: "Agree", 3: "Disagree", 4: "Strongly Di
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function num(v, d = 2) { return typeof v === "number" ? v.toFixed(d) : "—"; }
 function pct(v)        { return typeof v === "number" ? `${v.toFixed(1)}%` : "—"; }
+function getProbabilityLabel(percent) {
+  if (percent >= 75) return "High Probability";
+  if (percent >= 50) return "Moderate Probability";
+  return "Low Probability";
+}
+function getProbabilityColor(percent) {
+  if (percent >= 75) return IIEE.passGreen;
+  if (percent >= 50) return IIEE.amber;
+  return IIEE.failRed;
+}
 
 function sectionScore(keys, answers) {
   const vals = keys.map(k => Number(answers?.[k])).filter(v => v >= 1 && v <= 4);
@@ -560,7 +570,15 @@ export default function ExamineeDetailPanel({ records, selectedIdx, onSelect, ru
                 {
                   lbl: "Predicted",
                   val: predicted?.label,
-                  sub: `Predicted %: ${pct((predicted?.probability_pass ?? 0) * 100)}${predicted?.calibration_mode ? " · score-aligned" : ""}`,
+                  sub: (
+                    <>
+                      Predicted %: {pct((predicted?.probability_pass ?? 0) * 100)} ·{" "}
+                      <span style={{ color: getProbabilityColor((predicted?.probability_pass ?? 0) * 100), fontWeight: 700 }}>
+                        {getProbabilityLabel((predicted?.probability_pass ?? 0) * 100)}
+                      </span>
+                      {predicted?.calibration_mode ? " · score-aligned" : ""}
+                    </>
+                  ),
                 },
               ].map(x => {
                 const isPassed = x.val === "PASSED";

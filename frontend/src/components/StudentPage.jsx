@@ -556,6 +556,16 @@ function getRatingColor(score) {
   return IIEE.failRed;
 }
 function pct(v) { return v != null ? `${Number(v).toFixed(1)}%` : "—"; }
+function getProbabilityLabel(percent) {
+  if (percent >= 75) return "High Probability";
+  if (percent >= 50) return "Moderate Probability";
+  return "Low Probability";
+}
+function getProbabilityColor(percent) {
+  if (percent >= 75) return IIEE.passGreen;
+  if (percent >= 50) return IIEE.amber;
+  return IIEE.failRed;
+}
 function formatModelMetaDate(iso) {
   if (!iso) return "Unknown";
   const d = new Date(iso);
@@ -592,6 +602,9 @@ function KPI({ label, value, icon, color = IIEE.gold, sub }) {
 function HistoryRow({ entry, index, onView }) {
   const passed = entry.prediction === 1;
   const passColor = passed ? IIEE.passGreen : IIEE.failRed;
+  const passPercent = Number(entry?.probability_pass || 0) * 100;
+  const passProbabilityLabel = getProbabilityLabel(passPercent);
+  const passProbabilityColor = getProbabilityColor(passPercent);
   const rColor = getRatingColor(entry.predicted_rating_a);
   const reliability = entry.reliability_score;
   const rCat = entry.reliability_category;
@@ -630,7 +643,8 @@ function HistoryRow({ entry, index, onView }) {
         </div>
         <div className="sp-history-meta">
           <span className="sp-history-stat">
-            Pass prob: <strong style={{ color: passColor }}>{pct(entry.probability_pass * 100)}</strong>
+            Pass prob: <strong style={{ color: passColor }}>{pct(passPercent)}</strong>{" "}
+            (<strong style={{ color: passProbabilityColor }}>{passProbabilityLabel}</strong>)
           </span>
           <span className="sp-history-stat">
             Rtg A: <strong style={{ color: rColor }}>{entry.predicted_rating_a?.toFixed(1) ?? "—"}</strong>
@@ -825,7 +839,14 @@ export default function StudentPage({ onLogout }) {
                 value={latestEntry ? (latestEntry.prediction === 1 ? "PASS" : "FAIL") : "—"}
                 icon={latestEntry ? (latestEntry.prediction === 1 ? "🎓" : "📉") : "📊"}
                 color={latestEntry ? (latestEntry.prediction === 1 ? IIEE.passGreen : IIEE.failRed) : IIEE.dimText}
-                sub={latestEntry ? `${pct(latestEntry.probability_pass * 100)} pass probability` : "No attempts yet"}
+                sub={latestEntry ? (
+                  <>
+                    {pct(latestEntry.probability_pass * 100)} ·{" "}
+                    <span style={{ color: getProbabilityColor(latestEntry.probability_pass * 100) }}>
+                      {getProbabilityLabel(latestEntry.probability_pass * 100)}
+                    </span>
+                  </>
+                ) : "No attempts yet"}
               />
             </div>
 
@@ -851,6 +872,7 @@ export default function StudentPage({ onLogout }) {
                   <div className="sp-mini-stats">
                     {[
                       { label: "Pass Probability", val: pct(latestEntry.probability_pass * 100), color: latestEntry.prediction === 1 ? IIEE.passGreen : IIEE.failRed },
+                      { label: "Confidence Level", val: getProbabilityLabel(latestEntry.probability_pass * 100), color: getProbabilityColor(latestEntry.probability_pass * 100) },
                       { label: "Predicted Rating A", val: latestEntry.predicted_rating_a?.toFixed(1) ?? "—", color: getRatingColor(latestEntry.predicted_rating_a) },
                       { label: "Predicted Rating B", val: latestEntry.predicted_rating_b?.toFixed(1) ?? "—", color: getRatingColor(latestEntry.predicted_rating_b) },
                     ].map((item, i) => (
